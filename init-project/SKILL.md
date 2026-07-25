@@ -302,9 +302,14 @@ answers file as the top-level `agents` list and, after render, lives on as the
 RUNTIME config `docs/agents.json` (+ the `docs/agents.md` matrix) -- changeable
 any time via `/select-agents`, never frozen at bootstrap.
 
-If `claude-code` is NOT selected: warn that the enforcement stack (subagents,
-hooks, settings, skills) will not be generated, and that the bootstrap-installed
-files under `.claude/skills/` are inert and safe to delete after Phase 5.
+If `claude-code` is NOT selected: warn that the Claude-specific enforcement
+stack (subagents, hooks, settings, the `CLAUDE.md` symlink) will not be
+generated, but the five generated `.claude/skills/` procedures (`slice`,
+`security-review`, `tech-debt`, `select-agents`, and -- frontend projects --
+`design-loop`) still will, as plain-markdown procedures for the driving agent
+to read and follow manually. Only the bootstrap-installed helper skills
+(`init-project` itself and the Phase 1 `mattpocock/skills` pack) are inert
+and safe to delete after Phase 5.
 
 ### Phase 3: Confirm the plan -- show the filled docs, not a settings list
 
@@ -428,7 +433,7 @@ yours carry the real interview content):
       "id": "F002",
       "title": "Suggest three cookable recipes",
       "intent": "Confirming the list yields exactly three recipe suggestions, each cookable with the confirmed ingredients plus pantry staples.",
-      "serves": "REQ-AC2: three suggestions cookable with confirmed inventory plus staples",
+      "serves": "journey step 3: the app retrieves three matching recipes and adapts each to the confirmed inventory",
       "acceptance": ["Confirming an ingredient list returns exactly three recipes, each cookable with those ingredients plus pantry staples."],
       "tests": [],
       "status": "todo",
