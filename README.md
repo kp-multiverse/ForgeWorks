@@ -2,7 +2,7 @@
 
 > One command turns an empty folder into a structured, TDD-driven, security-gated project — built for **agentic coding**.
 
-**Senior-team discipline for your AI coding agent.** You bring the idea plus working development and agentic-coding experience -- ForgeWorks wraps your agent in a senior team's discipline (planning, a real test pyramid, a security review, a second-opinion reviewer), so a solo developer can turn a prompt into a product that is actually tested, secure, and shippable -- not a throwaway demo. (If you have never driven an AI coding agent before, expect a learning curve: the machine enforces design memos, TDD, and security gates.)
+**Senior-team discipline for your AI coding agent.** You bring the idea plus working development and agentic-coding experience -- ForgeWorks wraps your agent in a senior team's discipline (planning, a real test pyramid, a security review, a second-opinion reviewer), so a solo developer can turn a prompt into a product that is actually tested, secure, and shippable -- not a throwaway demo. (If you have never driven an AI coding agent before, expect a learning curve: the machine enforces the quality gate, the feature-list check, and reviews scaled to risk.)
 
 It is not a starter app. It installs the rules, specialist roles, and deterministic gates that make an AI coding agent produce code you can actually review, ship, and maintain. The core is stack-agnostic; your language and tooling are chosen in a short interview, not hard-coded.
 
@@ -23,7 +23,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Kpakfar/ForgeWorks/v2.5.0/bo
 
 ## What you get
 
-- **`AGENTS.md` constitution** — a ~80-line core (architecture, security, risk tiers, roster) plus on-demand skills for planning, design, and security discipline, all in one source of truth.
+- **`AGENTS.md` constitution** — a ~80-line core (architecture, security, risk tiers, roster) that stays the single source of truth, plus on-demand skills for planning, design, and security discipline for the ceremony that doesn't need to live on every page.
 - **5 subagents** — `@implementer`, `@code-reviewer` (+ optional Codex second opinion), `@security-reviewer`, `@design-reviewer` (frontend projects), and `@utility` (haiku-pinned, for mechanical chores that should never burn expensive-model tokens).
 - **Skills** — `slice` (the tiered per-feature workflow), `design-loop` (mockup -> build -> screenshot-verify, frontend projects), `security-review` (the trigger + procedure), `tech-debt` (on-demand sweep), and `select-agents` (change the agent roster mid-project).
 - **Deterministic gates** — a verify-only `qa` (plus a local `fix`), a supply-chain `deps-guard` hook, a `features.json`/`features_check.py` feature-list check, and CI (fast gate + separate e2e job).
