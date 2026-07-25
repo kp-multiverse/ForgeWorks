@@ -21,7 +21,7 @@ tool does mechanically versus what is still future work.
   Python, plain string substitution) renders the tree — every placeholder,
   conditional rule, structured-file escape, symlink, chmod, and version stamp.
   Same answers, same bytes. A golden-fixture CI job
-  (`.github/scripts/golden_test.py`) compares six rendered answer sets —
+  (`.github/scripts/golden_test.py`) compares seven rendered answer sets —
   including a hostile-values fixture — byte-for-byte against committed
   expected trees. Only the interview itself and the package-manager dependency
   steps remain agent-executed.
@@ -43,8 +43,18 @@ tool does mechanically versus what is still future work.
   for mid-project changes. Other agents inherit the rules, docs, and roster;
   dedicated adapters that reproduce the Claude Code subagents, hooks, and MCP
   orchestration elsewhere are still not built.
-- Conditional prototype/mockup-skill install at bootstrap (v2 spec section 7): deferred -- the visual-design baseline in the generated `<design-discipline>` block covers mockup quality without a skill dependency; revisit if a canonical prototype skill lands in the default pack.
-- **Express/starter mode** (a lighter on-ramp with fewer gates) is deferred;
-  positioning is honest-copy-only for now.
+- ~~Conditional prototype/mockup-skill install at bootstrap~~ -- **shipped in
+  v3.0.0** as the generated `design-loop` skill (mockup -> build ->
+  screenshot-verify, frontend projects), backed by `docs/design/` and the
+  `@design-reviewer` subagent.
+- ~~**Express/starter mode**~~ -- **superseded in v3.0.0** by the three risk
+  tiers (light / standard / high-risk) in `<risk-tiers>`: ceremony now scales
+  to the change instead of needing a separate lighter mode.
+- **v2's universal ship-record/audit chain was removed in v3.0.0.** The
+  per-slice ship record, `docs/current-task/`, and the `ship-audit` CI job
+  are gone; risk tiers plus `docs/deviations.md` replace them with
+  judgment-scaled ceremony instead of a mandatory audit trail on every
+  change. Rationale:
+  `docs/superpowers/specs/2026-07-25-v3.0.0-fable-era-harness-design.md`.
 - **A 5-minute worked example** ("watch it build one real feature" walkthrough
   doc) is deferred.

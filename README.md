@@ -16,24 +16,31 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Kpakfar/ForgeWorks/v2.5.0/bo
 
 - **Portable rules; enforcement is Claude Code today.** The whole constitution lives in `AGENTS.md` (symlinked to `CLAUDE.md`) — the cross-tool standard read by Claude Code, Codex, Cursor, opencode, and others. The rules and docs (`AGENTS.md`) are portable to any agent; the deep orchestration and local gates (subagents, hooks, MCP) run in Claude Code today, and other agents ignore the Claude-specific parts gracefully.
 - **Two agents, two perspectives.** Drive with your primary agent and bring a **second one as an independent reviewer** — e.g. **Codex** (opt in during setup) — for a genuine second opinion on important changes. Two models reviewing beats one.
-- **Plans from the heart, not lazily — on every slice.** A structured discovery — brainstorm the options, then grill the plan: core flow, riskiest assumption, non-goals, named test plan, a proactive "what's missing?" pass — is signed off *before* any code, for **every** feature and cycle, not just at setup. UI-heavy slices get a real mockup to approve *before* implementation.
-- **The whole test pyramid, at spec time.** Unit + functional/API + headless-browser e2e + security tests are named in the plan and written first (Red phase).
+- **Ceremony sized to risk, not to habit.** Three risk tiers — light, standard, high-risk — set how much planning and review a change needs, from "just build it" to a user-approved plan plus a full security review. UI-heavy slices get a real mockup to approve *before* implementation.
+- **The whole test pyramid, at spec time.** Unit + functional/API + headless-browser e2e + security tests are named in the plan and written first (Red phase) for standard and high-risk work.
 - **Security is enforced, not requested.** Access-control/IDOR, secrets, supply chain, and (for AI apps) prompt-injection defenses live in `AGENTS.md` + `docs/SECURITY.md`, backed by a real `PreToolUse` supply-chain hook (a best-effort guard, not a sandbox) — because prompt-level security is theater.
 - **Self-improving & upgradeable.** Lessons flow back into the template; existing projects pull updates with `/upgrade-project`, non-destructively.
 
 ## What you get
 
-- **`AGENTS.md` constitution** — architecture, security, test, planning, and design (mockup-over-ASCII) discipline, all in one source of truth.
-- **6 subagents** — `@test-spec-writer`, `@implementer`, `@code-reviewer` (+ optional Codex second opinion), `@security-reviewer`, `@tech-debt`, and `@utility` (haiku-pinned, for mechanical chores that should never burn expensive-model tokens).
-- **Deterministic gates** — a verify-only `qa` (plus a local `fix`), a supply-chain `deps-guard` hook, and CI (fast gate + separate e2e job).
-- **Living docs** — product vision, requirements, structure, gotchas, SECURITY, and a shared current-task scratchpad agents read and write.
+- **`AGENTS.md` constitution** — a ~80-line core (architecture, security, risk tiers, roster) plus on-demand skills for planning, design, and security discipline, all in one source of truth.
+- **5 subagents** — `@implementer`, `@code-reviewer` (+ optional Codex second opinion), `@security-reviewer`, `@design-reviewer` (frontend projects), and `@utility` (haiku-pinned, for mechanical chores that should never burn expensive-model tokens).
+- **Skills** — `slice` (the tiered per-feature workflow), `design-loop` (mockup -> build -> screenshot-verify, frontend projects), `security-review` (the trigger + procedure), `tech-debt` (on-demand sweep), and `select-agents` (change the agent roster mid-project).
+- **Deterministic gates** — a verify-only `qa` (plus a local `fix`), a supply-chain `deps-guard` hook, a `features.json`/`features_check.py` feature-list check, and CI (fast gate + separate e2e job).
+- **Living docs** — product vision, the feature list (`docs/features.json`), design docs, gotchas, SECURITY, and `docs/deviations.md` for agent judgment calls.
 - **Batteries** — Context7 MCP for live library docs, an optional dev container, a green-on-first-run scaffold, a PR template, and a pre-commit config (Python profile only).
 
 ## How it works
 
-The main agent orchestrates the loop; `tdd` and `grill-me` (from `mattpocock/skills`) drive the methodology and planning. Two mandatory reviewers (code review always, security red-team on a canonical trigger) pair with the per-slice **Red → Green → Refactor → Review** loop; three optional workers isolate the heavier phases, and every shipped slice leaves a durable, hook-audited ship record. Tasks with no behavioral effect (typos, doc wording, formatting) skip the ceremony — anything that changes what the product does, however small, does not. The same gate runs locally (`Stop` + `PreToolUse` hooks that block a red build or an evidence-free ship) and in CI.
+The main agent orchestrates the loop; `tdd` and `grill-me` (from `mattpocock/skills`) drive the methodology and planning. The `slice` skill picks a risk tier per change; code review is mandatory, a security red-team pass runs on a canonical trigger, and a design review checks shipped screens against the approved mockup on frontend projects. Tasks with no behavioral effect (typos, doc wording, formatting) skip the ceremony — anything that changes what the product does, however small, does not. The same quality gate runs locally (a `Stop` hook that blocks a red build) and in CI.
 
-![The ForgeWorks multi-agent TDD loop: a one-time bootstrap session, then a repeating seven-step cycle driven by an orchestration layer that dispatches six specialist subagents](docs/forgeworks-loop.png)
+<!-- TODO(v3): docs/forgeworks-loop.png still depicts the v2 loop (test-spec-writer
+     and tech-debt as subagents, a fixed seven-step cycle, no design-reviewer or
+     risk tiers) -- regenerate it for v3 before re-enabling. Original alt text:
+     "The ForgeWorks multi-agent TDD loop: a one-time bootstrap session, then a
+     repeating seven-step cycle driven by an orchestration layer that dispatches
+     six specialist subagents" -->
+<!-- ![The ForgeWorks multi-agent TDD loop](docs/forgeworks-loop.png) -->
 
 ## Upgrade an existing project
 
@@ -64,7 +71,7 @@ VERSION           stamped into generated projects
 
 ForgeWorks is an opinionated harness — a capable product with a clear roadmap. Be aware of what is and isn't mechanically true today:
 
-- **Generation is deterministic.** The agent interviews you and writes an answers file; a stdlib-Python renderer (`init-project/render.py`) turns it into the project tree — same answers, same bytes, locked by golden-fixture CI (six answer sets, byte-for-byte against committed expected trees, hostile values included). Only the interview itself and dependency installs remain agent work.
+- **Generation is deterministic.** The agent interviews you and writes an answers file; a stdlib-Python renderer (`init-project/render.py`) turns it into the project tree — same answers, same bytes, locked by golden-fixture CI (seven answer sets, byte-for-byte against committed expected trees, hostile values included). Only the interview itself and dependency installs remain agent work.
 - **The supply-chain guard is best-effort.** The `deps-guard` hook reduces risk; it is not a sandbox. The real controls are lockfile review and CI scanning.
 - **Profiles:** Python, TypeScript, Go, and Rust are each verified green in CI on the merged core+profile tree, quality gate and e2e runner included.
 

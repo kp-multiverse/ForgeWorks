@@ -28,9 +28,9 @@ Then open Claude Code and run `/init-project`.
 
 1. The skill confirms intent with you.
 2. It runs `npx skills@latest add mattpocock/skills` (you pick which skills).
-3. It interviews you (scope, the heart of the project, stack, security profile, dev container, and more).
-4. It writes your answers to `docs/_init-answers.json` and runs the bundled deterministic renderer (`render.py`), which generates the project from the universal core + your chosen language profile — same answers, same bytes, verified by golden-fixture CI in the template repo.
-5. The renderer symlinks `CLAUDE.md` → `AGENTS.md` and stamps the template version at `.claude/.template-version`.
+3. It interviews you (scope, the heart of the project, stack, visual references if there's a frontend, security profile, dev container, agent roster, and more).
+4. It writes your answers to `docs/_init-answers.json` — including a `features` list and a `design` section — and runs the bundled deterministic renderer (`render.py`), which generates the project from the universal core + your chosen language profile — same answers, same bytes, verified by golden-fixture CI in the template repo.
+5. The renderer symlinks `CLAUDE.md` → `AGENTS.md`, emits `docs/features.json`, and stamps the template version at `.claude/.template-version`.
 6. It offers to remove the init skill from the project — optional cleanup, since the skill isn't needed once generation is done; keeping it does no harm.
 
 ## Upgrading an existing project to a newer template
@@ -44,7 +44,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Kpakfar/ForgeWorks/v2.5.0/bo
 
 Open Claude Code and run `/upgrade-project`. It reconciles the project against the current template:
 
-- **Copies** new always-on files that are missing (e.g. `docs/SECURITY.md`, the deps-guard hook, the security-reviewer / tech-debt subagents).
+- **Copies** new always-on files that are missing (e.g. `docs/SECURITY.md`, the deps-guard hook, the security-reviewer / design-reviewer subagents).
 - **Grafts** new `AGENTS.md` rule blocks and subagent sections into your existing files **without overwriting** your hand-filled content.
 - **Applies** the language tooling delta (markers, deps, the e2e CI job for supported languages).
 - **Reports** what still needs a manual look.
