@@ -324,6 +324,16 @@ def skip_file(relpath: str, source: str, ans: dict) -> bool:
     if relpath == os.path.join(".claude", "hooks", "slice-audit.sh"):
         return False  # agent-neutral: CI invokes it as a plain script
                       # (`bash .claude/hooks/slice-audit.sh`) regardless of roster
+    no_frontend = ans["stack"]["has_frontend"] == "no"
+    if no_frontend and parts[:2] == ["docs", "design"]:
+        return True
+    if no_frontend and os.path.basename(relpath) == "tokens.css":
+        return True
+    if no_frontend and relpath == os.path.join(
+            ".claude", "agents", "design-reviewer.md"):
+        return True
+    if no_frontend and parts[:3] == [".claude", "skills", "design-loop"]:
+        return True
     if (parts[0] == ".claude" and not claude_selected(ans)):
         return True  # Claude Code not in the roster: no agents/hooks/skills/settings
     if parts[0] == ".devcontainer" and ans["stack"]["uses_devcontainer"] == "no":
