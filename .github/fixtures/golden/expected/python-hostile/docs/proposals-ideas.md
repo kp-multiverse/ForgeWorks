@@ -1,8 +1,9 @@
 # Proposals & Ideas
 
+Ideas parking lot -- promote an idea by adding a `features.json` entry.
 Free-form. Out-of-scope improvements, half-formed thoughts, things that came up during work but aren't ready to be tasks yet.
 
-Reviewed every ~2 weeks. Promote good ideas to `backlog.md` (with proper scoping), discard the rest.
+Reviewed every ~2 weeks. Promote good ideas by adding a scoped entry to `docs/features.json`, discard the rest.
 
 ## Format
 

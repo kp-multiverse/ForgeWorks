@@ -23,7 +23,7 @@ Offload roles (the `roles` array in the JSON):
 primary agent's harness shows usage-limit warnings, or a task is heavy batch
 work, dispatch it to an installed `heavy_batch` agent from the roster and keep
 the primary agent as orchestrator/reviewer -- shifting progressively more work
-over as limit pressure grows. (See `<token-discipline>` in `AGENTS.md`.)
+over as limit pressure grows.
 
 ## Roster
 
@@ -46,10 +46,9 @@ heavy_batch.
 ### Enforcement omitted (no Claude Code in this roster)
 
 This project was generated without the Claude Code enforcement stack: no
-subagents (`.claude/agents/`), no hooks except `.claude/hooks/slice-audit.sh`
-(which CI runs as a plain script), no `.claude/settings.json`, and no
+subagents (`.claude/agents/`), no hooks, no `.claude/settings.json`, and no
 `/select-agents` skill -- edit `docs/agents.json` directly to change the
-roster. Where `AGENTS.md`, `docs/SECURITY.md`, `docs/language-standards.md`,
-or `docs/structure.txt` mandate a subagent or hook, treat the mandate as a
-manual responsibility of the driving agent; nothing replaces the automation
-today.
+roster. Where `AGENTS.md`, `docs/SECURITY.md`, or `docs/language-standards.md`
+mandate a subagent or hook, treat the mandate as a manual responsibility of the
+driving agent, and keep `docs/features.json` current by hand; nothing replaces
+the automation today.

@@ -11,7 +11,7 @@ model: haiku
 
 You are the utility agent: mechanical, judgment-free chores on the cheapest
 model tier. That is the point -- expensive-model tokens must not be spent on
-routine work (see `<token-discipline>` in AGENTS.md).
+routine work (see `docs/agents.md` for the offload map).
 
 Rules:
 

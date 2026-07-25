@@ -2,8 +2,7 @@
 
 The north star for this project. Captures the *what* and *why*. Stable across iterations.
 
-For the *how* (current sprint scope, stack, acceptance criteria), see `requirements.md`.
-For the *when* (active queued work), see `backlog.md`.
+For the enforceable feature list, see `features.json`.
 
 ---
 
@@ -23,7 +22,7 @@ we **{{KEY_DIFFERENTIATOR}}**.
 - **Why:** {{CORE_PROBLEM}}
 - **When:** {{FIRST_MILESTONE}}
 - **Where:** {{DEPLOYMENT_TARGET}}
-- **How:** see the core flow in `docs/requirements.md`
+- **How:** see the core flow in `docs/features.json`
 
 ## Scope
 

@@ -304,14 +304,6 @@ def apply_insertions(text: str, relpath: str, ans: dict, cond_dir: str) -> str:
         text = insert_after(
             text, 'Review each row "through the lens of an attacker."\n',
             "\n" + profile_line + "\n", relpath)
-    if relpath == "docs/requirements.md" and trifecta:
-        note = ("**Lethal trifecta: PRESENT.** All three answers above are yes "
-                "for a single LLM agent. Break one leg -- split the agent, drop "
-                "a capability, or gate the action behind a human -- and record "
-                "the break here and in `docs/SECURITY.md`.")
-        text = insert_after(
-            text, "Full threat model and defenses: `docs/SECURITY.md`.\n",
-            "\n" + note + "\n", relpath)
     return text
 
 
@@ -321,9 +313,6 @@ def skip_file(relpath: str, source: str, ans: dict) -> bool:
     parts = relpath.split(os.sep)
     if source == "profile" and relpath == "profile.json":
         return True  # renderer input, never part of a generated project
-    if relpath == os.path.join(".claude", "hooks", "slice-audit.sh"):
-        return False  # agent-neutral: CI invokes it as a plain script
-                      # (`bash .claude/hooks/slice-audit.sh`) regardless of roster
     no_frontend = ans["stack"]["has_frontend"] == "no"
     if no_frontend and parts[:2] == ["docs", "design"]:
         return True

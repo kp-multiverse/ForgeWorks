@@ -2,8 +2,7 @@
 
 The north star for this project. Captures the *what* and *why*. Stable across iterations.
 
-For the *how* (current sprint scope, stack, acceptance criteria), see `requirements.md`.
-For the *when* (active queued work), see `backlog.md`.
+For the enforceable feature list, see `features.json`.
 
 ---
 
@@ -23,7 +22,7 @@ we **every claim carries a link to its evidence, and unsupported claims are flag
 - **Why:** Weekly stakeholder updates are assembled by hand from tickets, PRs, and chat; the writing is repetitive and the gathering is worse.
 - **When:** 2026-08-23
 - **Where:** Internal web app on the company PaaS.
-- **How:** see the core flow in `docs/requirements.md`
+- **How:** see the core flow in `docs/features.json`
 
 ## Scope
 

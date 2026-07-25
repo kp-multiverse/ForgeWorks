@@ -1,9 +1,10 @@
 # Reality probes
 
 One file per observed external collaborator, at `docs/probes/<slice>-<name>.md`.
-Required by `AGENTS.md` `<investigation-discipline>`: before building on any
-library, API, service, protocol, or data source, observe it for real -- one real
-call, real dispatch, or real run -- and record what actually came back.
+Optional convention: record a probe for a flaky or under-documented
+collaborator -- one real call, real dispatch, or real run -- and record what
+actually came back; the `slice` skill says when. Stable, well-documented APIs
+may be coded against their docs instead.
 
 ## Format
 

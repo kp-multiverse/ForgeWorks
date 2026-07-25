@@ -81,13 +81,6 @@ jobs:
       - name: deps-guard blocks/allows the expected commands
         run: bash .github/scripts/deps_guard_test.sh
 
-  slice-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: slice-audit hook blocks/passes the expected ship commits
-        run: bash .github/scripts/slice_audit_test.sh
-
   line-cap:
     runs-on: ubuntu-latest
     steps:

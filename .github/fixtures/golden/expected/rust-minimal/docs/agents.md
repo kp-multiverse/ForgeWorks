@@ -23,7 +23,7 @@ Offload roles (the `roles` array in the JSON):
 primary agent's harness shows usage-limit warnings, or a task is heavy batch
 work, dispatch it to an installed `heavy_batch` agent from the roster and keep
 the primary agent as orchestrator/reviewer -- shifting progressively more work
-over as limit pressure grows. (See `<token-discipline>` in `AGENTS.md`.)
+over as limit pressure grows.
 
 ## Roster
 

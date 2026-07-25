@@ -2,8 +2,7 @@
 
 The north star for this project. Captures the *what* and *why*. Stable across iterations.
 
-For the *how* (current sprint scope, stack, acceptance criteria), see `requirements.md`.
-For the *when* (active queued work), see `backlog.md`.
+For the enforceable feature list, see `features.json`.
 
 ---
 
@@ -23,7 +22,7 @@ we **start from a photo of the actual fridge, not from a search box**.
 - **Why:** Recipe sites answer 'what can I cook in general', not 'what can I cook right now with what I have'; the gap between inventory and inspiration stays manual.
 - **When:** 2026-08-09
 - **Where:** Public web app (mobile-first), hosted on a single VPS first.
-- **How:** see the core flow in `docs/requirements.md`
+- **How:** see the core flow in `docs/features.json`
 
 ## Scope
 

@@ -33,7 +33,7 @@ The end-to-end (headless-browser) suite is **not** in the fast gate. It runs sep
 
 ## Coding conventions
 
-These are the conventions `@implementer` and `@code-reviewer` enforce alongside the language-agnostic rules in `AGENTS.md` `<architecture-discipline>`.
+These are the conventions `@implementer` and `@code-reviewer` enforce alongside their own language-agnostic architecture rules (one concept per file, ~100-line target, 200-line hard cap, no premature abstraction).
 
 ### Type annotations
 

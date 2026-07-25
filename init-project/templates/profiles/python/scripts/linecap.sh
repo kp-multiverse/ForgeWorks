@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/linecap.sh -- mechanical line-cap gate (AGENTS.md <architecture-discipline>).
+# scripts/linecap.sh -- mechanical line-cap gate.
 #
 # Fails if any *.py file under src/ or tests/ exceeds 200 lines. The ~100-line
 # target stays a review judgment; the 200-line hard cap is enforced here so it
