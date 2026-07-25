@@ -1,4 +1,4 @@
-<!-- FW-BLOCK: memory v2.0.0 -->
+<!-- FW-BLOCK: memory v3.0.0 -->
 <memory>
 This project uses **mem0** for persistent memory across sessions.
 

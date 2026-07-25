@@ -279,7 +279,7 @@ def apply_insertions(text: str, relpath: str, ans: dict, cond_dir: str) -> str:
                 and all(sec[k] == "yes" for k in SECURITY_KEYS))
     if relpath == "AGENTS.md" and ans["opt_ins"]["mem0"] == "yes":
         block = _conditional(cond_dir, "memory-block.md").rstrip("\n")
-        text = insert_after(text, "<!-- /FW-BLOCK: library-docs -->\n",
+        text = insert_after(text, "<!-- /FW-BLOCK: learning -->\n",
                             "\n" + block + "\n", relpath)
     if relpath == "docs/gotchas.md" and ans["opt_ins"]["seed_gotchas"] == "yes":
         seed = _conditional(cond_dir, "gotchas-seed.md").rstrip("\n")
