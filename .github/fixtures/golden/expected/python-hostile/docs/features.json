@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "F001",
+      "title": "Render a \"hostile\" title with `backticks` & ampersands",
+      "intent": "Feeding the renderer text full of \"quotes\" & {{lowercase braces}}\nacross two lines must still parse in every structured file.",
+      "serves": "REQ-AC1: pyproject.toml parses with the hostile description \"as-is\" (escaped)",
+      "acceptance": [
+        "Rendered pyproject.toml parses and contains the hostile description escaped, not altered."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F002",
+      "title": "Carry newlines & 'single quotes' into Markdown verbatim",
+      "intent": "Markdown docs carry quotes, `backticks`, {{braces}} and newlines\nverbatim -- no sanitizing, no prettifying.",
+      "serves": "REQ-AC3: Markdown docs carry hostile text verbatim",
+      "acceptance": [
+        "A rendered Markdown doc contains the hostile project fields byte-for-byte, including embedded newlines."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "light"
+    }
+  ]
+}

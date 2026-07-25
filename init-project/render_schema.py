@@ -42,6 +42,12 @@ STACK_KEYS = (
 )
 SECURITY_KEYS = ("reads_untrusted", "holds_private_data", "acts_outward")
 OPT_IN_KEYS = ("explanations", "seed_gotchas", "mem0", "codex_reviewer")
+FEATURE_KEYS = ("id", "title", "intent", "serves", "acceptance", "tests",
+                "status", "tier")
+FEATURE_STATUSES = ("todo", "in-progress", "done", "dropped")
+FEATURE_TIERS = ("light", "standard", "high-risk")
+FEATURE_ID_RE = re.compile(r"^F\d{3}$")
+DESIGN_KEYS = ("references", "tone", "anti_reference")
 
 PROFILE_SCALARS = (
     "display_name", "language_version", "package_manager", "manifest_file",
@@ -98,6 +104,60 @@ def _check_reference(errors: list[str], where: str, value: object) -> None:
         return
     _check_text(errors, f"{where}.ref", value["ref"])
     _check_text(errors, f"{where}.location", value["location"])
+
+
+def _check_features(errors: list[str], value: object) -> None:
+    if not isinstance(value, list) or not value:
+        errors.append("features: must be a non-empty list of feature objects")
+        return
+    seen: set[str] = set()
+    for i, ft in enumerate(value):
+        where = f"features[{i}]"
+        if not isinstance(ft, dict):
+            errors.append(f"{where}: must be an object")
+            continue
+        extra = set(ft) - set(FEATURE_KEYS) - {"notes"}
+        if extra:
+            errors.append(f"{where}: unknown keys {sorted(extra)}")
+        for key in FEATURE_KEYS:
+            if key not in ft:
+                errors.append(f"{where}.{key}: missing")
+        fid = ft.get("id")
+        if isinstance(fid, str) and not FEATURE_ID_RE.match(fid):
+            errors.append(f"{where}.id: must match F000-F999 (got {fid!r})")
+        if isinstance(fid, str):
+            if fid in seen:
+                errors.append(f"{where}.id: duplicate {fid}")
+            seen.add(fid)
+        for key in ("title", "intent", "serves"):
+            if key in ft:
+                _check_text(errors, f"{where}.{key}", ft[key])
+        if "status" in ft and ft["status"] not in FEATURE_STATUSES:
+            errors.append(f"{where}.status: must be one of {FEATURE_STATUSES}")
+        if "tier" in ft and ft["tier"] not in FEATURE_TIERS:
+            errors.append(f"{where}.tier: must be one of {FEATURE_TIERS}")
+        acc = ft.get("acceptance")
+        if "acceptance" in ft and (not isinstance(acc, list) or not acc
+                                   or any(not isinstance(a, str) or not a.strip()
+                                          for a in acc)):
+            errors.append(f"{where}.acceptance: must be a non-empty list of strings")
+        tests = ft.get("tests")
+        if "tests" in ft and (not isinstance(tests, list)
+                              or any(not isinstance(t, str) for t in tests)):
+            errors.append(f"{where}.tests: must be a list of strings ([] until mapped)")
+
+
+def _check_design(errors: list[str], value: object, has_frontend: str) -> None:
+    if has_frontend == "no":
+        if value is not None:
+            errors.append('design: must be null when stack.has_frontend is "no"')
+        return
+    if not isinstance(value, dict) or set(value) != set(DESIGN_KEYS):
+        errors.append(f'design: must be an object with keys {DESIGN_KEYS} '
+                      '(required because the project has a frontend)')
+        return
+    for key in DESIGN_KEYS:
+        _check_text(errors, f"design.{key}", value[key])
 
 
 def validate_answers(ans: object) -> dict:
@@ -163,6 +223,14 @@ def validate_answers(ans: object) -> dict:
             errors.append("agents: duplicate agent names")
         if ans["opt_ins"]["codex_reviewer"] == "yes" and "codex" not in names:
             errors.append('opt_ins.codex_reviewer: "yes" requires "codex" in agents')
+    if "features" not in ans:
+        errors.append("features: missing (top-level, required)")
+    else:
+        _check_features(errors, ans["features"])
+    if "design" not in ans:
+        errors.append("design: missing (top-level; null when no frontend)")
+    else:
+        _check_design(errors, ans["design"], stack["has_frontend"])
     date = ans.get("date")
     if not isinstance(date, str) or not DATE_RE.match(date):
         errors.append("date: must be an ISO date string (YYYY-MM-DD)")

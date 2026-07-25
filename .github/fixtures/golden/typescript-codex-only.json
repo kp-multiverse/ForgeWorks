@@ -53,5 +53,28 @@
     "seed_gotchas": "no",
     "mem0": "no",
     "codex_reviewer": "no"
-  }
+  },
+  "design": null,
+  "features": [
+    {
+      "id": "F001",
+      "title": "Report a dead link with file:line",
+      "intent": "Running against a folder with one dead link exits non-zero and prints the link with file:line.",
+      "serves": "REQ-AC1: dead links must be reported precisely and fail the run",
+      "acceptance": ["Running the CLI on a folder with one dead link exits non-zero and prints that link's file and line."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F002",
+      "title": "Exit clean on a healthy docs tree",
+      "intent": "A fully healthy docs tree exits zero with a one-line summary.",
+      "serves": "REQ-AC2: a clean tree must not be flagged",
+      "acceptance": ["Running the CLI on a docs tree with no dead links exits zero and prints a one-line summary."],
+      "tests": [],
+      "status": "todo",
+      "tier": "light"
+    }
+  ]
 }

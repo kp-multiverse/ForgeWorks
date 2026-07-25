@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "F001",
+      "title": "Validate and forward a well-formed feed",
+      "intent": "A well-formed feed passes validation and is forwarded byte-identical.",
+      "serves": "REQ-AC1: clean feeds must pass through unchanged",
+      "acceptance": [
+        "A well-formed feed passes validation and reaches the intake queue byte-identical."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F002",
+      "title": "Quarantine a malformed feed with a precise report",
+      "intent": "A feed with a wrong date format is quarantined with the offending field and line in the report.",
+      "serves": "REQ-AC2: broken feeds must be quarantined with actionable errors",
+      "acceptance": [
+        "A feed with a wrong date format is quarantined and the report names the offending field and line."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "high-risk"
+    },
+    {
+      "id": "F003",
+      "title": "Normalize non-UTF-8 encodings",
+      "intent": "A feed with a non-UTF-8 encoding is normalized to UTF-8 and passed through.",
+      "serves": "REQ-AC3: encoding defects must not corrupt the pipeline",
+      "acceptance": [
+        "A feed encoded in a non-UTF-8 charset is normalized to UTF-8 and forwarded."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    }
+  ]
+}

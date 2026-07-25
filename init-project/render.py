@@ -60,6 +60,7 @@ FREE_TEXT_PLACEHOLDERS = {
     "CURRENT_ALTERNATIVE", "KEY_BENEFIT", "KEY_DIFFERENTIATOR",
     "BACKEND_FRAMEWORK", "VECTOR_DB", "LLM_PROVIDER", "EMBEDDINGS_MODEL",
     "DATABASE", "POSITIVE_REFERENCE_TEXT", "NEGATIVE_REFERENCE_TEXT",
+    "DESIGN_REFERENCES", "DESIGN_TONE", "DESIGN_ANTI_REFERENCE",
 }
 
 NO_BROWSER_STEP = "# no browser needed for this project's e2e suite"
@@ -183,6 +184,10 @@ def build_mapping(ans: dict, prof: dict, cond_dir: str) -> dict[str, str]:
     # E2E_BROWSER_INSTALL is a profile scalar but never a placeholder on its
     # own; only the derived step above lands in files.
     mapping.pop("E2E_BROWSER_INSTALL", None)
+    design = ans["design"] or {"references": "", "tone": "", "anti_reference": ""}
+    mapping["DESIGN_REFERENCES"] = design["references"]
+    mapping["DESIGN_TONE"] = design["tone"]
+    mapping["DESIGN_ANTI_REFERENCE"] = design["anti_reference"]
     return mapping
 
 
@@ -387,6 +392,12 @@ def post_steps(out_dir: str, ans: dict) -> None:
                           for a in ans["agents"]]}
     with open(agents_json, "w", encoding="utf-8", newline="") as f:
         json.dump(payload, f, indent=2, sort_keys=True)
+        f.write("\n")
+    # Machine-checked feature list -- the enforceable spec (see AGENTS.md).
+    features_json = os.path.join(out_dir, "docs", "features.json")
+    payload = {"schema": 1, "features": ans["features"]}
+    with open(features_json, "w", encoding="utf-8", newline="") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
         f.write("\n")
     # Template version stamp is ALWAYS written (upgrade-project depends on it),
     # even when the roster has no claude-code (bootstrap normally writes it first).
