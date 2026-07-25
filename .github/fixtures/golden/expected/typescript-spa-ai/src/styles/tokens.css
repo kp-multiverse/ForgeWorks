@@ -7,7 +7,7 @@
   /* Type: one scale, max two families. TODO: pick the display family. */
   --font-body: system-ui, sans-serif;
   --font-display: var(--font-body); /* TODO */
-  --text-base: 1rem;    /* >= 16px body */
+  --text-base: 1rem; /* >= 16px body */
   --text-ratio: 1.25;
   --text-lg: calc(var(--text-base) * var(--text-ratio));
   --text-xl: calc(var(--text-lg) * var(--text-ratio));
