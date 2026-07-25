@@ -1,6 +1,6 @@
 ---
 name: upgrade-project
-description: Upgrade an EXISTING project that was bootstrapped from an older version of ForgeWorks to the current structure, without clobbering hand-filled content. Reconciles the project against a fresh copy of the template: copies new always-on files that are missing, grafts new AGENTS.md rule blocks and subagent sections into the existing files while preserving project-specific content, applies the language tooling delta, and reports what still needs human review. Non-destructive and idempotent -- safe to run more than once. Use when a project already has a generated AGENTS.md and .claude/agents/ and the user says "upgrade", "/upgrade-project", "update the harness", "bring this up to the new template", or "sync the template structure". Do NOT use on an empty/uninitialized directory -- that is what /init-project is for.
+description: Upgrade an EXISTING project that was bootstrapped from an older version of ForgeWorks to the current structure, without clobbering hand-filled content. Reconciles the project against a fresh copy of the template: copies new always-on files that are missing, grafts new AGENTS.md rule blocks and subagent sections into the existing files while preserving project-specific content, applies the language tooling delta, and reports what still needs human review. Non-destructive and idempotent -- safe to run more than once, except the one-time v2->v3 migration (Phase 3-D), which is explicitly wholesale by design and runs only on the owner's accept. Use when a project already has a generated AGENTS.md and .claude/agents/ and the user says "upgrade", "/upgrade-project", "update the harness", "bring this up to the new template", or "sync the template structure". Do NOT use on an empty/uninitialized directory -- that is what /init-project is for.
 ---
 
 # upgrade-project
@@ -9,7 +9,7 @@ This skill brings an **existing** generated project up to the current template s
 
 ## Core principles
 
-- **Non-destructive.** Never overwrite a file that holds project content. Only create files that are absent, and only *insert into* existing files (never replace them wholesale).
+- **Non-destructive.** Never overwrite a file that holds project content. Only create files that are absent, and only *insert into* existing files (never replace them wholesale) -- except the one-time v2->v3 migration (Phase 3-D), which is explicitly wholesale by design and runs only on the owner's accept.
 - **Idempotent.** Every step checks "already present?" first. Running the skill twice changes nothing the second time.
 - **Automate the safe part, assist the rest.** New placeholder-free files are copied automatically. Merges into hand-edited files (`AGENTS.md`, subagents, manifest) are computed first and approved as ONE batched report (Phase 4), because merging prose is a judgment call the user signs off once.
 - **Reconcile against the live template, not a hardcoded list.** The skill diffs the project against a fresh copy of `init-project/templates/core` plus the project's own `init-project/templates/profiles/<lang>`, so files added to the template in future versions are picked up without changing this skill.
@@ -67,7 +67,7 @@ Reconcile against this skill's own released version (`v3.0.0`), not `main`: inst
 
 ### Phase 3: Reconcile
 
-If the project's `.claude/.template-version` (Phase 1) is below 3.0.0, stop here and run **Phase 3-D** instead -- it replaces `AGENTS.md` and the subagents wholesale rather than reconciling them block-by-block, because the v2 and v3 structures do not correspond. Once a project is on v3.0.0+, A-C below govern ongoing reconciliation as usual.
+If the project's `.claude/.template-version` (Phase 1) is below 3.0.0, stop here and run **Phase 3-D** instead -- it replaces `AGENTS.md` and the subagents wholesale rather than reconciling them block-by-block, because the v2 and v3 structures do not correspond. On decline, stop and report; the project stays on v2 semantics until the owner is ready -- do not apply a partial A-C pass to a sub-3.0.0 project. Once a project is on v3.0.0+, A-C below govern ongoing reconciliation as usual.
 
 Walk the template tree. For every template path, decide and act:
 
@@ -128,11 +128,26 @@ The high-value deltas per language:
 - **Rust** -- ensure `scripts/qa.sh` runs the full verify chain in order (`scripts/linecap.sh` -- the mechanical 200-line cap, exceptions in a committed `.linecap-ignore` -- then `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo check`, `cargo test`); e2e tests are `#[ignore]`-tagged in `tests/e2e.rs` and run only via `scripts/e2e.sh` (`cargo test --test e2e -- --ignored`), never in the fast gate; `rust-toolchain.toml` pins the toolchain (channel + `clippy`/`rustfmt` components); and CI sets up Rust via the SHA-pinned `actions-rust-lang/setup-rust-toolchain` action with `rustflags: ""` (the scripts alone define strictness).
 Show each proposed change against the project's current file before applying; don't overwrite hand-edits. For an experimental language with no profile, leave clearly-marked TODOs and report them.
 
+**E. Mini-interview (discovery placeholders).** Collect every queued
+interview-sourced placeholder from 3-A, dedupe, and ask the user ONLY those
+questions, batched in one message (use the matching Part A question wording
+from `init-project/SKILL.md`). Substitute the answers and write the files.
+This replaces "add manually": the upgrade ends with zero `{{...}}` on disk and
+zero punted files. If the user declines a question, write
+`TODO(interview-skipped)` -- never a raw placeholder.
+
+A project already on v3.0.0+ ends its Phase 3 work here (A-B-C-E) -- go
+straight to **Phase 4** and never touch the section below; Phase 3-D runs
+INSTEAD of A-C-E, not after them, and only for a project the routing note at
+the top of this phase already sent here for being below v3.0.0.
+
 ### Phase 3-D: v2 -> v3 migration (template-version < 3.0.0)
 
 v3 replaced the enforcement architecture. When `.claude/.template-version` is
 below 3.0.0, offer the migration as one explicit, all-or-nothing step (mixing
-v2 and v3 half-states is worse than either). On accept:
+v2 and v3 half-states is worse than either); each step checks for
+already-migrated state and skips it, so a re-run after a partial failure is
+safe. On accept:
 
 1. **Constitution.** Replace `AGENTS.md` wholesale with the freshly rendered
    v3 one, carrying forward: the project header facts, the A10 style-reference
@@ -142,16 +157,18 @@ v2 and v3 half-states is worse than either). On accept:
    `<project>`/`<learning>` or report them.
 2. **New files.** Copy in: the four skills, `scripts/features_check.py`,
    `docs/deviations.md`, `docs/plans/README.md`, and (if the project has a
-   frontend) `docs/design/` + `@design-reviewer` + the profile tokens file.
-   Rewrite `.claude/agents/implementer.md` / `code-reviewer.md` /
-   `security-reviewer.md` to the v3 versions (project-local edits are shown
-   side-by-side, never silently lost).
+   frontend) `docs/design/` + `@design-reviewer` + the profile tokens file +
+   the `design-loop` skill. Rewrite `.claude/agents/implementer.md` /
+   `code-reviewer.md` / `security-reviewer.md` to the v3 versions
+   (project-local edits are shown side-by-side, never silently lost).
 3. **features.json skeleton.** Build `docs/features.json` from the project's
    `docs/backlog.md` rows + `docs/requirements.md` REQ-ACs: Shipped rows ->
    `status: done` with `tests: []` **flagged for curation** (the check fails
    on done-without-tests, so the report's top action item is mapping tests or
    temporarily marking rows `in-progress`); Active/queued rows -> `todo`.
-   Ordering: user-visible journey features first.
+   Tier: rows default to `tier: "standard"`; rows whose text matches the
+   `security-review` skill's trigger get `"high-risk"`; the report tells the
+   owner to adjust. Ordering: user-visible journey features first.
 4. **Mockup rescue.** Move any discovered mockups (`.local/mockups/*.html`,
    files the backlog links) into `docs/design/mockups/` with feature-id names;
    list claude.ai artifact URLs found in docs for the owner to export.
@@ -162,15 +179,10 @@ v2 and v3 half-states is worse than either). On accept:
    `docs/requirements.md`, `docs/structure.txt` ON DISK (history has value) but
    report them as retired -- the owner deletes when ready.
 6. **Report** everything: grafts, curation debts (test mapping!), retired
-   files, and that the memo/ship ceremony no longer applies.
-
-**E. Mini-interview (discovery placeholders).** Collect every queued
-interview-sourced placeholder from 3-A, dedupe, and ask the user ONLY those
-questions, batched in one message (use the matching Part A question wording
-from `init-project/SKILL.md`). Substitute the answers and write the files.
-This replaces "add manually": the upgrade ends with zero `{{...}}` on disk and
-zero punted files. If the user declines a question, write
-`TODO(interview-skipped)` -- never a raw placeholder.
+   files, and that the memo/ship ceremony no longer applies. Then go straight
+   to **Phase 4** to apply the change set -- a migration does not also run
+   A-C-E in the same pass; a later upgrade run (now on v3.0.0+) uses A-C-E as
+   normal.
 
 ### Phase 4: One report, one approval, then verify and stamp
 
@@ -199,7 +211,7 @@ zero punted files. If the user declines a question, write
 - **Looks empty / uninitialized.** Stop. Tell the user to run `/init-project`.
 - **`degit` fails (no network/npx).** Stop with the cause; the upgrade needs the current template to reconcile against.
 - **The project's `AGENTS.md` was heavily rewritten.** Do not force the merge. Show the missing blocks and let the user place them; surface, don't overwrite.
-- **Re-run after a partial upgrade.** Fine -- idempotent. Already-present files and blocks are skipped.
+- **Re-run after a partial upgrade.** A-C are idempotent; a partially-applied Phase 3-D re-run is safe too, because each step starts by checking what already landed -- skip what's present. Already-present files and blocks are skipped.
 
 ## Note for template maintainers
 
