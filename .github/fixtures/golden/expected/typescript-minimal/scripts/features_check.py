@@ -68,7 +68,7 @@ def check() -> list[str]:
                 test_file = str(t).split("::", 1)[0]
                 if not os.path.exists(test_file):
                     errors.append(f"{where}: cited test file missing: {test_file}")
-        if ft["status"] == "dropped" and not str(ft.get("notes", "")).strip():
+        if ft["status"] == "dropped" and not str(ft.get("notes") or "").strip():
             errors.append(f"{where}: dropped without a reason in notes")
     return errors
 
