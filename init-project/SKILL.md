@@ -109,11 +109,13 @@ complete "that ..." (e.g. "turns what you have into what you can cook").
 #### A3. Acceptance criteria for the first iteration
 
 Ask for 3-5 numbered, observable statements that, when all true, mean the MVP
-works. These become `REQ-AC1..n` -- the label a feature's `serves:` line cites
-back to instead of a separate requirements doc. These become the acceptance
-criteria of the first entries in `docs/features.json`. Probe each until it is
-verifiable by hand: "How would you check this one?" Reject vague criteria
-("it should be fast") and help sharpen them ("p95 under 2s on 1k documents").
+works. These become the `acceptance` array of the first entries in
+`docs/features.json` -- there is no separate requirements doc for them to live
+in. (A feature's `serves:` line points at `docs/PRODUCT_VISION.md` instead --
+the differentiator or journey step the feature exists for -- see Phase 4.)
+Probe each until it is verifiable by hand: "How would you check this one?"
+Reject vague criteria ("it should be fast") and help sharpen them ("p95 under
+2s on 1k documents").
 
 #### A4. Non-goals
 
@@ -449,7 +451,7 @@ Field rules the renderer enforces (it fails closed with a precise message):
 - Rule zero still holds: no bare `TODO` in any answer. The only allowed form is `TODO(interview-skipped)` when the user explicitly refused a question. `date` is today, ISO format.
 - `vector_db`, `llm_provider`, `embeddings_model`, `database`, `backend_framework`: write `none` (or `none (CLI/library)` for the framework) when not applicable.
 - `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.
-- `features` (top-level, required, non-empty): each entry needs `id` (`F000`-`F999`, unique), `title`, `intent`, `serves`, `acceptance` (non-empty list of strings), `tests` (list of strings -- `[]` at bootstrap, filled in as the test files are named), `status` (all `"todo"` at bootstrap; `in-progress` / `done` / `dropped` only apply later), and `tier` (`light` / `standard` / `high-risk`, per the `<risk-tiers>` table in `AGENTS.md`). Derive 3-7 features from A2's core journey and A3's acceptance criteria -- order them user-visible-journey-first (hardening and infra queue behind the first shippable surface) -- and give each a `serves:` line naming the differentiator or journey step it exists for (a `REQ-ACn: ...` label from A3 is a good `serves:` value). An optional ninth key, `notes`, is unused at bootstrap (every feature starts `todo`) but becomes required later -- `scripts/features_check.py` fails a `dropped` feature that has no reason recorded in `notes`.
+- `features` (top-level, required, non-empty): each entry needs `id` (`F000`-`F999`, unique), `title`, `intent`, `serves`, `acceptance` (non-empty list of strings), `tests` (list of strings -- `[]` at bootstrap, filled in as the test files are named), `status` (all `"todo"` at bootstrap; `in-progress` / `done` / `dropped` only apply later), and `tier` (`light` / `standard` / `high-risk`, per the `<risk-tiers>` table in `AGENTS.md`). Derive 3-7 features from A2's core journey, using A3's acceptance criteria as the source for each feature's `acceptance` array -- order them user-visible-journey-first (hardening and infra queue behind the first shippable surface) -- and give each a `serves:` line naming the differentiator or journey step it exists for from `docs/PRODUCT_VISION.md` (e.g. "differentiator: <the A2 key differentiator>" or "journey step 2: <the step>"). There is no requirements doc for `serves:` to cite a `REQ-ACn` label back to -- name the vision-level reason, not the criterion. An optional ninth key, `notes`, is unused at bootstrap (every feature starts `todo`) but becomes required later -- `scripts/features_check.py` fails a `dropped` feature that has no reason recorded in `notes`.
 - `design` (top-level): an object with `references`, `tone`, `anti_reference` (V1/V2) when `stack.has_frontend` is not `"no"`; `null` when it is `"no"`.
 
 **Step 2 -- run the renderer** from the project root:
@@ -635,19 +637,19 @@ Any new placeholder must be added here, to the answers schema (or
 | `{{PROJECT_SLUG}}` | A1 -- derived: lowercase, hyphenated, valid package/module identifier |
 | `{{PRIMARY_USER}}` | A1 |
 | `{{CORE_PROBLEM}}` | A2 |
-| `{{CORE_JOURNEY}}` | A2 (the heart: the core user-visible flow, as steps) |
+| `{{CORE_JOURNEY}}` | A2 (the heart: the core user-visible flow, as steps) -- answers-file only (no template consumer in v3.0.0; feeds `docs/PRODUCT_VISION.md` narrative and the `features[].serves` "journey step" phrasing the agent writes by hand, not a direct substitution) |
 | `{{SUCCESS_MEASURE}}` | A2 (what success looks like, concretely) |
-| `{{RISKIEST_ASSUMPTION}}` | A2 (the assumption that sinks the project if wrong) |
-| `{{REQ_AC_LIST}}` | A3 -- rendered as `- [ ] **REQ-ACn:** <criterion>` lines |
+| `{{RISKIEST_ASSUMPTION}}` | A2 (the assumption that sinks the project if wrong) -- answers-file only (no template consumer in v3.0.0) |
+| `{{REQ_AC_LIST}}` | A3 -- kept in the answers file as the raw `- [ ] **REQ-ACn:** <criterion>` lines the interview collected; answers-file only (no template consumer in v3.0.0 -- no `docs/requirements.md` exists to render it into). A3's criteria are the source for each feature's `acceptance` array in Phase 4, not for this placeholder. |
 | `{{NON_GOALS}}` | A4 (bullet list) |
-| `{{OTHER_USERS}}` | A9 (bullet list; `- none identified yet` if empty) |
-| `{{CONSTRAINT_TIME}}` | A5 |
-| `{{CONSTRAINT_COST}}` | A5 (includes LLM/API budget when AI is in scope) |
-| `{{CONSTRAINT_DATA}}` | A5 |
+| `{{OTHER_USERS}}` | A9 (bullet list; `- none identified yet` if empty) -- answers-file only (no template consumer in v3.0.0) |
+| `{{CONSTRAINT_TIME}}` | A5 -- answers-file only (no template consumer in v3.0.0) |
+| `{{CONSTRAINT_COST}}` | A5 (includes LLM/API budget when AI is in scope) -- answers-file only (no template consumer in v3.0.0) |
+| `{{CONSTRAINT_DATA}}` | A5 -- answers-file only (no template consumer in v3.0.0) |
 | `{{FIRST_MILESTONE}}` | A5 -- derived date or `none set` |
 | `{{DEPLOYMENT_TARGET}}` | A6 |
-| `{{SCALE_EXPECTATIONS}}` | A7 |
-| `{{INTEGRATIONS}}` | A8 (bullet list; `- none` if none) |
+| `{{SCALE_EXPECTATIONS}}` | A7 -- answers-file only (no template consumer in v3.0.0) |
+| `{{INTEGRATIONS}}` | A8 (bullet list; `- none` if none) -- answers-file only (no template consumer in v3.0.0) |
 | `{{PAIN_POINT}}` | A2 (positioning) |
 | `{{PRODUCT_CATEGORY}}` | A2 (positioning) |
 | `{{CURRENT_ALTERNATIVE}}` | A2 (positioning) |
@@ -655,18 +657,18 @@ Any new placeholder must be added here, to the answers schema (or
 | `{{KEY_DIFFERENTIATOR}}` | A2 (positioning) |
 | `{{IN_SCOPE_LIST}}` | Derived from A2 core flow + A3 criteria (bullet list) |
 | `{{SUCCESS_METRICS}}` | A2 success measure rendered as 1-3 `- <metric> -- target` lines |
-| `{{READS_UNTRUSTED}}` | B8 (`yes`/`no`) |
-| `{{HOLDS_PRIVATE_DATA}}` | B8 (`yes`/`no`) |
-| `{{ACTS_OUTWARD}}` | B8 (`yes`/`no`) |
+| `{{READS_UNTRUSTED}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0; documents what the B8 answer means, and the security-profile line in `docs/SECURITY.md` is written directly by renderer rule 10, not through this placeholder) |
+| `{{HOLDS_PRIVATE_DATA}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0), same as above |
+| `{{ACTS_OUTWARD}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0), same as above |
 | `{{E2E_BROWSER_INSTALL_STEP}}` | Derived from B2 + profile `e2e_browser_install` (renderer rule 12) |
 | `{{LANGUAGE}}` | B1 |
 | `{{HAS_FRONTEND}}` | B2 |
-| `{{BACKEND_FRAMEWORK}}` | B3 |
+| `{{BACKEND_FRAMEWORK}}` | B3 -- answers-file only (no template consumer in v3.0.0) |
 | `{{AI_FEATURES}}` | B4 (comma-separated) |
-| `{{VECTOR_DB}}` | B4 |
-| `{{LLM_PROVIDER}}` | B5 |
-| `{{EMBEDDINGS_MODEL}}` | B5 |
-| `{{DATABASE}}` | B6 |
+| `{{VECTOR_DB}}` | B4 -- answers-file only (no template consumer in v3.0.0) |
+| `{{LLM_PROVIDER}}` | B5 -- answers-file only (no template consumer in v3.0.0) |
+| `{{EMBEDDINGS_MODEL}}` | B5 -- answers-file only (no template consumer in v3.0.0) |
+| `{{DATABASE}}` | B6 -- answers-file only (no template consumer in v3.0.0) |
 | `{{USES_DEVCONTAINER}}` | B7 (`yes`/`no`) |
 | `{{POSITIVE_REFERENCE_TEXT}}` | A10 -- rendered line (Phase 4 renderer table, rule 5) |
 | `{{NEGATIVE_REFERENCE_TEXT}}` | A10 -- rendered line, may be empty |
@@ -680,7 +682,9 @@ Any new placeholder must be added here, to the answers schema (or
 | `{{AGENT_MATRIX}}` | Derived from B13 -- per-agent sections from `templates/conditional/agents/`, joined |
 | `{{DATE}}` | today, ISO format (`date` in the answers file) |
 
-B9 (`explanations`), B10 (`seed_gotchas`), and B11 (`mem0`) have no placeholder of their own: they are switches in the answers file's `opt_ins` section that turn renderer rules 6-8 on or off. B8 (security profile) still fills the three `yes`/`no` mapping entries above, but the security-profile line in `docs/SECURITY.md` is written directly by renderer rule 10, not through those placeholders -- no current template file consumes `{{READS_UNTRUSTED}}` / `{{HOLDS_PRIVATE_DATA}}` / `{{ACTS_OUTWARD}}` today. Their rows stay: `render.py`'s mapping still carries them (harmless to keep, and they document what the B8 answers mean), and a future template could use them again.
+B9 (`explanations`), B10 (`seed_gotchas`), and B11 (`mem0`) have no placeholder of their own: they are switches in the answers file's `opt_ins` section that turn renderer rules 6-8 on or off.
+
+Rows marked **answers-file only (no template consumer in v3.0.0)** above are still asked, still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRODUCT_VISION.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all eight golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
 
 ### Language-derived placeholders (from the profile)
 
@@ -1049,7 +1053,7 @@ Refuse unless they explicitly confirm overwriting. Show what would be overwritte
 This is a hard failure. The `tdd` skill is required. Stop and ask the user to install Node.js, then re-run.
 
 **Package manager not available for chosen language.**
-Stop with a clear install link for the chosen language's package manager (`uv`, `pnpm`, `cargo`, `go`).
+Stop with a clear install link for the chosen language's package manager (`uv`, `npm`, `cargo`, `go`).
 
 **Context7 MCP fails to start after bootstrap.**
 Check that `npx` is available. The Context7 server in `.mcp.json` uses `npx -y @upstash/context7-mcp@3.2.3`. If npx is broken, document the failure in `docs/gotchas.md` and instruct the user to either fix npx or remove the Context7 entry from `.mcp.json`.
