@@ -155,10 +155,20 @@ safe. On accept:
    `<quality-gate>` blocks). Show the old file's project-specific additions
    (blocks the project added itself, gotcha-style lines) and graft them into
    `<project>`/`<learning>` or report them.
-2. **New files.** Copy in: the four skills, `scripts/features_check.py`,
-   `docs/deviations.md`, `docs/plans/README.md`, and (if the project has a
-   frontend) `docs/design/` + `@design-reviewer` + the profile tokens file +
-   the `design-loop` skill. Rewrite `.claude/agents/implementer.md` /
+2. **New files.** Copy in unconditionally: the `slice`, `security-review`,
+   and `tech-debt` skills, plus `select-agents` if it is not already present
+   (a v2.5.0+ project may already have it), `scripts/features_check.py`,
+   `docs/deviations.md`, and `docs/plans/README.md`. If the project has a
+   frontend, additionally copy `docs/design/` + `@design-reviewer` + the
+   profile tokens file + the `design-loop` skill -- but before writing
+   `docs/design/DESIGN.md`, ask the owner the same V1 (two or three REAL
+   products or sites this should feel like, and what specifically to take
+   from each) and V2 (three tone words, plus one anti-reference: "never let
+   it look like ...") questions `init-project` asks, in one batched message,
+   and substitute `{{DESIGN_REFERENCES}}` / `{{DESIGN_TONE}}` /
+   `{{DESIGN_ANTI_REFERENCE}}` with the answers. If the owner declines,
+   substitute `TODO(interview-skipped)` for all three -- never leave a raw
+   `{{...}}` on disk. Rewrite `.claude/agents/implementer.md` /
    `code-reviewer.md` / `security-reviewer.md` to the v3 versions
    (project-local edits are shown side-by-side, never silently lost).
 3. **features.json skeleton.** Build `docs/features.json` from the project's
