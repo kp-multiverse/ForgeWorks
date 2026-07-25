@@ -323,8 +323,12 @@ def skip_file(relpath: str, source: str, ans: dict) -> bool:
         return True
     if no_frontend and parts[:3] == [".claude", "skills", "design-loop"]:
         return True
-    if (parts[0] == ".claude" and not claude_selected(ans)):
-        return True  # Claude Code not in the roster: no agents/hooks/skills/settings
+    if (parts[0] == ".claude" and not claude_selected(ans)
+            and parts[:2] != [".claude", "skills"]):
+        return True  # Claude Code not in the roster: no agents/hooks/settings/symlink
+        # (.claude/skills/ ships regardless -- plain-markdown procedures any
+        # driving agent can read; only the Claude-specific mechanics they
+        # invoke, e.g. subagents/hooks, are unavailable without Claude Code)
     if parts[0] == ".devcontainer" and ans["stack"]["uses_devcontainer"] == "no":
         return True
     if parts[:2] == ["docs", "explanations"] and ans["opt_ins"]["explanations"] == "no":

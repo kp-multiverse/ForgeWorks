@@ -1,0 +1,19 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+# Dev container config carries explanatory comments; skip the json parser on it.
+.devcontainer
+# Installed skill templates under .claude are not project code.
+.claude
+# The constitution, docs, and subagent files are agent-maintained markdown from
+# the template core; prettier's markdown style disagrees with them and they are
+# not code. Keeping them out keeps `qa` green on the first run.
+*.md
+# Renderer-written data files (json.dump, not hand-authored): their array/object
+# wrapping depends on content length, so they cannot be guaranteed to match
+# Prettier's printWidth-driven JSON style. Keeping them out keeps `qa` green on
+# the first run regardless of answers.
+docs/agents.json
+docs/features.json

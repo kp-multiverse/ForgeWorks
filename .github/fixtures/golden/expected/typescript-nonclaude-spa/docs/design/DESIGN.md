@@ -1,4 +1,4 @@
-# Design direction: Recipe Radar
+# Design direction: Ledgerline
 
 The visual spec for this project. The `design-loop` skill reads this before any
 mockup; `@design-reviewer` grades shipped screens against it and the approved
@@ -7,12 +7,12 @@ mockup in `mockups/`.
 ## Direction (from the setup interview)
 
 **References -- what to steal, from where:**
-- datasette.io -- plain, content-first layout that gets out of the way
-- a well-lit recipe card: one photo, short ingredient list, numbered steps
+- airtable.com -- dense tabular editing that stays legible at speed
+- linear.app -- calm density, restrained color, keyboard-first affordances
 
-**Tone:** warm, uncluttered, mobile-first
+**Tone:** calm, precise, unhurried
 
-**Anti-reference (never let it look like this):** cluttered recipe blogs: ad blocks, autoplay video, ingredient list buried under a life story
+**Anti-reference (never let it look like this):** generic spreadsheet clone: default browser table styling, no visual hierarchy, red/green the only signal
 
 ## Tokens
 

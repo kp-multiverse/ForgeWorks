@@ -488,7 +488,7 @@ fixtures in the template repo CI:
 | 13 | Renames profile manifests shipped with an `.example` suffix (`pyproject.toml.example` -> `pyproject.toml`). Core files are never renamed (`.env.example` stays). |
 | 14 | Creates the `CLAUDE.md` -> `AGENTS.md` symlink (a one-line pointer file where symlinks are unavailable), `chmod +x` on `.claude/hooks/*.sh` and `scripts/*.sh`, and stamps `.claude/.template-version` (with this release's version) if the bootstrap `install.sh` did not already write it. |
 | 15 | Fails closed if any `{{...}}` placeholder survives anywhere in the output. |
-| 16 | B13: when `claude-code` is NOT in `agents`, the entire `.claude/` tree (agents, hooks, settings, skills) and the `CLAUDE.md` symlink are not generated -- `.claude/.template-version` is the one exception, always written by post-processing (rule 14) regardless of roster. A `claude-code` entry with `"status": "planned"` still counts as selected for this rule -- the full tree is still generated; `status` only affects `docs/agents.json` and the matrix status note (rule 17). |
+| 16 | B13: when `claude-code` is NOT in `agents`, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the `CLAUDE.md` symlink are not generated -- these are the Claude-specific enforcement mechanics (subagents, hooks, settings). `.claude/skills/` (`slice`, `security-review`, `tech-debt`, `select-agents`, and -- frontend only -- `design-loop`) ships regardless of roster: they are plain-markdown procedures any driving agent can read and follow, not Claude Code slash commands. `.claude/.template-version` is likewise always written by post-processing (rule 14) regardless of roster. A `claude-code` entry with `"status": "planned"` still counts as selected for this rule -- the agents/hooks/settings tree is still generated; `status` only affects `docs/agents.json` and the matrix status note (rule 17). |
 | 17 | B13: renders `{{AGENT_MATRIX}}` in `docs/agents.md` from `templates/conditional/agents/<name>.md` (planned agents get a status note) and writes the machine-readable roster `docs/agents.json` (name, status, offload roles). When `claude-code` is NOT in `agents`, an honest-omission note (`templates/conditional/agents/no-claude-note.md`) is appended as the final section of `docs/agents.md`, spelling out what was skipped and that `docs/SECURITY.md` / `docs/language-standards.md` mandates -- and keeping `docs/features.json` current -- fall to the driving agent manually. |
 | 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. The mechanism ships in `render.py` ready for reuse; no template file currently carries a `<!-- CC-...-START/END -->` fence -- the v2 doc that carried the only instance was retired in the v3 redesign. |
 | 19 | Writes `docs/features.json` from the answers' `features` list (schema 1). |
@@ -542,36 +542,44 @@ test -f docs/PRODUCT_VISION.md && test -f docs/features.json && \
 test -f docs/SECURITY.md && test -f docs/language-standards.md && \
 test -f docs/deviations.md && test -f docs/plans/README.md && \
 test -f docs/agents.md && test -f docs/agents.json && \
-test -f scripts/features_check.py && python3 scripts/features_check.py
+test -f scripts/features_check.py && python3 scripts/features_check.py && \
+test -f .claude/skills/slice/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
+test -f .claude/skills/tech-debt/SKILL.md && test -f .claude/skills/select-agents/SKILL.md
 ```
 
-Then, ONLY when `claude-code` is in the B13 roster, confirm the enforcement
-tree landed:
+(`.claude/skills/` ships for every roster -- plain-markdown procedures, not
+Claude Code slash commands -- so this check is unconditional.)
+
+Then, ONLY when `claude-code` is in the B13 roster, confirm the Claude-specific
+enforcement tree landed:
 
 ```bash
 test -L CLAUDE.md && test -d .claude/agents && \
 test -f .claude/agents/code-reviewer.md && test -f .claude/agents/security-reviewer.md && \
 test -f .claude/agents/utility.md && \
-test -f .claude/settings.json && test -f .claude/hooks/deps-guard.sh && \
-test -f .claude/skills/slice/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
-test -f .claude/skills/tech-debt/SKILL.md && test -f .claude/skills/select-agents/SKILL.md
+test -f .claude/settings.json && test -f .claude/hooks/deps-guard.sh
 ```
 
 And, ONLY when the project has a frontend (B2 not `no`), also confirm the
 design tree landed:
 
 ```bash
-test -f docs/design/DESIGN.md && test -f .claude/agents/design-reviewer.md && \
-test -f .claude/skills/design-loop/SKILL.md
+test -f docs/design/DESIGN.md && test -f .claude/skills/design-loop/SKILL.md
 ```
 
-When `claude-code` is NOT in the roster: skip the first (`.claude/`) block, and
-tell the user the bootstrap-installed `.claude/skills/` trees (init-project
-itself and the Phase 1 skill pack) are inert for their agents and safe to
-delete. The design-tree check is gated on B2, not on the roster -- run it for
-any frontend project regardless of which agents drive it, but drop its
-`.claude/agents/design-reviewer.md` and `.claude/skills/design-loop/SKILL.md`
-lines (there is no `.claude/` tree to check) and confirm only `docs/design/DESIGN.md`.
+(this pair ships for any frontend project regardless of which agents drive
+it). ONLY when `claude-code` is also in the roster, additionally confirm
+`test -f .claude/agents/design-reviewer.md`.
+
+When `claude-code` is NOT in the roster: skip the Claude-specific enforcement
+block above, and tell the user the bootstrap-installed skill helpers --
+`init-project` itself and the Phase 1 `mattpocock/skills` pack (`tdd`,
+`grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`) -- are inert for
+their agents and safe to delete. This does NOT include the five generated
+`.claude/skills/` procedures checked above (`slice`, `security-review`,
+`tech-debt`, `select-agents`, `design-loop`): those are the project's own
+canonical procedures and the driving agent should read and follow them even
+without Claude Code.
 
 Then confirm the chosen profile landed: its manifest (`{{MANIFEST_FILE}}`) exists, and the green-scaffold source + test exist (Python `src/example.py`+`tests/test_example.py`; TypeScript `src/example.ts`+`tests/example.test.ts`; Go `greet.go`+`greet_test.go`; Rust `src/lib.rs` (with its in-file unit test) + `tests/e2e.rs` + `rust-toolchain.toml`).
 
@@ -581,7 +589,7 @@ Then check no unresolved placeholders remain:
 ! grep -rn '{{[A-Z0-9_]*}}' . --include='*.md' --include='*.txt' --include='*.toml' --include='*.yml' --include='*.yaml' --include='*.json' --include='*.sh' --include='*.py' --include='*.ts' --include='*.go' --include='*.rs' --include='*.mod' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=skills 2>/dev/null
 ```
 
-(`--exclude-dir=skills` skips only the installed skill trees under `.claude/skills/`; the generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
+(`--exclude-dir=skills` skips every dir literally named `skills`, which covers both the bootstrap-installed helper skills and this project's own generated `.claude/skills/` procedures -- those never carry unsubstituted placeholders (there are none in `templates/core/.claude/skills/` to begin with), so excluding them is safe. The generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
 
 Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
 

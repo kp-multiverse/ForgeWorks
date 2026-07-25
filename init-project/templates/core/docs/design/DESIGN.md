@@ -15,8 +15,8 @@ mockup in `mockups/`.
 
 ## Tokens
 
-The canonical values live in the tokens file (see `structure` note in the
-profile: `src/styles/tokens.css` or `static/tokens.css`). Rules of thumb:
+The canonical values live in the tokens file for your language profile:
+`src/styles/tokens.css` (TypeScript) or `static/tokens.css` (Python). Rules of thumb:
 one type scale (fixed ratio), at most two fonts, body >= 16px; one spacing
 unit used everywhere; one accent color spent on the primary action only.
 Change a token, not a one-off value. TODO markers in the tokens file are

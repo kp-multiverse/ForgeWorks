@@ -34,15 +34,6 @@ Claude-specific enforcement (subagents, hooks) does not. Usable from any
 driver as a dispatch target: `codex exec "<task brief>"` for second-opinion
 reviews and heavy batch work. Default roles: second_opinion, heavy_batch.
 
-### Antigravity
-
-Reads `AGENTS.md` -- rules and docs apply; Claude-specific enforcement
-(subagents, hooks) does not. Use it as a dispatch target for heavy batch work
-and independent reviews when it is installed. Default roles: second_opinion,
-heavy_batch.
-
-> Status: **planned** -- selected in the interview but not detected as installed. Run `/select-agents` (or edit `docs/agents.json`) once it is available.
-
 ### Enforcement omitted (no Claude Code in this roster)
 
 This project was generated without the Claude Code enforcement stack: no

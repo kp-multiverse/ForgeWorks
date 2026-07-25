@@ -1,0 +1,13 @@
+{
+  "agents": [
+    {
+      "name": "codex",
+      "roles": [
+        "second_opinion",
+        "heavy_batch"
+      ],
+      "status": "installed"
+    }
+  ],
+  "schema": 1
+}
