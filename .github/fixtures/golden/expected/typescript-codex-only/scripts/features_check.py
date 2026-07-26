@@ -8,6 +8,7 @@ quality gate's job, not this script's. Run locally or in CI:
 
     python3 scripts/features_check.py
 """
+
 from __future__ import annotations
 
 import json
@@ -15,8 +16,7 @@ import os
 import re
 import sys
 
-REQUIRED = ("id", "title", "intent", "serves", "acceptance", "tests",
-            "status", "tier")
+REQUIRED = ("id", "title", "intent", "serves", "acceptance", "tests", "status", "tier")
 STATUSES = {"todo", "in-progress", "done", "dropped"}
 TIERS = {"light", "standard", "high-risk"}
 ID_RE = re.compile(r"^F\d{3}$")
