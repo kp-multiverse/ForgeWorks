@@ -61,9 +61,7 @@ def check() -> list[str]:
         else:
             for j, a in enumerate(acceptance):
                 if not isinstance(a, str) or not a.strip():
-                    errors.append(
-                        f"{where}: acceptance[{j}] must be a non-empty string"
-                    )
+                    errors.append(f"{where}: acceptance[{j}] must be a non-empty string")
         tests = ft["tests"]
         if not isinstance(tests, list):
             errors.append(f"{where}: tests must be a list")

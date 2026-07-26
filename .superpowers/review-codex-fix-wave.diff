@@ -1,0 +1,1557 @@
+3339efc fix(core): roster-honest deps-guard claim in SECURITY.md universal risks
+04fe617 fix(upgrade): recover the roster in Phase 1, complete the features.json skeleton
+5f859b2 fix(upgrade): reconcile A/C in the v2->v3 migration, gate by roster/frontend, keep the gate green
+ca136e9 feat(design): document the Go/Rust tokens gap and add a ninth golden fixture
+57a9316 fix(bootstrap): delete transient answers file before the first quality gate
+e29aed8 fix(template): roster-conditional subagent wording, light-tier lifecycle, tier contradiction
+d41b8a0 fix(gate): close validation bypasses in features_check.py
+25abd13 fix(render): reject structural-tag injection and tighten schema strictness
+
+.github/fixtures/golden/go-frontend-spa.json       |  86 +++++++++++++++++
+ AGENTS.md                                          |   4 +-
+ README.md                                          |   2 +-
+ docs/ROADMAP.md                                    |   2 +-
+ init-project/SKILL.md                              |  20 ++--
+ init-project/render_schema.py                      |  29 ++++--
+ .../core/.claude/skills/design-loop/SKILL.md       |   7 +-
+ .../core/.claude/skills/security-review/SKILL.md   |   7 +-
+ .../templates/core/.claude/skills/slice/SKILL.md   |  14 ++-
+ init-project/templates/core/AGENTS.md              |   3 +-
+ init-project/templates/core/docs/SECURITY.md       |  14 ++-
+ init-project/templates/core/docs/design/DESIGN.md  |  13 ++-
+ .../templates/core/scripts/features_check.py       |  38 ++++++--
+ .../templates/profiles/typescript/.prettierignore  |   4 +
+ upgrade-project/SKILL.md                           | 103 +++++++++++++++------
+ 15 files changed, 272 insertions(+), 74 deletions(-)
+
+.github/fixtures/golden/go-frontend-spa.json       |  86 +++++++++++++++++
+ AGENTS.md                                          |   4 +-
+ README.md                                          |   2 +-
+ docs/ROADMAP.md                                    |   2 +-
+ init-project/SKILL.md                              |  20 ++--
+ init-project/render_schema.py                      |  29 ++++--
+ .../core/.claude/skills/design-loop/SKILL.md       |   7 +-
+ .../core/.claude/skills/security-review/SKILL.md   |   7 +-
+ .../templates/core/.claude/skills/slice/SKILL.md   |  14 ++-
+ init-project/templates/core/AGENTS.md              |   3 +-
+ init-project/templates/core/docs/SECURITY.md       |  14 ++-
+ init-project/templates/core/docs/design/DESIGN.md  |  13 ++-
+ .../templates/core/scripts/features_check.py       |  38 ++++++--
+ .../templates/profiles/typescript/.prettierignore  |   4 +
+ upgrade-project/SKILL.md                           | 103 +++++++++++++++------
+ 15 files changed, 272 insertions(+), 74 deletions(-)
+
+diff --git a/.github/fixtures/golden/go-frontend-spa.json b/.github/fixtures/golden/go-frontend-spa.json
+new file mode 100644
+index 0000000..b594dc0
+--- /dev/null
++++ b/.github/fixtures/golden/go-frontend-spa.json
+@@ -0,0 +1,86 @@
++{
++  "schema": 1,
++  "date": "2026-07-26",
++  "agents": [{"name": "claude-code", "status": "installed"}],
++  "project": {
++    "name": "Pillarwatch",
++    "slug": "pillarwatch",
++    "goal": "A self-hosted status page that shows the up/down history of a small team's own services, no third-party dependency.",
++    "primary_user": "An on-call engineer at a small team who wants an honest status page without paying for or trusting a SaaS status vendor.",
++    "core_problem": "Small teams either run no status page (users find out about outages from support tickets) or hand uptime data to a third-party SaaS that is one more thing to trust and pay for.",
++    "core_journey": "1. The team registers a service with a health-check URL.\n2. Pillarwatch polls it on an interval and records up/down transitions.\n3. A public page renders current status and a 90-day history bar per service.",
++    "success_measure": "A service outage shows up on the public page within one poll interval of the health check failing, with no manual step.",
++    "success_metrics": "- time from real outage to page reflecting it -- under one poll interval\n- self-hosted install time -- under 10 minutes on a single binary",
++    "riskiest_assumption": "A simple interval poll plus a small state machine (up/down/degraded) is enough signal for a small team, without needing synthetic transactions or multi-region checks.",
++    "req_ac_list": "- [ ] **REQ-AC1:** A registered service that fails its health check flips to \"down\" and the public page reflects it within one poll interval.\n- [ ] **REQ-AC2:** A service that recovers flips back to \"up\" and the incident is closed with a duration.\n- [ ] **REQ-AC3:** The public page renders a 90-day history bar per service from stored transitions.",
++    "non_goals": "- No multi-region or synthetic-transaction checks.\n- No paging/alerting integrations in the first cut -- the page itself is the notification.",
++    "other_users": "- End users of the team's product, checking whether an outage is known (read-only, no login).",
++    "constraint_time": "One weekend project; first usable cut in a few evenings.",
++    "constraint_cost": "Must run as a single small binary on a $5/month VM; no managed database requirement.",
++    "constraint_data": "Health-check results and incident history only; no user accounts or personal data collected from the public page.",
++    "first_milestone": "2026-08-09",
++    "deployment_target": "A single Linux VM, reverse-proxied behind the team's existing domain.",
++    "scale_expectations": "Under 50 registered services, polled every 30-60 seconds; a handful of concurrent public-page viewers during an incident.",
++    "integrations": "- Outbound HTTP health checks against each registered service's URL.\n- Optional outbound webhook on status change (stretch goal, not in the first cut).",
++    "in_scope_list": "- Service registration with a health-check URL and poll interval.\n- Poller with an up/down/degraded state machine and transition history.\n- Public status page with current status and a 90-day history bar per service.",
++    "pain_point": "no honest status page without paying for or trusting a SaaS vendor",
++    "product_category": "self-hosted status page",
++    "current_alternative": "a paid third-party status-page SaaS, or no status page at all",
++    "key_benefit": "an honest, self-hosted status page with no third party in the loop",
++    "key_differentiator": "single-binary self-hosted install instead of a hosted SaaS subscription",
++    "positive_reference": {
++      "ref": "the single-binary, no-frills operational feel of Uptime Kuma",
++      "location": "https://github.com/louislam/uptime-kuma"
++    },
++    "negative_reference": null
++  },
++  "stack": {
++    "language": "go",
++    "has_frontend": "yes-minimal",
++    "backend_framework": "stdlib net/http",
++    "ai_features": [],
++    "vector_db": "none",
++    "llm_provider": "none",
++    "embeddings_model": "none",
++    "database": "SQLite",
++    "uses_devcontainer": "no"
++  },
++  "security": {
++    "reads_untrusted": "no",
++    "holds_private_data": "no",
++    "acts_outward": "yes"
++  },
++  "opt_ins": {
++    "explanations": "no",
++    "seed_gotchas": "no",
++    "mem0": "no",
++    "codex_reviewer": "no"
++  },
++  "design": {
++    "references": "- Uptime Kuma -- calm, information-dense status list that stays legible mid-incident\n- Basecamp's status page -- plain, confident typography with zero marketing chrome",
++    "tone": "plain, calm, trustworthy",
++    "anti_reference": "a marketing-site status page: hero banner, gradient background, animated illustrations distracting from the actual up/down signal"
++  },
++  "features": [
++    {
++      "id": "F001",
++      "title": "Register a service and start polling it",
++      "intent": "A team can register a service with a health-check URL and poll interval, and the poller starts checking it.",
++      "serves": "journey step 1: the team registers a service with a health-check URL",
++      "acceptance": ["A newly registered service is polled at its configured interval and its first result is recorded."],
++      "tests": [],
++      "status": "todo",
++      "tier": "standard"
++    },
++    {
++      "id": "F002",
++      "title": "Public status page shows current status and history",
++      "intent": "The public page renders each service's current status and a 90-day history bar from stored transitions.",
++      "serves": "REQ-AC3: the public page renders a 90-day history bar per service from stored transitions",
++      "acceptance": ["The public page shows every registered service's current status and a 90-day history bar built from its recorded transitions."],
++      "tests": [],
++      "status": "todo",
++      "tier": "standard"
++    }
++  ]
++}
+diff --git a/AGENTS.md b/AGENTS.md
+index f15cb80..dcd4bf1 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -11,38 +11,38 @@ This file is the constitution for working *on* `ForgeWorks`. It is for contribut
+ <repo-architecture>
+ The pieces, each with a single responsibility:
+ 
+ - `bootstrap/install.sh` -- runs in an empty target folder. Validates environment (curl, git, npx), drops `AGENTS.md` (bootstrap mode) into the target, and installs the `/init-project` skill via `npx degit`. Knows nothing about stacks.
+ - `bootstrap/AGENTS.md` -- the bootstrap-mode constitution that lands in target projects. Tells the agent "this project is uninitialized; run `/init-project`."
+ - `init-project/SKILL.md` -- the interview skill. Runs in the target project after install. Asks A1-A10 (product discovery) + V1-V2 (visual references, frontend projects only) + B1-B13 (stack and opt-ins, including the agent roster), writes the answers to `docs/_init-answers.json` (schema documented in Phase 4, with top-level `features` and `design` sections), runs the renderer, then installs deps (Phase 4.5, the only agent-executed generation step -- it runs package managers).
+ - `init-project/render.py` -- the deterministic renderer (stdlib Python, plain string substitution, no template engine). Takes `--answers/--core/--profile/--out` and executes every substitution and conditional rule: placeholder table, AI-discipline block, AI fences, style references, mem0/memory block, gotchas seed, `docs/features.json` emission, explanations/devcontainer opt-outs, Codex conditionals, JSON/TOML escaping of hostile answers, multi-line re-indent, manifest `.example` rename, `CLAUDE.md` symlink, `chmod +x`, `.claude/.template-version` stamp. Same answers, same bytes; it fails closed on invalid answers or any leftover `{{...}}`.
+ - `init-project/templates/core/` -- the language-free files every project gets: the AGENTS.md constitution, `docs/` (including `docs/plans/`, `docs/deviations.md`), security files, `.mcp.json`, CI shape (including the `features-check` job), README, .env.example, the generated skills (`slice`, `security-review`, `tech-debt`, `select-agents`) and subagents (`implementer`, `code-reviewer`, `security-reviewer`, `utility`). `docs/design/`, the `design-loop` skill, and the `design-reviewer` subagent ship only when the project has a frontend (B2/V1/V2; `render.py`'s `skip_file` drops them otherwise). Uses `{{PLACEHOLDER}}` substitution.
+ - `init-project/templates/conditional/` -- the canonical texts of the conditional blocks (`ai-discipline.md`, `memory-block.md`, `memory-doc-line.md`, `codex-review-step.md`, `codex-roster-note.md`, `gotchas-seed.md`, plus the per-agent `agents/*.md` roster notes). `render.py` reads them; SKILL.md only points at them. Edit block text HERE.
+ - `init-project/templates/profiles/<lang>/` -- one folder per language with its manifest, toolchain, `scripts/` (or package scripts), green scaffold, dev container, `.gitignore`, (Python only) pre-commit config, and `profile.json` -- the machine-readable profile values `render.py` substitutes (kept in sync with the SKILL.md `<language-profiles>` YAML; `profile.json` is renderer input and never copied into a generated project). A generated project = `core/` + exactly one profile, so no other language's files ever leak in. Python, TypeScript, Go, and Rust are complete; "Other" is not built yet.
+-- `.github/fixtures/golden/` -- eight answers fixtures spanning the conditional matrix (AI/no-AI, devcontainer, opt-ins, hostile values, non-Claude roster) plus committed expected trees under `expected/<name>/`. The CI `golden-fixtures` job (`.github/scripts/golden_test.py`) re-renders each fixture and compares byte-for-byte; `--update` regenerates the trees after an intentional template change.
++- `.github/fixtures/golden/` -- nine answers fixtures spanning the conditional matrix (AI/no-AI, devcontainer, opt-ins, hostile values, non-Claude roster, a frontend profile with no shipped tokens file) plus committed expected trees under `expected/<name>/`. The CI `golden-fixtures` job (`.github/scripts/golden_test.py`) re-renders each fixture and compares byte-for-byte; `--update` regenerates the trees after an intentional template change.
+ - `upgrade-project/SKILL.md` -- the brownfield counterpart to `init-project`. Runs in an EXISTING generated project and reconciles it to the current template (copies missing always-on files, grafts new `AGENTS.md` rule blocks and subagent sections without overwriting, applies the tooling delta, reports the rest). `bootstrap/install.sh` installs this skill instead of `init-project` when it detects an already-generated project.
+ - `VERSION` -- the template's version (e.g. `2.3.0`). The bootstrap stamps it into a generated project at `.claude/.template-version` (`render.py` writes the fallback if the stamp is missing); `upgrade-project` reads it for the from->to report.
+ 
+ The split is sharp: `bootstrap/` is dumb and stack-blind. `init-project/SKILL.md` is the greenfield interviewer and `render.py` its deterministic engine; `upgrade-project/SKILL.md` is the brownfield brain. `templates/core/` + `templates/profiles/` + `templates/conditional/` are the body.
+ </repo-architecture>
+ 
+ <editing-the-template>
+ When editing files in `init-project/templates/`:
+ 
+ - **`core/` is language-free.** Examples, conventions, and rule wording in `templates/core/` (especially `core/AGENTS.md`) must work for any language. If you write "Pydantic", "npm", "cargo", or any toolchain name in `core/` outside the conditional `<ai-discipline>` block, it is leakage -- lift it to the language's `<language-profiles>` YAML in `SKILL.md`, into `templates/profiles/<lang>/`, or to a conditional block. Anything language-specific (manifest, scripts, scaffold, dev container, `.gitignore`, pre-commit) lives in `templates/profiles/<lang>/`, never in `core/`.
+ - **AI-specific rules.** Live in the `<ai-discipline>` block (`templates/conditional/ai-discipline.md`), rendered only when at least one AI feature is selected (B4). Do NOT add AI examples to `<architecture-discipline>`.
+ - **Placeholders.** Use `{{UPPER_SNAKE}}` for substituted values. Every placeholder must be listed in `SKILL.md`'s placeholder table with its source (a Q number or a derived rule) AND implemented in `render.py`'s mapping (an unknown placeholder is a render error). After any template change, regenerate the golden expected trees (`golden_test.py --update`) and commit them with it -- the golden job diffs them byte-for-byte.
+ - **User-fillable slots.** Use literal text like `*<target user>*` or `TODO`. Do NOT use `{{...}}` for slots the user is meant to fill after generation; the renderer fails closed on any unresolved `{{...}}`.
+ - **Conditional files.** Files that should NOT ship when an opt-in is `no` or the project has no frontend (`docs/explanations/`, `docs/memory.md`, `docs/design/`, `tokens.css`, `.claude/agents/design-reviewer.md`, `.claude/skills/design-loop/`) live in the template folder unconditionally; `render.py` skips them at render time (see `skip_file`). New conditional files follow the same pattern: add the skip rule in `render.py` and cover both states in the golden fixtures.
+ - **Roster-gated files.** When `claude-code` is not in the B13 agent roster, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the `CLAUDE.md` symlink are not generated -- those are Claude Code-specific mechanics. `.claude/skills/` ships regardless of roster: it holds plain-markdown procedures (`slice`, `security-review`, `tech-debt`, `select-agents`, and -- frontend only -- `design-loop`) that any driving agent can read, and it is where load-bearing content (e.g. the security-review trigger) now lives, so it cannot be roster-gated. `templates/conditional/agents/no-claude-note.md` documents the split for the generated project; keep it in sync if the split changes.
+ - **Conditional block texts.** The sometimes-rendered block texts live in `templates/conditional/`; `render.py` reads them and `SKILL.md` Phase 4 points at them. Never re-inline them into SKILL.md.
+-- **Conditional content inside always-on files.** Some always-on files carry AI-only sections fenced with HTML-comment markers; `render.py` keeps or strips them by B4 (renderer rule 4: markers follow the `<!-- AI-<NAME>-START/END -->` shape and are handled generically). Current fences: `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`. A second family, `<!-- CC-<NAME>-START/END -->`, is keyed on `claude-code` being in the B13 roster and implemented in the renderer, but has zero instances in the current templates. Fence any future sometimes-on content the same way (the renderer picks each family up automatically) and register the new marker in `upgrade-project/SKILL.md` Phase 3-A.
++- **Conditional content inside always-on files.** Some always-on files carry AI-only sections fenced with HTML-comment markers; `render.py` keeps or strips them by B4 (renderer rule 4: markers follow the `<!-- AI-<NAME>-START/END -->` shape and are handled generically). Current fences: `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`. A second family, `<!-- CC-<NAME>-START/END -->`, is keyed on `claude-code` being in the B13 roster and implemented in the renderer. Current fence: `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md` (the hook is a Claude Code enforcement mechanic; other rosters do not get it). Fence any future sometimes-on content the same way (the renderer picks each family up automatically) and register the new marker in `upgrade-project/SKILL.md` Phase 3-A.
+ - **FW-BLOCK markers.** Every rule block in `templates/core/AGENTS.md` is wrapped in `<!-- FW-BLOCK: <name> vX.Y.Z -->` ... `<!-- /FW-BLOCK: <name> -->` markers. Today's seven: `project`, `commands`, `etiquette`, `hard-rules`, `risk-tiers`, `learning`, `roster` -- plus the conditional `<ai-discipline>` block and the mem0 memory block, which carry their own markers. They ship into generated projects and are what makes `upgrade-project`'s block grafting deterministic (absent -> insert; older version -> show side-by-side; current -> skip). When you edit a block's content, bump the version in its opening marker to the release that ships the change. New blocks get markers from day one.
+ - **Security files are always-on and stack-neutral.** `docs/SECURITY.md`, `.claude/settings.json`, `.claude/hooks/deps-guard.sh`, and `.claude/agents/security-reviewer.md` ship unchanged for every language. Keep their wording stack-agnostic; the LLM-specific security rules live only in the fenced sections and the conditional `<ai-discipline>` block.
+ - **Line caps.** The ~100-line target / 200-line hard cap applies to **generated project files** -- everything under `templates/core/` and `templates/profiles/` (it becomes someone else's code). It does NOT apply to the generator/meta files: `init-project/SKILL.md`, `upgrade-project/SKILL.md`, and this repo's `AGENTS.md` are reference documents (interview + emission logic) and are necessarily longer. The core AGENTS.md constitution is a reference document like the SKILLs and may exceed the cap.
+ </editing-the-template>
+ 
+ <editing-the-skill>
+ `init-project/SKILL.md` has five phases (0 confirm, 1 install skills, 2 interview, 3 confirm plan, 4 write answers file + run render.py, 4.5 install deps, 5 verify). Phase 4 is executed by `render.py`, not by the agent; SKILL.md's Phase 4 is the answers-file schema plus a behavior table documenting what the renderer does. When editing:
+ 
+ - **Interview questions.** Numbered A1-A10 (product discovery) + V1-V2 (visual references, asked only when the project has a frontend) + B1-B13 (stack and opt-ins) today; B8 security profile, B12 Codex reviewer, B13 agent roster. The answers file carries top-level `features` (the `docs/features.json` source) and `design` (mockup/tone references) sections alongside the flat Q&A. Adding a question means adding it to (a) Phase 2 interview, (b) Phase 3 summary, (c) the placeholder table, (d) the Phase 4 answers-file schema (+ its example), and (e) `render.py` (validation + mapping/rule) if it affects the generated tree -- then regenerate the golden expected trees.
+ - **Conditional emission.** Every conditional rule is implemented in `render.py` and documented in the Phase 4 behavior table. No hidden conditionals, and no rule that exists only in prose -- if the renderer does not implement it, it does not happen.
+diff --git a/README.md b/README.md
+index c073208..7217730 100644
+--- a/README.md
++++ b/README.md
+@@ -64,17 +64,17 @@ VERSION           stamped into generated projects
+ ```
+ 
+ ## Languages
+ 
+ **Python, TypeScript, Go, and Rust** are complete profiles — pick any in the interview and you get only that language's toolchain (no cross-language leakage). All four are verified green on the first run by CI, on the **merged core+profile tree** (the exact shape a generated project has). "Other" isn't built yet (the interview tells you so and gets consent). Adding a language is a documented recipe (`docs/how-to-use.md`). Releases are versioned tags (current: `v3.0.0`): a pinned tag gives you the same template files tomorrow, though runtime inputs (npm/degit/Context7) aren't fully reproducible yet — see `docs/ROADMAP.md`.
+ 
+ ## Status
+ 
+ ForgeWorks is an opinionated harness — a capable product with a clear roadmap. Be aware of what is and isn't mechanically true today:
+ 
+-- **Generation is deterministic.** The agent interviews you and writes an answers file; a stdlib-Python renderer (`init-project/render.py`) turns it into the project tree — same answers, same bytes, locked by golden-fixture CI (eight answer sets, byte-for-byte against committed expected trees, hostile values included). Only the interview itself and dependency installs remain agent work.
++- **Generation is deterministic.** The agent interviews you and writes an answers file; a stdlib-Python renderer (`init-project/render.py`) turns it into the project tree — same answers, same bytes, locked by golden-fixture CI (nine answer sets, byte-for-byte against committed expected trees, hostile values included). Only the interview itself and dependency installs remain agent work.
+ - **The supply-chain guard is best-effort.** The `deps-guard` hook reduces risk; it is not a sandbox. The real controls are lockfile review and CI scanning.
+ - **Profiles:** Python, TypeScript, Go, and Rust are each verified green in CI on the merged core+profile tree, quality gate and e2e runner included.
+ 
+ ## License
+ 
+ MIT. Use it, change it.
+diff --git a/docs/ROADMAP.md b/docs/ROADMAP.md
+index ea41c55..4e0c0c5 100644
+--- a/docs/ROADMAP.md
++++ b/docs/ROADMAP.md
+@@ -14,21 +14,21 @@ tool does mechanically versus what is still future work.
+   each **verified green on the first run by the root CI** (`.github/workflows/ci.yml`),
+   which renders the merged core+profile tree — the exact shape a generated
+   project has — and runs the real quality gate and e2e runner on it.
+   "Other" is not built — the interview says so and asks for consent
+   before continuing.
+ - **Generation is deterministic (since v2.3.0).** The agent runs the interview
+   and writes `docs/_init-answers.json`; `init-project/render.py` (stdlib
+   Python, plain string substitution) renders the tree — every placeholder,
+   conditional rule, structured-file escape, symlink, chmod, and version stamp.
+   Same answers, same bytes. A golden-fixture CI job
+-  (`.github/scripts/golden_test.py`) compares eight rendered answer sets —
++  (`.github/scripts/golden_test.py`) compares nine rendered answer sets —
+   including a hostile-values fixture — byte-for-byte against committed
+   expected trees. Only the interview itself and the package-manager dependency
+   steps remain agent-executed.
+ - **Portability.** The rules and docs (`AGENTS.md`, symlinked to `CLAUDE.md`) are
+   the cross-tool standard and travel to any agent. The deep orchestration and
+   local gates (subagents, hooks, MCP) run in Claude Code.
+ 
+ ## Known limitations / roadmap
+ 
+ - **Supply-chain pinning is largely done (v2.4.0).** GitHub Actions are
+diff --git a/init-project/SKILL.md b/init-project/SKILL.md
+index dc86f1d..ba10f5c 100644
+--- a/init-project/SKILL.md
++++ b/init-project/SKILL.md
+@@ -64,21 +64,21 @@ Required skills (must be installed): `tdd`, `grill-me`, `to-prd`, `caveman`, `wr
+ After the user picks them in the skills picker, verify `tdd` and `grill-me` are present before proceeding. `grill-me` is what powers the planning pass (Phase 2's interview, and the `slice` skill's high-risk-tier plan review); do not skip it. If the user refuses or skips, stop and explain why bootstrap cannot continue without `tdd` and `grill-me`.
+ 
+ ### Phase 2: Interview
+ 
+ This is a planning interview, not a form. Do not be lazy here and do not just transcribe answers -- interrogate them. Run the `grill-me` skill (from mattpocock/skills) to drive it; if unavailable, mirror its style: probe assumptions, surface trade-offs, ask the follow-up.
+ 
+ Start from the **heart of the project**: the one flow that, if it works, makes the project worth building. Get that crisp before anything about stack or tooling. Ask the questions below one at a time (or in tight groups of 2-3 if obviously related), but treat A1-A2 as a real discovery, not a single line each.
+ 
+ **Be proactive about what's missing.** The complaint that drove this design is interviews that record what the user says and stop there. After the core questions, run one explicit "what haven't we talked about?" pass and name the gaps yourself: error and empty states, the unhappy path, auth and who can see what, scale, observability, the riskiest assumption. Tell the user what you think they have not considered. A good interview leaves the user thinking "I hadn't thought of that."
+ 
+-Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (it is deleted after Phase 5 verification).
++Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (deleted partway through Phase 5, before the quality-gate run -- see Phase 5).
+ 
+ The interview has two parts, in this order: **Part A -- product discovery** (the
+ project itself; this is where surprises are killed) and **Part B -- stack and
+ options** (machinery). Rule zero: **nothing this interview can elicit ships as a
+ TODO in the generated docs.** When an answer is vague, grill it: "How would you
+ verify that?", "What breaks first?", "Give me a real example input and output."
+ 
+ **Part A -- product discovery**
+ 
+ #### A1. Project name and one-sentence goal
+@@ -490,27 +490,29 @@ fixtures in the template repo CI:
+ | 8 | B11 `mem0: yes` -> keeps `docs/memory.md`, renders `{{MEMORY_DOC_LINE}}` in `AGENTS.md`'s `<project>` block, and inserts the `<memory>` block (from `templates/conditional/memory-block.md`, see rule 21 for the anchor); `no` -> none of those. The `mem0ai` dependency itself is added in Phase 4.5. |
+ | 9 | B12 `codex_reviewer: yes` -> renders `{{CODEX_REVIEW_STEP}}` and `{{CODEX_ROSTER_NOTE}}` from `templates/conditional/codex-*.md`; `no` -> both empty. |
+ | 10 | B8: seeds the security-profile line into `docs/SECURITY.md`; if all three answers are `yes` AND AI features are on, appends the lethal-trifecta-PRESENT note to that same insertion. |
+ | 11 | B7 `uses_devcontainer: no` -> `.devcontainer/` is not generated. |
+ | 12 | B2 + profile: renders `{{E2E_BROWSER_INSTALL_STEP}}` as the browser-install step (UI project with a profile `e2e_browser_install`) or the "no browser needed" comment. |
+ | 13 | Renames profile manifests shipped with an `.example` suffix (`pyproject.toml.example` -> `pyproject.toml`). Core files are never renamed (`.env.example` stays). |
+ | 14 | Creates the `CLAUDE.md` -> `AGENTS.md` symlink (a one-line pointer file where symlinks are unavailable), `chmod +x` on `.claude/hooks/*.sh` and `scripts/*.sh`, and stamps `.claude/.template-version` (with this release's version) if the bootstrap `install.sh` did not already write it. |
+ | 15 | Fails closed if any `{{...}}` placeholder survives anywhere in the output. |
+ | 16 | B13: when `claude-code` is NOT in `agents`, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the `CLAUDE.md` symlink are not generated -- these are the Claude-specific enforcement mechanics (subagents, hooks, settings). `.claude/skills/` (`slice`, `security-review`, `tech-debt`, `select-agents`, and -- frontend only -- `design-loop`) ships regardless of roster: they are plain-markdown procedures any driving agent can read and follow, not Claude Code slash commands. `.claude/.template-version` is likewise always written by post-processing (rule 14) regardless of roster. A `claude-code` entry with `"status": "planned"` still counts as selected for this rule -- the agents/hooks/settings tree is still generated; `status` only affects `docs/agents.json` and the matrix status note (rule 17). |
+ | 17 | B13: renders `{{AGENT_MATRIX}}` in `docs/agents.md` from `templates/conditional/agents/<name>.md` (planned agents get a status note) and writes the machine-readable roster `docs/agents.json` (name, status, offload roles). When `claude-code` is NOT in `agents`, an honest-omission note (`templates/conditional/agents/no-claude-note.md`) is appended as the final section of `docs/agents.md`, spelling out what was skipped and that `docs/SECURITY.md` / `docs/language-standards.md` mandates -- and keeping `docs/features.json` current -- fall to the driving agent manually. |
+-| 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. The mechanism ships in `render.py` ready for reuse; no template file currently carries a `<!-- CC-...-START/END -->` fence -- the v2 doc that carried the only instance was retired in the v3 redesign. |
++| 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. Current instance: `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section (the hook is a Claude Code enforcement mechanic, so other rosters do not get the bullet). |
+ | 19 | Writes `docs/features.json` from the answers' `features` list (schema 1). |
+ | 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/), the profile tokens.css, `@design-reviewer`, and the `design-loop` skill; `has_frontend: no` skips all of them. |
+ | 21 | mem0 memory block inserts after `<!-- /FW-BLOCK: learning -->`. |
+ 
+-Keep `docs/_init-answers.json` until Phase 5 verification passes, then delete it
+-(`rm docs/_init-answers.json`) -- its content lives on in the rendered docs.
++Keep `docs/_init-answers.json` until Phase 5's placeholder grep and
++`features_check.py` pass, then delete it (`rm docs/_init-answers.json`)
++BEFORE running the quality gate -- it is transient renderer working state,
++not project content, and its content lives on in the rendered docs.
+ 
+ ### Phase 4.5: Install dependencies
+ 
+ Dependency work is the one part of generation that stays with the agent: it
+ runs environment-dependent package-manager commands, so it cannot be a
+ deterministic file render. Two steps.
+ 
+ **First, capability dependencies (B3-B6).** The rendered manifest ships a
+ minimal core only; append ONLY the dependencies the answers call for, using the
+ chosen profile's `add_dep_command` (prefix Python's `uv add` with
+@@ -591,23 +593,27 @@ without Claude Code.
+ Then confirm the chosen profile landed: its manifest (`{{MANIFEST_FILE}}`) exists, and the green-scaffold source + test exist (Python `src/example.py`+`tests/test_example.py`; TypeScript `src/example.ts`+`tests/example.test.ts`; Go `greet.go`+`greet_test.go`; Rust `src/lib.rs` (with its in-file unit test) + `tests/e2e.rs` + `rust-toolchain.toml`).
+ 
+ Then check no unresolved placeholders remain:
+ 
+ ```bash
+ ! grep -rn '{{[A-Z0-9_]*}}' . --include='*.md' --include='*.txt' --include='*.toml' --include='*.yml' --include='*.yaml' --include='*.json' --include='*.sh' --include='*.py' --include='*.ts' --include='*.go' --include='*.rs' --include='*.mod' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=skills 2>/dev/null
+ ```
+ 
+ (`--exclude-dir=skills` skips every dir literally named `skills`, which covers both the bootstrap-installed helper skills and this project's own generated `.claude/skills/` procedures -- those never carry unsubstituted placeholders (there are none in `templates/core/.claude/skills/` to begin with), so excluding them is safe. The generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
+ 
+-Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
++Now delete the renderer input, BEFORE running the quality gate: `rm
++docs/_init-answers.json` (its content lives on in the rendered docs). It is
++transient working state, not project content -- a project language's gate
++(e.g. TypeScript's prettier check) has no reason to see it, and leaving it
++on disk into the gate run is a bug, not a convenience.
+ 
+-Once verification passes, delete the renderer input: `rm docs/_init-answers.json` (its content lives on in the rendered docs).
++Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+ 
+ Report what was generated, then hand off:
+ 
+ > "Bootstrap complete. Your project is ready. Next steps:
+ > 1. {{If dev container}}: Reopen in dev container, then run `{{INSTALL_COMMAND}}` inside. {{Else}}: Deps are already installed; `{{QA_COMMAND}}` is green on the fresh scaffold. Use `{{FIX_COMMAND}}` to auto-format locally.
+ > 2. Initialize git: `git add . && git commit -m 'chore: bootstrap project'`. Push to enable CI.
+ > 3. Restart Claude Code so `.mcp.json` (Context7) registers.
+ > 4. Start your first task -- run the `slice` skill against the first entry in `docs/features.json`, replacing `src/example.py` and `tests/test_example.py` with your first slice."
+ 
+ Then, if the repo has a GitHub remote and `gh` is available, offer (do not run unasked) to enable branch protection -- the generated CI is merge-blocking only once the repo requires its checks:
+@@ -682,21 +688,21 @@ Any new placeholder must be added here, to the answers schema (or
+ | `{{DESIGN_ANTI_REFERENCE}}` | V2 -- anti-reference; empty string when `design` is `null` |
+ | `{{MEMORY_DOC_LINE}}` | Derived from B11 (`templates/conditional/memory-doc-line.md`, or empty) |
+ | `{{AI_DISCIPLINE_BLOCK}}` | Derived from B4 (`templates/conditional/ai-discipline.md`, or empty) |
+ | `{{CODEX_REVIEW_STEP}}` | Derived from B12 -- `templates/conditional/codex-review-step.md`, or empty |
+ | `{{CODEX_ROSTER_NOTE}}` | Derived from B12 -- `templates/conditional/codex-roster-note.md`, or empty |
+ | `{{AGENT_MATRIX}}` | Derived from B13 -- per-agent sections from `templates/conditional/agents/`, joined |
+ | `{{DATE}}` | today, ISO format (`date` in the answers file) |
+ 
+ B9 (`explanations`), B10 (`seed_gotchas`), and B11 (`mem0`) have no placeholder of their own: they are switches in the answers file's `opt_ins` section that turn renderer rules 6-8 on or off.
+ 
+-Rows marked **answers-file only (no template consumer in v3.0.0)** above are still asked, still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRODUCT_VISION.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all eight golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
++Rows marked **answers-file only (no template consumer in v3.0.0)** above are still asked, still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRODUCT_VISION.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all nine golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
+ 
+ ### Language-derived placeholders (from the profile)
+ 
+ The renderer reads these from `templates/profiles/<lang>/profile.json` (the
+ machine-readable copy of the YAML blocks below -- keep the two in sync; the
+ golden-fixture CI cross-checks the load-bearing values).
+ 
+ | Placeholder | Filled from language profile |
+ |---|---|
+ | `{{LANGUAGE_VERSION}}` | profile.language_version |
+diff --git a/init-project/render_schema.py b/init-project/render_schema.py
+index f469109..dfe0f33 100644
+--- a/init-project/render_schema.py
++++ b/init-project/render_schema.py
+@@ -10,20 +10,25 @@ the offending field.
+ 
+ from __future__ import annotations
+ 
+ import json
+ import os
+ import re
+ 
+ PLACEHOLDER_RE = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
+ SLUG_RE = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
+ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
++STRUCTURAL_TAG_RE = re.compile(
++    r"</?(project|commands|etiquette|hard-rules|risk-tiers|learning|roster"
++    r"|ai-discipline|memory)>",
++    re.IGNORECASE,
++)
+ 
+ LANGUAGES = ("python", "typescript", "go", "rust")
+ FRONTEND_CHOICES = ("yes-spa", "yes-minimal", "no")
+ AI_FEATURE_CHOICES = ("rag", "agents", "evals", "streaming")
+ AGENT_CHOICES = ("claude-code", "codex", "antigravity", "cursor", "other")
+ AGENT_STATUSES = ("installed", "planned")
+ 
+ # Answers-file layout: section -> required keys. All free-text unless
+ # validate_answers() handles the key specially (enums, yes/no, references).
+ PROJECT_KEYS = (
+@@ -41,20 +46,23 @@ STACK_KEYS = (
+     "uses_devcontainer",
+ )
+ SECURITY_KEYS = ("reads_untrusted", "holds_private_data", "acts_outward")
+ OPT_IN_KEYS = ("explanations", "seed_gotchas", "mem0", "codex_reviewer")
+ FEATURE_KEYS = ("id", "title", "intent", "serves", "acceptance", "tests",
+                 "status", "tier")
+ FEATURE_STATUSES = ("todo", "in-progress", "done", "dropped")
+ FEATURE_TIERS = ("light", "standard", "high-risk")
+ FEATURE_ID_RE = re.compile(r"^F\d{3}$")
+ DESIGN_KEYS = ("references", "tone", "anti_reference")
++TOP_LEVEL_KEYS = ("schema", "date", "agents", "project", "stack", "security",
++                  "opt_ins", "features", "design")
++SCHEMA_VERSION = 1
+ 
+ PROFILE_SCALARS = (
+     "display_name", "language_version", "package_manager", "manifest_file",
+     "install_command", "add_dep_command", "qa_command", "fix_command",
+     "e2e_command", "e2e_browser_install", "test_runner", "test_command",
+     "lint_tool", "lint_command", "format_tool", "format_command", "type_tool",
+     "type_command", "precommit_install_command",
+ )
+ PROFILE_LISTS = ("ci_setup_steps", "precommit_hooks", "library_docs_urls")
+ # notes key in profile.json -> placeholder name (singular/plural is irregular).
+@@ -79,20 +87,22 @@ class RenderError(Exception):
+ def _check_text(errors: list[str], where: str, value: object) -> None:
+     if not isinstance(value, str) or not value.strip():
+         errors.append(f"{where}: must be a non-empty string")
+         return
+     cleaned = value.replace("\r\n", "\n").replace("\r", "\n")
+     if any(ord(c) < 32 and c not in "\n\t" for c in cleaned):
+         errors.append(f"{where}: contains control characters")
+     if "<!--" in cleaned or "-->" in cleaned:
+         errors.append(f"{where}: must not contain HTML comment markers "
+                       "(<!-- or -->) -- they would break generated files")
++    if STRUCTURAL_TAG_RE.search(cleaned):
++        errors.append(f"{where}: must not contain AGENTS.md structural tags")
+     if PLACEHOLDER_RE.search(cleaned):
+         errors.append(f"{where}: contains text shaped like a template "
+                       "placeholder ({{UPPER_SNAKE}}); not allowed in answers")
+ 
+ 
+ def _check_yes_no(errors: list[str], where: str, value: object) -> None:
+     if value not in ("yes", "no"):
+         errors.append(f'{where}: must be exactly "yes" or "no" (got {value!r})')
+ 
+ 
+@@ -115,27 +125,28 @@ def _check_features(errors: list[str], value: object) -> None:
+         where = f"features[{i}]"
+         if not isinstance(ft, dict):
+             errors.append(f"{where}: must be an object")
+             continue
+         extra = set(ft) - set(FEATURE_KEYS) - {"notes"}
+         if extra:
+             errors.append(f"{where}: unknown keys {sorted(extra)}")
+         for key in FEATURE_KEYS:
+             if key not in ft:
+                 errors.append(f"{where}.{key}: missing")
+-        fid = ft.get("id")
+-        if isinstance(fid, str) and not FEATURE_ID_RE.match(fid):
+-            errors.append(f"{where}.id: must match F000-F999 (got {fid!r})")
+-        if isinstance(fid, str):
+-            if fid in seen:
++        if "id" in ft:
++            fid = ft["id"]
++            if not isinstance(fid, str) or not FEATURE_ID_RE.match(fid):
++                errors.append(f"{where}.id: must match F000-F999 (got {fid!r})")
++            elif fid in seen:
+                 errors.append(f"{where}.id: duplicate {fid}")
+-            seen.add(fid)
++            else:
++                seen.add(fid)
+         for key in ("title", "intent", "serves"):
+             if key in ft:
+                 _check_text(errors, f"{where}.{key}", ft[key])
+         if "status" in ft and ft["status"] not in FEATURE_STATUSES:
+             errors.append(f"{where}.status: must be one of {FEATURE_STATUSES}")
+         if "tier" in ft and ft["tier"] not in FEATURE_TIERS:
+             errors.append(f"{where}.tier: must be one of {FEATURE_TIERS}")
+         acc = ft.get("acceptance")
+         if "acceptance" in ft and (not isinstance(acc, list) or not acc
+                                    or any(not isinstance(a, str) or not a.strip()
+@@ -158,20 +169,26 @@ def _check_design(errors: list[str], value: object, has_frontend: str) -> None:
+         return
+     for key in DESIGN_KEYS:
+         _check_text(errors, f"design.{key}", value[key])
+ 
+ 
+ def validate_answers(ans: object) -> dict:
+     """Validate the answers file against the documented schema. Fail closed."""
+     errors: list[str] = []
+     if not isinstance(ans, dict):
+         raise RenderError("answers file: top level must be a JSON object")
++    if ans.get("schema") != SCHEMA_VERSION:
++        errors.append(f"schema: must be exactly {SCHEMA_VERSION} "
++                      f"(got {ans.get('schema')!r})")
++    unknown_top = set(ans) - set(TOP_LEVEL_KEYS)
++    if unknown_top:
++        errors.append(f"unknown top-level key(s): {sorted(unknown_top)}")
+     for section, keys in (("project", PROJECT_KEYS), ("stack", STACK_KEYS),
+                           ("security", SECURITY_KEYS), ("opt_ins", OPT_IN_KEYS)):
+         block = ans.get(section)
+         if not isinstance(block, dict):
+             errors.append(f'missing or invalid section "{section}"')
+             continue
+         for key in keys:
+             if key not in block:
+                 errors.append(f'{section}.{key}: missing (use "TODO(interview-skipped)" '
+                               "only if the user explicitly refused the question)")
+diff --git a/init-project/templates/core/.claude/skills/design-loop/SKILL.md b/init-project/templates/core/.claude/skills/design-loop/SKILL.md
+index c19e6dc..93de52f 100644
+--- a/init-project/templates/core/.claude/skills/design-loop/SKILL.md
++++ b/init-project/templates/core/.claude/skills/design-loop/SKILL.md
+@@ -21,19 +21,20 @@ prevent the default look; do not start from a blank aesthetic.
+ 2. **Owner picks.** This is the one human design gate. Present the variants,
+    let the owner pick and amend.
+ 3. **Commit the winner** to `docs/design/mockups/<feature-id>-<name>.html`
+    (see the README there) and note the pick in the feature's `notes` field.
+    The mockup is now the spec for that surface.
+ 4. **Build against the mockup**, taking colors/spacing/type from the tokens
+    file, not from the mockup's inline values. States are part of the surface:
+    loading, empty, and error get designed, not defaulted.
+ 5. **Verify visually.** Run the app, screenshot the surface in its real states
+    (wide + narrow), and compare against the mockup and rubric yourself; then
+-   dispatch `@design-reviewer` for the fresh-context grade. Iterate until it
+-   reports MATCHES, or the owner accepts named deltas (log them in
+-   `docs/deviations.md`).
++   dispatch `@design-reviewer` for the fresh-context grade (or, when
++   subagents aren't available in your harness, run the equivalent
++   independent pass in a fresh context). Iterate until it reports MATCHES,
++   or the owner accepts named deltas (log them in `docs/deviations.md`).
+ 
+ ## Existing surface
+ 
+ Re-read its mockup before changing it. If the change is big enough to alter
+ the mockup, update the mockup in the same branch -- mockup and screen move
+ together or the drift compounds.
+diff --git a/init-project/templates/core/.claude/skills/security-review/SKILL.md b/init-project/templates/core/.claude/skills/security-review/SKILL.md
+index fb85fac..04e19ed 100644
+--- a/init-project/templates/core/.claude/skills/security-review/SKILL.md
++++ b/init-project/templates/core/.claude/skills/security-review/SKILL.md
+@@ -11,19 +11,20 @@ description: >-
+ ## The trigger (canonical -- this is its only home)
+ 
+ Work is security-triggering when it adds or changes any of:
+ external input handling; dependence on untrusted generated output; public
+ publishing of content; authentication or authorization; a tool or automation
+ with side effects; persistence of untrusted content.
+ 
+ ## Procedure when the trigger matches
+ 
+ 1. Dispatch `@security-reviewer` (an independent red-team pass; a "security
+-   focus" inside the code review does not substitute).
++   focus" inside the code review does not substitute) -- or, when subagents
++   aren't available in your harness, run the equivalent independent pass in
++   a fresh context.
+ 2. Apply the `docs/SECURITY.md` delta for the new surface, or record in the
+    review notes why none is needed. A stale threat model is worse than none.
+ 3. Findings become failing security tests before fixes -- the gap stays closed
+    in CI. Prove controls on the real enforcement path with the live path's
+    flags, never via a debug/introspection endpoint.
+ 
+-Matching work is high-risk tier (`AGENTS.md` `<risk-tiers>`) unless the touch
+-is trivially contained -- when in doubt, it is not.
++Matching work is high-risk tier (`AGENTS.md` `<risk-tiers>`), full stop.
+diff --git a/init-project/templates/core/.claude/skills/slice/SKILL.md b/init-project/templates/core/.claude/skills/slice/SKILL.md
+index 5895039..3a591b8 100644
+--- a/init-project/templates/core/.claude/skills/slice/SKILL.md
++++ b/init-project/templates/core/.claude/skills/slice/SKILL.md
+@@ -4,21 +4,25 @@ description: >-
+   The per-feature workflow for this project. Use when starting any feature,
+   change, or fix -- "build F003", "next feature", "add X", "fix Y". Reads the
+   feature's entry in docs/features.json, picks the risk tier, and runs the
+   tier's procedure.
+ ---
+ 
+ # slice -- build one feature at the right ceremony level
+ 
+ ## 1. Anchor
+ 
+-Read the feature's entry in `docs/features.json` (id, intent, `serves:`,
++`docs/features.json` entries are for user-observable features and meaningful
++behavior changes. Light-tier chores (typos, copy tweaks, pure refactors, small
++fixes with no new behavior) need no entry -- quality gate green is their
++whole lifecycle; skip straight to step 3's light procedure. Otherwise, read
++the feature's entry in `docs/features.json` (id, intent, `serves:`,
+ acceptance, tier). If the work has no entry yet, add one first (next free id,
+ `status: todo`, `tests: []`) -- the array is priority-ordered, and user-visible
+ journey features lead unless the owner reorders; hardening and infra queue
+ behind the first shippable surface. The `serves:` line is the tether to
+ `docs/PRODUCT_VISION.md` -- if you cannot write one, question the feature.
+ 
+ ## 2. Pick the tier
+ 
+ Judge against the table in `AGENTS.md` `<risk-tiers>`. When genuinely unsure
+ between standard and high-risk, ask the owner -- that is cheaper than either
+@@ -35,23 +39,25 @@ mistake.
+    external collaborator that is flaky or under-documented, record one real
+    probe (request + response) in `docs/probes/` and build fixtures from it;
+    stable, well-documented APIs may be coded against their docs (verify
+    signatures via Context7).
+ 2. New user-visible surface? Run the `design-loop` skill first (that is where
+    the one mockup approval lives). Changing an existing surface? Re-read its
+    mockup; drift is a deviation to log.
+ 3. Red -> Green with the `tdd` skill: failing tests first (mapped to the
+    acceptance criteria), then minimal code, then refactor. Update the feature's
+    `tests` array as you name them.
+-4. Review: dispatch `@code-reviewer` (correctness + requirements only). If the
+-   feature is user-visible, dispatch `@design-reviewer` after green. If the
+-   work matches the `security-review` skill's trigger, run that too.
++4. Review: dispatch `@code-reviewer` (correctness + requirements only; when
++   subagents aren't available in your harness, run the equivalent
++   independent pass in a fresh context instead). If the feature is
++   user-visible, dispatch `@design-reviewer` after green. If the work
++   matches the `security-review` skill's trigger, run that too.
+ 5. Set `status: done` only when mapped tests pass and reviews are resolved;
+    run `python3 scripts/features_check.py` and the quality gate.
+ 
+ **high-risk** -- everything in standard, plus: write the plan to
+ `docs/plans/<feature-id>.md` and get the owner's approval BEFORE implementation
+ (use `grill-me` on the plan if installed); `@security-reviewer` runs; the full
+ pyramid (unit + functional + e2e + security tests) is named at Red.
+ 
+ ## 4. Architecture defaults (all tiers)
+ 
+diff --git a/init-project/templates/core/AGENTS.md b/init-project/templates/core/AGENTS.md
+index 0939e1c..ad78c9c 100644
+--- a/init-project/templates/core/AGENTS.md
++++ b/init-project/templates/core/AGENTS.md
+@@ -42,40 +42,41 @@ Few and absolute -- each holds with no exceptions:
+ - When work matches the security trigger in the `security-review` skill, that review runs before merge.
+ </hard-rules>
+ <!-- /FW-BLOCK: hard-rules -->
+ 
+ <!-- FW-BLOCK: risk-tiers v3.0.0 -->
+ <risk-tiers>
+ Pick the tier by judgment against this table; the `slice` skill has the per-tier procedure.
+ 
+ | Tier | Typical work | Ceremony |
+ |---|---|---|
+-| light | copy, styling tweaks, small fixes, internal refactors | build it; quality gate green |
++| light | copy, styling tweaks, small fixes, internal refactors | build it; quality gate green (no `features.json` entry needed) |
+ | standard | a new feature or behavior change | short plan, tests first (Red -> Green), scoped code review; design review if user-visible |
+ | high-risk | auth, payments, security-trigger matches, architecture changes | user-approved plan in `docs/plans/` + security review + full test pyramid |
+ 
+ Human approval is needed in exactly two places: the mockup pick for a NEW user-visible surface, and high-risk plans. Everything else proceeds -- deviations get the conservative choice and a `docs/deviations.md` line, and the owner reviews diffs.
+ </risk-tiers>
+ <!-- /FW-BLOCK: risk-tiers -->
+ 
+ <!-- FW-BLOCK: learning v3.0.0 -->
+ <learning>
+ - When reality surprises you (an API behaves differently than documented, a gate passes but the feature is dead), add the lesson to `docs/gotchas.md`.
+ - When implementation must deviate from the plan or mockup, take the conservative option, log it in `docs/deviations.md`, and keep going.
+ </learning>
+ <!-- /FW-BLOCK: learning -->
+ 
+ <!-- FW-BLOCK: roster v3.0.0 -->
+ <roster>
+ Skills (on demand): `slice` (per-feature workflow, tiered), `design-loop` (mockup -> build -> screenshot-verify; frontend projects), `security-review` (the trigger definition + procedure), `tech-debt` (on-demand sweep), `select-agents` (change the agent roster). Upstream: `tdd` (Red -> Green -> Refactor), `grill-me` (plan interrogation for high-risk work).
+ 
+ Subagents: `@implementer` (green-phase work in an isolated context), `@code-reviewer` (correctness + requirements review; its Stop hook re-runs the quality gate){{CODEX_ROSTER_NOTE}}, `@security-reviewer` (red-team pass on trigger), `@design-reviewer` (grades shipped screens against the approved mockup + rubric; frontend projects), `@utility` (mechanical chores). Parallel agents only for read-only work; one writer at a time.
++Subagents exist when Claude Code drives. On other rosters, run the same reviews as independent fresh-context passes -- the skills above define what each pass checks.
+ </roster>
+ <!-- /FW-BLOCK: roster -->
+ {{AI_DISCIPLINE_BLOCK}}
+ <!--
+ Project: {{PROJECT_NAME}}
+ Goal: {{PROJECT_GOAL}}
+ Primary user: {{PRIMARY_USER}}
+ Language: {{LANGUAGE}}
+ Frontend: {{HAS_FRONTEND}}
+ AI features: {{AI_FEATURES}}
+diff --git a/init-project/templates/core/docs/SECURITY.md b/init-project/templates/core/docs/SECURITY.md
+index e7da039..09c7289 100644
+--- a/init-project/templates/core/docs/SECURITY.md
++++ b/init-project/templates/core/docs/SECURITY.md
+@@ -32,22 +32,23 @@ These apply to every project regardless of stack or subject.
+    or signed token (verify the signature, don't just decode it), enforced in one
+    middleware layer. Scope every query and file path to that owner. Validate and
+    sandbox any path or id from input so `../` cannot escape. *Where enforced:* TODO.
+ 2. **Secrets exposure** -- keys in source, logs, prompts, or committed config.
+    **Defense:** secrets live only in env or a secret store; the ignore file
+    excludes them; an example env file documents the variables with empty values.
+    *Where enforced:* TODO.
+ 3. **Supply-chain / slopsquatting** -- a compromised or hallucinated dependency runs
+    code on dev/CI machines. **Defense:** install from the lockfile only (no blind
+    updates); vet every new package (real, established, right author, not a
+-   lookalike); prefer dependencies more than ~a week old. Enforced by the
+-   `deps-guard` hook, not by trust.
++   lookalike); prefer dependencies more than ~a week old. Enforced by committed
++   lockfiles, reviewed updates, and CI dependency scanning on every roster --
++   plus the `deps-guard` PreToolUse hook when Claude Code drives -- not by trust.
+ 4. **Unbounded input** -- a huge payload buries an injection or runs up cost.
+    **Defense:** length-bound every input that enters a prompt, a log, or storage.
+ 5. **Blast radius** -- assume something will be compromised; limit what it reaches.
+    **Defense:** least privilege per session; isolate production; do not give broad
+    direct production access. Fail closed on any security-check error.
+ 
+ <!-- AI-SECURITY-START -->
+ ## LLM / agent risks and defenses
+ 
+ These apply because this project uses prompts, LLMs, or agentic flows. If that ever
+@@ -101,15 +102,18 @@ used, the OWASP Top 10 for LLM apps, time-boxing each category.
+ - [ ] **Prompt injection per source.** For EACH external data source (prioritize
+       tool/MCP results over direct chat), inject context-specific instructions
+       (impersonation + urgency, not "give me the secrets"); confirm no leak or
+       unintended action.
+ - [ ] **Trifecta containment.** Confirm no single agent reads untrusted content,
+       holds private data, and acts outward without a human gate.
+ <!-- AI-REDTEAM-END -->
+ 
+ ## Enforcement
+ 
++<!-- CC-HOOKS-START -->
+ - **Hook:** `.claude/hooks/deps-guard.sh` (PreToolUse) gates dependency installs.
++<!-- CC-HOOKS-END -->
+ - **Tests:** the red-team checklist above lives in the test suite and runs in CI.
+-- **Reviews:** `@security-reviewer` is MANDATORY for every slice matching the
+-  security trigger (`.claude/skills/security-review/SKILL.md`), per `AGENTS.md`
+-  `<hard-rules>`.
++- **Reviews:** an independent security red-team pass is MANDATORY for work
++  matching the trigger in `.claude/skills/security-review/SKILL.md` (via
++  `@security-reviewer` when Claude Code drives; as a manual fresh-context
++  pass otherwise), per `AGENTS.md` `<hard-rules>`.
+diff --git a/init-project/templates/core/docs/design/DESIGN.md b/init-project/templates/core/docs/design/DESIGN.md
+index f4e26bd..c781b55 100644
+--- a/init-project/templates/core/docs/design/DESIGN.md
++++ b/init-project/templates/core/docs/design/DESIGN.md
+@@ -9,25 +9,28 @@ mockup in `mockups/`.
+ **References -- what to steal, from where:**
+ {{DESIGN_REFERENCES}}
+ 
+ **Tone:** {{DESIGN_TONE}}
+ 
+ **Anti-reference (never let it look like this):** {{DESIGN_ANTI_REFERENCE}}
+ 
+ ## Tokens
+ 
+ The canonical values live in the tokens file for your language profile:
+-`src/styles/tokens.css` (TypeScript) or `static/tokens.css` (Python). Rules of thumb:
+-one type scale (fixed ratio), at most two fonts, body >= 16px; one spacing
+-unit used everywhere; one accent color spent on the primary action only.
+-Change a token, not a one-off value. TODO markers in the tokens file are
+-choices still open -- settle them in the first design-loop pass.
++TypeScript: `src/styles/tokens.css`; Python: `static/tokens.css`; profiles
++without a shipped tokens file (Go/Rust in v3.0.0): define the token table
++right here in this file and treat it as canonical. Rules of thumb: one type
++scale (fixed ratio), at most two fonts, body >= 16px; one spacing unit used
++everywhere; one accent color spent on the primary action only. Change a
++token, not a one-off value. TODO markers in the tokens file (or, for Go/Rust,
++in this section) are choices still open -- settle them in the first
++design-loop pass.
+ 
+ ## Aesthetic rubric (what `@design-reviewer` grades)
+ 
+ 1. **Mockup fidelity.** The shipped screen matches the approved mockup in
+    `mockups/` -- layout, hierarchy, states, and liveness (loading, empty,
+    error states exist and look designed, not defaulted).
+ 2. **No generic-AI tells.** Automatic fail for: purple-gradient hero, a
+    three-rounded-cards feature grid, default-font-everywhere, uniform
+    border-radius on every element, centered-everything layouts, emoji as
+    icons on interactive elements.
+diff --git a/init-project/templates/core/scripts/features_check.py b/init-project/templates/core/scripts/features_check.py
+index f1892cf..8d10690 100755
+--- a/init-project/templates/core/scripts/features_check.py
++++ b/init-project/templates/core/scripts/features_check.py
+@@ -48,34 +48,56 @@ def check() -> list[str]:
+         if not isinstance(fid, str) or not ID_RE.match(fid):
+             errors.append(f"{where}: id must match F000-F999")
+         elif fid in seen:
+             errors.append(f"{where}: duplicate id")
+         else:
+             seen.add(fid)
+         if ft["status"] not in STATUSES:
+             errors.append(f"{where}: status must be one of {sorted(STATUSES)}")
+         if ft["tier"] not in TIERS:
+             errors.append(f"{where}: tier must be one of {sorted(TIERS)}")
+-        if not isinstance(ft["acceptance"], list) or not ft["acceptance"]:
++        acceptance = ft["acceptance"]
++        if not isinstance(acceptance, list) or not acceptance:
+             errors.append(f"{where}: acceptance must be a non-empty list")
++        else:
++            for j, a in enumerate(acceptance):
++                if not isinstance(a, str) or not a.strip():
++                    errors.append(
++                        f"{where}: acceptance[{j}] must be a non-empty string"
++                    )
+         tests = ft["tests"]
+         if not isinstance(tests, list):
+             errors.append(f"{where}: tests must be a list")
+             tests = []
+-        if ft["status"] == "done":
+-            if not tests:
+-                errors.append(f"{where}: done with no mapped tests")
+-            for t in tests:
+-                test_file = str(t).split("::", 1)[0]
+-                if not os.path.exists(test_file):
++        else:
++            for j, t in enumerate(tests):
++                if not isinstance(t, str) or not t.strip():
++                    errors.append(f"{where}: tests[{j}] must be a non-empty string")
++                    continue
++                test_file = t.split("::", 1)[0]
++                if not test_file:
++                    errors.append(f"{where}: tests[{j}] has no file part before '::'")
++                    continue
++                if os.path.isabs(test_file) or ".." in test_file.split(os.sep):
++                    errors.append(
++                        f"{where}: tests[{j}] must be a repo-relative "
++                        f"path with no '..' component: {test_file}"
++                    )
++                    continue
++                if ft["status"] == "done" and not os.path.isfile(test_file):
+                     errors.append(f"{where}: cited test file missing: {test_file}")
+-        if ft["status"] == "dropped" and not str(ft.get("notes") or "").strip():
++        if ft["status"] == "done" and not tests:
++            errors.append(f"{where}: done with no mapped tests")
++        notes = ft.get("notes")
++        if "notes" in ft and not isinstance(notes, str):
++            errors.append(f"{where}: notes must be a string")
++        if ft["status"] == "dropped" and not str(notes or "").strip():
+             errors.append(f"{where}: dropped without a reason in notes")
+     return errors
+ 
+ 
+ def main() -> int:
+     errors = check()
+     if errors:
+         print("features-check: FAIL")
+         for e in errors:
+             print(f"  - {e}")
+diff --git a/init-project/templates/profiles/typescript/.prettierignore b/init-project/templates/profiles/typescript/.prettierignore
+index 3f88b07..cd6765e 100644
+--- a/init-project/templates/profiles/typescript/.prettierignore
++++ b/init-project/templates/profiles/typescript/.prettierignore
+@@ -10,10 +10,14 @@ test-results
+ # The constitution, docs, and subagent files are agent-maintained markdown from
+ # the template core; prettier's markdown style disagrees with them and they are
+ # not code. Keeping them out keeps `qa` green on the first run.
+ *.md
+ # Renderer-written data files (json.dump, not hand-authored): their array/object
+ # wrapping depends on content length, so they cannot be guaranteed to match
+ # Prettier's printWidth-driven JSON style. Keeping them out keeps `qa` green on
+ # the first run regardless of answers.
+ docs/agents.json
+ docs/features.json
++# Transient renderer input (docs/_init-answers.json), deleted after Phase 5 --
++# never part of the committed project, but prettier would otherwise see it
++# if the gate runs before that deletion.
++docs/_init-answers.json
+diff --git a/upgrade-project/SKILL.md b/upgrade-project/SKILL.md
+index 922d838..b9a1aeb 100644
+--- a/upgrade-project/SKILL.md
++++ b/upgrade-project/SKILL.md
+@@ -37,20 +37,21 @@ If the directory is empty or only has a bootstrap-mode `AGENTS.md`, **stop** and
+ 3. If `git status` shows uncommitted changes you did not make, say so and stop until the user confirms whose they are -- concurrent edits are the one thing this skill cannot reconcile.
+    Wait for confirmation before making changes.
+ 
+ ### Phase 1: Recover context
+ 
+ The upgrade has no interview answers on hand, so recover what it needs from the project:
+ 
+ - **Project name** -- from the manifest (`pyproject.toml` `[project].name`, `package.json` `"name"`, etc.) or the `AGENTS.md` metadata comment.
+ - **Language** -- from the manifest file present (`pyproject.toml` -> Python, `package.json` -> TypeScript, `Cargo.toml` -> Rust, `go.mod` -> Go).
+ - **AI features?** -- detect a `prompts/` dir, an LLM SDK in the manifest, or an existing `<ai-discipline>` block. Confirm with the user (yes/no).
++- **Agent roster** -- read `docs/agents.json` if present (a v2.5.0+ project). If absent, the project predates the B13 roster feature and is Claude-only by construction. If ambiguous (e.g. a hand-edited or missing file on a project that otherwise looks v2.5.0+), confirm with the user. This governs the CC-fence rule below and the Phase 3-D migration's roster gating.
+ - **mem0 / persistent memory?** -- detect `docs/memory.md`, a `<memory>` block in `AGENTS.md`, or `mem0ai` in the manifest. If absent, ask the user once whether to add it (yes/no; default no).
+ - **Quality-gate command** -- recover `{{QA_COMMAND}}` from `docs/language-standards.md` (the "Quality-gate command" line) or the manifest's scripts; needed to regenerate `.claude/hooks/quality-gate.sh` if missing.
+ - **Codex available?** -- detect it first: an existing "Second opinion (Codex)" section in .claude/agents/code-reviewer.md or a Codex note in the AGENTS.md agent roster means the project already opted in -- keep it, do not ask and NEVER remove it on a "no". Only when no Codex trace exists, ask the user (yes/no).
+ - **Current version stamp ("from" version)** -- read `.claude/.template-version` if present. This is the project's real source version (install.sh does NOT overwrite it). Hold it for the from->to report; it is rewritten only in Phase 4 after a successful upgrade.
+ 
+ Ask the user only for what you could not detect. Keep it to 2-3 questions.
+ 
+ ### Phase 2: Fetch the current template
+ 
+ The template is `core/` (language-free) plus one `profiles/<lang>/`. Pull both the core and the project's own language profile (from Phase 1) into temp dirs to reconcile against:
+@@ -72,20 +73,21 @@ If the project's `.claude/.template-version` (Phase 1) is below 3.0.0, stop here
+ Walk the template tree. For every template path, decide and act:
+ 
+ **A. File ABSENT in the project (additive).**
+ - **No `{{...}}` placeholders** (e.g. `.claude/agents/security-reviewer.md`, `.claude/agents/design-reviewer.md`, `.claude/hooks/deps-guard.sh`) -> copy verbatim. `chmod +x` any `.sh`.
+ - **Only recoverable placeholders** (`{{PROJECT_NAME}}`, `{{LANGUAGE}}`, `{{DATE}}`) -> substitute from Phase 1 and copy. This covers `docs/SECURITY.md`; then apply the AI-fence rule below.
+ - **Language/tooling placeholders you cannot resolve** (no full language profile on hand) -> do NOT half-write it. Report it as "add manually" with a pointer to the template path.
+ 
+   *Special cases:*
+   - `.claude/settings.json` -- if the project already has one, **merge** the `PreToolUse` deps-guard hook into the existing `hooks` object; never replace the file (that would drop the project's own hooks).
+   - **AI fences** (same rule everywhere a template file carries them): if the project uses AI, delete only the marker lines and keep the content; if not, delete the fenced blocks entirely. Current fences (v3.0.0): `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`. (Two v2.5.0 fences are gone in v3 -- one keyed on the agent roster, one in a now-retired doc; see Phase 3-D for what replaced their files.)
++  - **CC fences** (same mechanic, keyed on the Phase 1 agent roster instead of AI features): if `claude-code` is in the recovered roster, delete only the marker lines and keep the content; if not, delete the fenced block entirely. Current fence (v3.0.0): `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section.
+   - **Manifest `.example` suffix** (Python): the template ships `pyproject.toml.example` so the template repo's own tooling ignores it. A generated project already has a real `pyproject.toml` -- never copy the `.example` file in as "absent"; treat it as the merge source for the existing manifest (Phase 3-C), not a new file.
+   - **Profile files come from the project's OWN profile** (Phase 2 pulled `profiles/<lang>/`). Copy them verbatim where absent -- including that language's real `scripts/` (Python, Go, and Rust have `scripts/e2e.sh`; TypeScript runs e2e via an `npm run e2e` script in `package.json`). Never substitute another language's runner or a stub for a complete profile; the Go and Rust profiles have real e2e runners.
+   - `.claude/hooks/quality-gate.sh` -- carries `{{QA_COMMAND}}`, which IS recoverable (Phase 1). If the hook is missing, substitute the recovered command and copy it; never report it as manual.
+   - **Discovery placeholders (interview-sourced) in an absent file** (e.g. `{{SUCCESS_MEASURE}}`, `{{NON_GOALS}}`, `{{REQ_AC_LIST}}`, the positioning and constraints values): do NOT report "add manually" and do NOT half-write `{{...}}`. Queue the file for the Phase 3-E mini-interview.
+   - **.devcontainer/** -- respect the project's original opt-out: if the project has no .devcontainer/, do not copy it in as "absent"; note the availability once in the report instead.
+   - **Renamed/reshaped placeholders** -- when a template file's placeholder changed name or shape between versions (e.g. a commented step replaced by a rendered one), recover the concrete value from the project's already-rendered copy of that file (it holds the substituted value) before falling back to the mini-interview. Do not punt.
+   - `docs/agents.md` + `docs/agents.json` (v2.5.0): these carry the interview's
+     B13 roster, which CANNOT be recovered from an existing project. Do not
+     copy the template versions (they contain `{{AGENT_MATRIX}}` / derive from
+     answers). Report them as missing and point the user at `/select-agents`
+@@ -131,93 +133,138 @@ Show each proposed change against the project's current file before applying; do
+ **E. Mini-interview (discovery placeholders).** Collect every queued
+ interview-sourced placeholder from 3-A, dedupe, and ask the user ONLY those
+ questions, batched in one message (use the matching Part A question wording
+ from `init-project/SKILL.md`). Substitute the answers and write the files.
+ This replaces "add manually": the upgrade ends with zero `{{...}}` on disk and
+ zero punted files. If the user declines a question, write
+ `TODO(interview-skipped)` -- never a raw placeholder.
+ 
+ A project already on v3.0.0+ ends its Phase 3 work here (A-B-C-E) -- go
+ straight to **Phase 4** and never touch the section below; Phase 3-D runs
+-INSTEAD of A-C-E, not after them, and only for a project the routing note at
+-the top of this phase already sent here for being below v3.0.0.
++INSTEAD of this A-B-C-E block, not after it, and only for a project the
++routing note at the top of this phase already sent here for being below
++v3.0.0. (Phase 3-D's own step 6 folds A and C back in against the v3
++template once the wholesale swap makes the project v3-shaped -- B and E stay
++superseded; see that step.)
+ 
+ ### Phase 3-D: v2 -> v3 migration (template-version < 3.0.0)
+ 
+ v3 replaced the enforcement architecture. When `.claude/.template-version` is
+ below 3.0.0, offer the migration as one explicit, all-or-nothing step (mixing
+ v2 and v3 half-states is worse than either); each step checks for
+ already-migrated state and skips it, so a re-run after a partial failure is
+-safe. On accept:
++safe.
++
++**First, apply the Phase 1 agent roster the same way `render.py` does.**
++`.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the
++`CLAUDE.md` symlink are only written/rewritten when `claude-code` is in the
++roster recovered in Phase 1 -- a Codex-only v2 project gets the v3 skills
++and docs in steps 2-3 below but no Claude subagent files, and step 1's
++`AGENTS.md` swap uses the roster-conditional `<roster>` wording, not the
++unconditional v2 one. Design artifacts (`docs/design/`, the `design-loop`
++skill, `@design-reviewer`, the profile tokens file) are only migrated when
++the project has a frontend (detect from the old
++`docs/requirements.md`/backlog, or ask once if undetectable) -- independent
++of roster. On accept:
+ 
+ 1. **Constitution.** Replace `AGENTS.md` wholesale with the freshly rendered
+    v3 one, carrying forward: the project header facts, the A10 style-reference
+    lines, and the commands (recoverable from the old `<development-process>` /
+    `<quality-gate>` blocks). Show the old file's project-specific additions
+    (blocks the project added itself, gotcha-style lines) and graft them into
+    `<project>`/`<learning>` or report them.
+-2. **New files.** Copy in unconditionally: the `slice`, `security-review`,
+-   and `tech-debt` skills, plus `select-agents` if it is not already present
+-   (a v2.5.0+ project may already have it), `scripts/features_check.py`,
+-   `docs/deviations.md`, and `docs/plans/README.md`. If the project has a
+-   frontend, additionally copy `docs/design/` + `@design-reviewer` + the
+-   profile tokens file + the `design-loop` skill -- but before writing
++2. **New files.** Copy in unconditionally (any roster): the `slice`,
++   `security-review`, and `tech-debt` skills, plus `select-agents` if it is
++   not already present (a v2.5.0+ project may already have it),
++   `scripts/features_check.py`, `docs/deviations.md`, and
++   `docs/plans/README.md` -- these are plain-markdown procedures and docs,
++   not Claude-specific mechanics. If the project has a frontend,
++   additionally copy `docs/design/` + the profile tokens file + the
++   `design-loop` skill (also roster-independent) -- but before writing
+    `docs/design/DESIGN.md`, ask the owner the same V1 (two or three REAL
+    products or sites this should feel like, and what specifically to take
+    from each) and V2 (three tone words, plus one anti-reference: "never let
+    it look like ...") questions `init-project` asks, in one batched message,
+    and substitute `{{DESIGN_REFERENCES}}` / `{{DESIGN_TONE}}` /
+    `{{DESIGN_ANTI_REFERENCE}}` with the answers. If the owner declines,
+    substitute `TODO(interview-skipped)` for all three -- never leave a raw
+-   `{{...}}` on disk. Rewrite `.claude/agents/implementer.md` /
+-   `code-reviewer.md` / `security-reviewer.md` to the v3 versions
+-   (project-local edits are shown side-by-side, never silently lost).
++   `{{...}}` on disk. ONLY when `claude-code` is in the roster (recovered
++   above): rewrite `.claude/agents/implementer.md` / `code-reviewer.md` /
++   `security-reviewer.md` to the v3 versions (project-local edits are shown
++   side-by-side, never silently lost), and, for a frontend project,
++   additionally write `.claude/agents/design-reviewer.md`. A non-Claude
++   roster gets the skills and docs above but no `.claude/agents/` tree --
++   report that as expected, not a gap.
+ 3. **features.json skeleton.** Build `docs/features.json` from the project's
+-   `docs/backlog.md` rows + `docs/requirements.md` REQ-ACs: Shipped rows ->
+-   `status: done` with `tests: []` **flagged for curation** (the check fails
+-   on done-without-tests, so the report's top action item is mapping tests or
+-   temporarily marking rows `in-progress`); Active/queued rows -> `todo`.
+-   Tier: rows default to `tier: "standard"`; rows whose text matches the
+-   `security-review` skill's trigger get `"high-risk"`; the report tells the
+-   owner to adjust. Ordering: user-visible journey features first.
++   `docs/backlog.md` rows + `docs/requirements.md` REQ-ACs. Every row needs
++   all eight `features_check.py`-required keys, never a partial entry: `id`
++   (next free `F000`-`F999`), `title` and `intent` from the backlog row's own
++   text, `serves` naming the vision-level reason (differentiator or journey
++   step) the row exists for, `acceptance` as a non-empty list of non-empty
++   strings sourced from the row's matching `docs/requirements.md` REQ-ACs
++   (or, when no REQ-AC maps to it, the backlog row's own description turned
++   into one acceptance sentence -- never an empty list). Then: Shipped rows
++   -> `status: "in-progress"` with `tests: []` and `notes: "shipped in v2;
++   map tests to promote to done"` **flagged for curation** (the report's top
++   action item is mapping tests and promoting each row to `done`); Active/
++   queued rows -> `todo`. Tier: rows default to `tier: "standard"`; rows
++   whose text matches the `security-review` skill's trigger get
++   `"high-risk"`; the report tells the owner to adjust. Ordering:
++   user-visible journey features first.
+ 4. **Mockup rescue.** Move any discovered mockups (`.local/mockups/*.html`,
+    files the backlog links) into `docs/design/mockups/` with feature-id names;
+    list claude.ai artifact URLs found in docs for the owner to export.
+ 5. **Retire.** Delete `.claude/hooks/slice-audit.sh`, the settings.json entry
+    for it, the qa.yml `ship-audit` job (replace with the `features-check`
+    job), `.claude/agents/tech-debt.md`, `.claude/agents/test-spec-writer.md`.
+    Leave `docs/ships/`, `docs/designs/`, `docs/current-task/`, `docs/backlog.md`,
+    `docs/requirements.md`, `docs/structure.txt` ON DISK (history has value) but
+    report them as retired -- the owner deletes when ready.
+-6. **Report** everything: grafts, curation debts (test mapping!), retired
+-   files, and that the memo/ship ceremony no longer applies. Then go straight
+-   to **Phase 4** to apply the change set -- a migration does not also run
+-   A-C-E in the same pass; a later upgrade run (now on v3.0.0+) uses A-C-E as
+-   normal.
++6. **Reconcile the rest in the same pass.** The wholesale swap and retirements
++   above only replace what does not correspond between v2 and v3
++   (`AGENTS.md`, the subagents, the feature list, the retired docs). Once
++   they are done the project IS v3-shaped, so also run **Phase 3-A** (copy
++   in new always-on template files -- e.g. `docs/deviations.md`,
++   `docs/plans/README.md` if step 2 has not already added them, and any
++   other file this release added that step 2 did not enumerate) and
++   **Phase 3-C** (the language tooling delta -- e.g. the TypeScript
++   eslint-family bump, the Go `-race` gate step) against the fetched v3
++   template, in this same migration pass. Only **Phase 3-B** (block-by-block
++   `AGENTS.md`/subagent grafting -- superseded by step 1's wholesale
++   constitution swap, which already carries the full v3 block set) and
++   **Phase 3-E** (the discovery mini-interview -- superseded by step 2's own
++   design V1/V2 questions and the curation report) stay out of this pass.
++7. **Report** everything: grafts, curation debts (test mapping!), retired
++   files, the A/C reconciliation just applied, and that the memo/ship
++   ceremony no longer applies. Then go to **Phase 4** to apply the combined
++   change set; a later upgrade run (now on v3.0.0+) uses A-B-C-E as normal.
+ 
+ ### Phase 4: One report, one approval, then verify and stamp
+ 
+ 1. Compute the ENTIRE change set first (3-A copies, 3-B grafts, 3-C tooling
+    deltas, 3-E answers -- or, for a project below v3.0.0 that accepted the
+    3-D migration, that migration's own change set). Present ONE report with
+    five buckets: **copy verbatim**, **graft (new blocks, by name)**,
+    **substitute (with the values)**, **needs your answer (the mini-interview
+    questions)**, **superseded (flagged for removal)**. Collect the
+    mini-interview answers and a single yes.
+ 2. Apply everything. `chmod +x` new scripts/hooks.
+ 3. Ensure `docs/plans/`, `docs/probes/`, and -- for frontend projects --
+    `docs/design/mockups/` exist (copy their READMEs from the template if
+    absent) -- they are the gate's working directories.
+-4. Run the project's quality gate and confirm it still passes; fix any breakage
+-   the upgrade introduced before finishing.
+-5. **Only after the gate passes,** write the new version to
+-   `.claude/.template-version`.
++4. Run BOTH the project's language quality gate AND `python3
++   scripts/features_check.py`; fix any breakage the upgrade introduced (a
++   3-D migration commonly needs this -- shipped rows land `in-progress`, not
++   `done`, precisely so this check is green on the first post-migration run)
++   before finishing.
++5. **Only after BOTH the gate and `features_check.py` pass,** write the new
++   version to `.claude/.template-version`.
+ 6. Close with: "Upgraded <from> -> <to> in one run. Review the diff and commit
+    on your branch. Nothing was overwritten without being shown first."
+ 
+ ---
+ 
+ ## Failure modes
+ 
+ - **Looks empty / uninitialized.** Stop. Tell the user to run `/init-project`.
+ - **`degit` fails (no network/npx).** Stop with the cause; the upgrade needs the current template to reconcile against.
+ - **The project's `AGENTS.md` was heavily rewritten.** Do not force the merge. Show the missing blocks and let the user place them; surface, don't overwrite.
+
+--- Changes ---
+
+.github/fixtures/golden/go-frontend-spa.json
+  @@ -0,0 +1,86 @@
+  +{
+  +  "schema": 1,
+  +  "date": "2026-07-26",
+  +  "agents": [{"name": "claude-code", "status": "installed"}],
+  +  "project": {
+  +    "name": "Pillarwatch",
+  +    "slug": "pillarwatch",
+  +    "goal": "A self-hosted status page that shows the up/down history of a small team's own services, no third-party dependency.",
+  +    "primary_user": "An on-call engineer at a small team who wants an honest status page without paying for or trusting a SaaS status vendor.",
+  +    "core_problem": "Small teams either run no status page (users find out about outages from support tickets) or hand uptime data to a third-party SaaS that is one more thing to trust and pay for.",
+  +    "core_journey": "1. The team registers a service with a health-check URL.\n2. Pillarwatch polls it on an interval and records up/down transitions.\n3. A public page renders current status and a 90-day history bar per service.",
+  +    "success_measure": "A service outage shows up on the public page within one poll interval of the health check failing, with no manual step.",
+  +    "success_metrics": "- time from real outage to page reflecting it -- under one poll interval\n- self-hosted install time -- under 10 minutes on a single binary",
+  +    "riskiest_assumption": "A simple interval poll plus a small state machine (up/down/degraded) is enough signal for a small team, without needing synthetic transactions or multi-region checks.",
+  +    "req_ac_list": "- [ ] **REQ-AC1:** A registered service that fails its health check flips to \"down\" and the public page reflects it within one poll interval.\n- [ ] **REQ-AC2:** A service that recovers flips back to \"up\" and the incident is closed with a duration.\n- [ ] **REQ-AC3:** The public page renders a 90-day history bar per service from stored transitions.",
+  +    "non_goals": "- No multi-region or synthetic-transaction checks.\n- No paging/alerting integrations in the first cut -- the page itself is the notification.",
+  +    "other_users": "- End users of the team's product, checking whether an outage is known (read-only, no login).",
+  +    "constraint_time": "One weekend project; first usable cut in a few evenings.",
+  +    "constraint_cost": "Must run as a single small binary on a $5/month VM; no managed database requirement.",
+  +    "constraint_data": "Health-check results and incident history only; no user accounts or personal data collected from the public page.",
+  +    "first_milestone": "2026-08-09",
+  +    "deployment_target": "A single Linux VM, reverse-proxied behind the team's existing domain.",
+  +    "scale_expectations": "Under 50 registered services, polled every 30-60 seconds; a handful of concurrent public-page viewers during an incident.",
+  +    "integrations": "- Outbound HTTP health checks against each registered service's URL.\n- Optional outbound webhook on status change (stretch goal, not in the first cut).",
+  +    "in_scope_list": "- Service registration with a health-check URL and poll interval.\n- Poller with an up/down/degraded state machine and transition history.\n- Public status page with current status and a 90-day history bar per service.",
+  +    "pain_point": "no honest status page without paying for or trusting a SaaS vendor",
+  +    "product_category": "self-hosted status page",
+  +    "current_alternative": "a paid third-party status-page SaaS, or no status page at all",
+  +    "key_benefit": "an honest, self-hosted status page with no third party in the loop",
+  +    "key_differentiator": "single-binary self-hosted install instead of a hosted SaaS subscription",
+  +    "positive_reference": {
+  +      "ref": "the single-binary, no-frills operational feel of Uptime Kuma",
+  +      "location": "https://github.com/louislam/uptime-kuma"
+  +    },
+  +    "negative_reference": null
+  +  },
+  +  "stack": {
+  +    "language": "go",
+  +    "has_frontend": "yes-minimal",
+  +    "backend_framework": "stdlib net/http",
+  +    "ai_features": [],
+  +    "vector_db": "none",
+  +    "llm_provider": "none",
+  +    "embeddings_model": "none",
+  +    "database": "SQLite",
+  +    "uses_devcontainer": "no"
+  +  },
+  +  "security": {
+  +    "reads_untrusted": "no",
+  +    "holds_private_data": "no",
+  +    "acts_outward": "yes"
+  +  },
+  +  "opt_ins": {
+  +    "explanations": "no",
+  +    "seed_gotchas": "no",
+  +    "mem0": "no",
+  +    "codex_reviewer": "no"
+  +  },
+  +  "design": {
+  +    "references": "- Uptime Kuma -- calm, information-dense status list that stays legible mid-incident\n- Basecamp's status page -- plain, confident typography with zero marketing chrome",
+  +    "tone": "plain, calm, trustworthy",
+  +    "anti_reference": "a marketing-site status page: hero banner, gradient background, animated illustrations distracting from the actual up/down signal"
+  +  },
+  +  "features": [
+  +    {
+  +      "id": "F001",
+  +      "title": "Register a service and start polling it",
+  +      "intent": "A team can register a service with a health-check URL and poll interval, and the poller starts checking it.",
+  +      "serves": "journey step 1: the team registers a service with a health-check URL",
+  +      "acceptance": ["A newly registered service is polled at its configured interval and its first result is recorded."],
+  +      "tests": [],
+  +      "status": "todo",
+  +      "tier": "standard"
+  +    },
+  +    {
+  +      "id": "F002",
+  +      "title": "Public status page shows current status and history",
+  +      "intent": "The public page renders each service's current status and a 90-day history bar from stored transitions.",
+  +      "serves": "REQ-AC3: the public page renders a 90-day history bar per service from stored transitions",
+  +      "acceptance": ["The public page shows every registered service's current status and a 90-day history bar built from its recorded transitions."],
+  +      "tests": [],
+  +      "status": "todo",
+  +      "tier": "standard"
+  +    }
+  +  ]
+  +}
+  +86 -0
+
+AGENTS.md
+  @@ -11,38 +11,38 @@ This file is the constitution for working *on* `ForgeWorks`. It is for contribut
+  -- `.github/fixtures/golden/` -- eight answers fixtures spanning the conditional matrix (AI/no-AI, devcontainer, opt-ins, hostile values, non-Claude roster) plus committed expected trees under `expected/<name>/`. The CI `golden-fixtures` job (`.github/scripts/golden_test.py`) re-renders each fixture and compares byte-for-byte; `--update` regenerates the trees after an intentional template change.
+  +- `.github/fixtures/golden/` -- nine answers fixtures spanning the conditional matrix (AI/no-AI, devcontainer, opt-ins, hostile values, non-Claude roster, a frontend profile with no shipped tokens file) plus committed expected trees under `expected/<name>/`. The CI `golden-fixtures` job (`.github/scripts/golden_test.py`) re-renders each fixture and compares byte-for-byte; `--update` regenerates the trees after an intentional template change.
+   - `upgrade-project/SKILL.md` -- the brownfield counterpart to `init-project`. Runs in an EXISTING generated project and reconciles it to the current template (copies missing always-on files, grafts new `AGENTS.md` rule blocks and subagent sections without overwriting, applies the tooling delta, reports the rest). `bootstrap/install.sh` installs this skill instead of `init-project` when it detects an already-generated project.
+   - `VERSION` -- the template's version (e.g. `2.3.0`). The bootstrap stamps it into a generated project at `.claude/.template-version` (`render.py` writes the fallback if the stamp is missing); `upgrade-project` reads it for the from->to report.
+   
+   The split is sharp: `bootstrap/` is dumb and stack-blind. `init-project/SKILL.md` is the greenfield interviewer and `render.py` its deterministic engine; `upgrade-project/SKILL.md` is the brownfield brain. `templates/core/` + `templates/profiles/` + `templates/conditional/` are the body.
+   </repo-architecture>
+   
+   <editing-the-template>
+   When editing files in `init-project/templates/`:
+   
+   - **`core/` is language-free.** Examples, conventions, and rule wording in `templates/core/` (especially `core/AGENTS.md`) must work for any language. If you write "Pydantic", "npm", "cargo", or any toolchain name in `core/` outside the conditional `<ai-discipline>` block, it is leakage -- lift it to the language's `<language-profiles>` YAML in `SKILL.md`, into `templates/profiles/<lang>/`, or to a conditional block. Anything language-specific (manifest, scripts, scaffold, dev container, `.gitignore`, pre-commit) lives in `templates/profiles/<lang>/`, never in `core/`.
+   - **AI-specific rules.** Live in the `<ai-discipline>` block (`templates/conditional/ai-discipline.md`), rendered only when at least one AI feature is selected (B4). Do NOT add AI examples to `<architecture-discipline>`.
+   - **Placeholders.** Use `{{UPPER_SNAKE}}` for substituted values. Every placeholder must be listed in `SKILL.md`'s placeholder table with its source (a Q number or a derived rule) AND implemented in `render.py`'s mapping (an unknown placeholder is a render error). After any template change, regenerate the golden expected trees (`golden_test.py --update`) and commit them with it -- the golden job diffs them byte-for-byte.
+   - **User-fillable slots.** Use literal text like `*<target user>*` or `TODO`. Do NOT use `{{...}}` for slots the user is meant to fill after generation; the renderer fails closed on any unresolved `{{...}}`.
+   - **Conditional files.** Files that should NOT ship when an opt-in is `no` or the project has no frontend (`docs/explanations/`, `docs/memory.md`, `docs/design/`, `tokens.css`, `.claude/agents/design-reviewer.md`, `.claude/skills/design-loop/`) live in the template folder unconditionally; `render.py` skips them at render time (see `skip_file`). New conditional files follow the same pattern: add the skip rule in `render.py` and cover both states in the golden fixtures.
+   - **Roster-gated files.** When `claude-code` is not in the B13 agent roster, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the `CLAUDE.md` symlink are not generated -- those are Claude Code-specific mechanics. `.claude/skills/` ships regardless of roster: it holds plain-markdown procedures (`slice`, `security-review`, `tech-debt`, `select-agents`, and -- frontend only -- `design-loop`) that any driving agent can read, and it is where load-bearing content (e.g. the security-review trigger) now lives, so it cannot be roster-gated. `templates/conditional/agents/no-claude-note.md` documents the split for the generated project; keep it in sync if the split changes.
+   - **Conditional block texts.** The sometimes-rendered block texts live in `templates/conditional/`; `render.py` reads them and `SKILL.md` Phase 4 points at them. Never re-inline them into SKILL.md.
+  -- **Conditional content inside always-on files.** Some always-on files carry AI-only sections fenced with HTML-comment markers; `render.py` keeps or strips them by B4 (renderer rule 4: markers follow the `<!-- AI-<NAME>-START/END -->` shape and are handled generically). Current fences: `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`. A second family, `<!-- CC-<NAME>-START/END -->`, is keyed on `claude-code` being in the B13 roster and implemented in the renderer, but has zero instances in the current templates. Fence any future sometimes-on content the same way (the renderer picks each family up automatically) and register the new marker in `upgrade-project/SKILL.md` Phase 3-A.
+  +- **Conditional content inside always-on files.** Some always-on files carry AI-only sections fenced with HTML-comment markers; `render.py` keeps or strips them by B4 (renderer rule 4: markers follow the `<!-- AI-<NAME>-START/END -->` shape and are handled generically). Current fences: `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`. A second family, `<!-- CC-<NAME>-START/END -->`, is keyed on `claude-code` being in the B13 roster and implemented in the renderer. Current fence: `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md` (the hook is a Claude Code enforcement mechanic; other rosters do not get it). Fence any future sometimes-on content the same way (the renderer picks each family up automatically) and register the new marker in `upgrade-project/SKILL.md` Phase 3-A.
+   - **FW-BLOCK markers.** Every rule block in `templates/core/AGENTS.md` is wrapped in `<!-- FW-BLOCK: <name> vX.Y.Z -->` ... `<!-- /FW-BLOCK: <name> -->` markers. Today's seven: `project`, `commands`, `etiquette`, `hard-rules`, `risk-tiers`, `learning`, `roster` -- plus the conditional `<ai-discipline>` block and the mem0 memory block, which carry their own markers. They ship into generated projects and are what makes `upgrade-project`'s block grafting deterministic (absent -> insert; older version -> show side-by-side; current -> skip). When you edit a block's content, bump the version in its opening marker to the release that ships the change. New blocks get markers from day one.
+   - **Security files are always-on and stack-neutral.** `docs/SECURITY.md`, `.claude/settings.json`, `.claude/hooks/deps-guard.sh`, and `.claude/agents/security-reviewer.md` ship unchanged for every language. Keep their wording stack-agnostic; the LLM-specific security rules live only in the fenced sections and the conditional `<ai-discipline>` block.
+   - **Line caps.** The ~100-line target / 200-line hard cap applies to **generated project files** -- everything under `templates/core/` and `templates/profiles/` (it becomes someone else's code). It does NOT apply to the generator/meta files: `init-project/SKILL.md`, `upgrade-project/SKILL.md`, and this repo's `AGENTS.md` are reference documents (interview + emission logic) and are necessarily longer. The core AGENTS.md constitution is a reference document like the SKILLs and may exceed the cap.
+   </editing-the-template>
+   
+   <editing-the-skill>
+   `init-project/SKILL.md` has five phases (0 confirm, 1 install skills, 2 interview, 3 confirm plan, 4 write answers file + run render.py, 4.5 install deps, 5 verify). Phase 4 is executed by `render.py`, not by the agent; SKILL.md's Phase 4 is the answers-file schema plus a behavior table documenting what the renderer does. When editing:
+   
+   - **Interview questions.** Numbered A1-A10 (product discovery) + V1-V2 (visual references, asked only when the project has a frontend) + B1-B13 (stack and opt-ins) today; B8 security profile, B12 Codex reviewer, B13 agent roster. The answers file carries top-level `features` (the `docs/features.json` source) and `design` (mockup/tone references) sections alongside the flat Q&A. Adding a question means adding it to (a) Phase 2 interview, (b) Phase 3 summary, (c) the placeholder table, (d) the Phase 4 answers-file schema (+ its example), and (e) `render.py` (validation + mapping/rule) if it affects the generated tree -- then regenerate the golden expected trees.
+   - **Conditional emission.** Every conditional rule is implemented in `render.py` and documented in the Phase 4 behavior table. No hidden conditionals, and no rule that exists only in prose -- if the renderer does not implement it, it does not happen.
+  +2 -2
+
+README.md
+  @@ -64,17 +64,17 @@ VERSION           stamped into generated projects
+  -- **Generation is deterministic.** The agent interviews you and writes an answers file; a stdlib-Python renderer (`init-project/render.py`) turns it into the project tree — same answers, same bytes, locked by golden-fixture CI (eight answer sets, byte-for-byte against committed expected trees, hostile values included). Only the interview itself and dependency installs remain agent work.
+  +- **Generation is deterministic.** The agent interviews you and writes an answers file; a stdlib-Python renderer (`init-project/render.py`) turns it into the project tree — same answers, same bytes, locked by golden-fixture CI (nine answer sets, byte-for-byte against committed expected trees, hostile values included). Only the interview itself and dependency installs remain agent work.
+   - **The supply-chain guard is best-effort.** The `deps-guard` hook reduces risk; it is not a sandbox. The real controls are lockfile review and CI scanning.
+   - **Profiles:** Python, TypeScript, Go, and Rust are each verified green in CI on the merged core+profile tree, quality gate and e2e runner included.
+   
+   ## License
+   
+   MIT. Use it, change it.
+  +1 -1
+
+docs/ROADMAP.md
+  @@ -14,21 +14,21 @@ tool does mechanically versus what is still future work.
+  -  (`.github/scripts/golden_test.py`) compares eight rendered answer sets —
+  +  (`.github/scripts/golden_test.py`) compares nine rendered answer sets —
+     including a hostile-values fixture — byte-for-byte against committed
+     expected trees. Only the interview itself and the package-manager dependency
+     steps remain agent-executed.
+   - **Portability.** The rules and docs (`AGENTS.md`, symlinked to `CLAUDE.md`) are
+     the cross-tool standard and travel to any agent. The deep orchestration and
+     local gates (subagents, hooks, MCP) run in Claude Code.
+   
+   ## Known limitations / roadmap
+   
+   - **Supply-chain pinning is largely done (v2.4.0).** GitHub Actions are
+  +1 -1
+
+init-project/SKILL.md
+  @@ -64,21 +64,21 @@ Required skills (must be installed): `tdd`, `grill-me`, `to-prd`, `caveman`, `wr
+  -Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (it is deleted after Phase 5 verification).
+  +Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (deleted partway through Phase 5, before the quality-gate run -- see Phase 5).
+   
+   The interview has two parts, in this order: **Part A -- product discovery** (the
+   project itself; this is where surprises are killed) and **Part B -- stack and
+   options** (machinery). Rule zero: **nothing this interview can elicit ships as a
+   TODO in the generated docs.** When an answer is vague, grill it: "How would you
+   verify that?", "What breaks first?", "Give me a real example input and output."
+   
+   **Part A -- product discovery**
+   
+   #### A1. Project name and one-sentence goal
+  @@ -490,27 +490,29 @@ fixtures in the template repo CI:
+  -| 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. The mechanism ships in `render.py` ready for reuse; no template file currently carries a `<!-- CC-...-START/END -->` fence -- the v2 doc that carried the only instance was retired in the v3 redesign. |
+  +| 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. Current instance: `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section (the hook is a Claude Code enforcement mechanic, so other rosters do not get the bullet). |
+   | 19 | Writes `docs/features.json` from the answers' `features` list (schema 1). |
+   | 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/), the profile tokens.css, `@design-reviewer`, and the `design-loop` skill; `has_frontend: no` skips all of them. |
+   | 21 | mem0 memory block inserts after `<!-- /FW-BLOCK: learning -->`. |
+   
+  -Keep `docs/_init-answers.json` until Phase 5 verification passes, then delete it
+  -(`rm docs/_init-answers.json`) -- its content lives on in the rendered docs.
+  +Keep `docs/_init-answers.json` until Phase 5's placeholder grep and
+  +`features_check.py` pass, then delete it (`rm docs/_init-answers.json`)
+  +BEFORE running the quality gate -- it is transient renderer working state,
+  +not project content, and its content lives on in the rendered docs.
+   
+   ### Phase 4.5: Install dependencies
+   
+   Dependency work is the one part of generation that stays with the agent: it
+   runs environment-dependent package-manager commands, so it cannot be a
+   deterministic file render. Two steps.
+   
+   **First, capability dependencies (B3-B6).** The rendered manifest ships a
+   minimal core only; append ONLY the dependencies the answers call for, using the
+   chosen profile's `add_dep_command` (prefix Python's `uv add` with
+  @@ -591,23 +593,27 @@ without Claude Code.
+  -Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+  +Now delete the renderer input, BEFORE running the quality gate: `rm
+  +docs/_init-answers.json` (its content lives on in the rendered docs). It is
+  +transient working state, not project content -- a project language's gate
+  +(e.g. TypeScript's prettier check) has no reason to see it, and leaving it
+  +on disk into the gate run is a bug, not a convenience.
+   
+  -Once verification passes, delete the renderer input: `rm docs/_init-answers.json` (its content lives on in the rendered docs).
+  +Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+   
+   Report what was generated, then hand off:
+   
+   > "Bootstrap complete. Your project is ready. Next steps:
+   > 1. {{If dev container}}: Reopen in dev container, then run `{{INSTALL_COMMAND}}` inside. {{Else}}: Deps are already installed; `{{QA_COMMAND}}` is green on the fresh scaffold. Use `{{FIX_COMMAND}}` to auto-format locally.
+   > 2. Initialize git: `git add . && git commit -m 'chore: bootstrap project'`. Push to enable CI.
+   > 3. Restart Claude Code so `.mcp.json` (Context7) registers.
+   > 4. Start your first task -- run the `slice` skill against the first entry in `docs/features.json`, replacing `src/example.py` and `tests/test_example.py` with your first slice."
+   
+   Then, if the repo has a GitHub remote and `gh` is available, offer (do not run unasked) to enable branch protection -- the generated CI is merge-blocking only once the repo requires its checks:
+  @@ -682,21 +688,21 @@ Any new placeholder must be added here, to the answers schema (or
+  -Rows marked **answers-file only (no template consumer in v3.0.0)** above are still asked, still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRODUCT_VISION.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all eight golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
+  +Rows marked **answers-file only (no template consumer in v3.0.0)** above are still asked, still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRODUCT_VISION.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all nine golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
+   
+   ### Language-derived placeholders (from the profile)
+   
+   The renderer reads these from `templates/profiles/<lang>/profile.json` (the
+   machine-readable copy of the YAML blocks below -- keep the two in sync; the
+   golden-fixture CI cross-checks the load-bearing values).
+   
+   | Placeholder | Filled from language profile |
+   |---|---|
+   | `{{LANGUAGE_VERSION}}` | profile.language_version |
+  +13 -7
+
+init-project/render_schema.py
+  @@ -10,20 +10,25 @@ the offending field.
+  +STRUCTURAL_TAG_RE = re.compile(
+  +    r"</?(project|commands|etiquette|hard-rules|risk-tiers|learning|roster"
+  +    r"|ai-discipline|memory)>",
+  +    re.IGNORECASE,
+  +)
+   
+   LANGUAGES = ("python", "typescript", "go", "rust")
+   FRONTEND_CHOICES = ("yes-spa", "yes-minimal", "no")
+   AI_FEATURE_CHOICES = ("rag", "agents", "evals", "streaming")
+   AGENT_CHOICES = ("claude-code", "codex", "antigravity", "cursor", "other")
+   AGENT_STATUSES = ("installed", "planned")
+   
+   # Answers-file layout: section -> required keys. All free-text unless
+   # validate_answers() handles the key specially (enums, yes/no, references).
+   PROJECT_KEYS = (
+  @@ -41,20 +46,23 @@ STACK_KEYS = (
+  +TOP_LEVEL_KEYS = ("schema", "date", "agents", "project", "stack", "security",
+  +                  "opt_ins", "features", "design")
+  +SCHEMA_VERSION = 1
+   
+   PROFILE_SCALARS = (
+       "display_name", "language_version", "package_manager", "manifest_file",
+       "install_command", "add_dep_command", "qa_command", "fix_command",
+       "e2e_command", "e2e_browser_install", "test_runner", "test_command",
+       "lint_tool", "lint_command", "format_tool", "format_command", "type_tool",
+       "type_command", "precommit_install_command",
+   )
+   PROFILE_LISTS = ("ci_setup_steps", "precommit_hooks", "library_docs_urls")
+   # notes key in profile.json -> placeholder name (singular/plural is irregular).
+  @@ -79,20 +87,22 @@ class RenderError(Exception):
+  +    if STRUCTURAL_TAG_RE.search(cleaned):
+  +        errors.append(f"{where}: must not contain AGENTS.md structural tags")
+       if PLACEHOLDER_RE.search(cleaned):
+           errors.append(f"{where}: contains text shaped like a template "
+                         "placeholder ({{UPPER_SNAKE}}); not allowed in answers")
+   
+   
+   def _check_yes_no(errors: list[str], where: str, value: object) -> None:
+       if value not in ("yes", "no"):
+           errors.append(f'{where}: must be exactly "yes" or "no" (got {value!r})')
+   
+   
+  @@ -115,27 +125,28 @@ def _check_features(errors: list[str], value: object) -> None:
+  -        fid = ft.get("id")
+  -        if isinstance(fid, str) and not FEATURE_ID_RE.match(fid):
+  -            errors.append(f"{where}.id: must match F000-F999 (got {fid!r})")
+  -        if isinstance(fid, str):
+  -            if fid in seen:
+  +        if "id" in ft:
+  +            fid = ft["id"]
+  +            if not isinstance(fid, str) or not FEATURE_ID_RE.match(fid):
+  +                errors.append(f"{where}.id: must match F000-F999 (got {fid!r})")
+  +            elif fid in seen:
+                   errors.append(f"{where}.id: duplicate {fid}")
+  -            seen.add(fid)
+  +            else:
+  +                seen.add(fid)
+           for key in ("title", "intent", "serves"):
+               if key in ft:
+                   _check_text(errors, f"{where}.{key}", ft[key])
+           if "status" in ft and ft["status"] not in FEATURE_STATUSES:
+               errors.append(f"{where}.status: must be one of {FEATURE_STATUSES}")
+           if "tier" in ft and ft["tier"] not in FEATURE_TIERS:
+               errors.append(f"{where}.tier: must be one of {FEATURE_TIERS}")
+           acc = ft.get("acceptance")
+           if "acceptance" in ft and (not isinstance(acc, list) or not acc
+                                      or any(not isinstance(a, str) or not a.strip()
+  @@ -158,20 +169,26 @@ def _check_design(errors: list[str], value: object, has_frontend: str) -> None:
+  +    if ans.get("schema") != SCHEMA_VERSION:
+  +        errors.append(f"schema: must be exactly {SCHEMA_VERSION} "
+  +                      f"(got {ans.get('schema')!r})")
+  +    unknown_top = set(ans) - set(TOP_LEVEL_KEYS)
+  +    if unknown_top:
+  +        errors.append(f"unknown top-level key(s): {sorted(unknown_top)}")
+       for section, keys in (("project", PROJECT_KEYS), ("stack", STACK_KEYS),
+                             ("security", SECURITY_KEYS), ("opt_ins", OPT_IN_KEYS)):
+           block = ans.get(section)
+           if not isinstance(block, dict):
+               errors.append(f'missing or invalid section "{section}"')
+               continue
+           for key in keys:
+               if key not in block:
+                   errors.append(f'{section}.{key}: missing (use "TODO(interview-skipped)" '
+                                 "only if the user explicitly refused the question)")
+  +23 -6
+
+init-project/templates/core/.claude/skills/design-loop/SKILL.md
+  @@ -21,19 +21,20 @@ prevent the default look; do not start from a blank aesthetic.
+  -   dispatch `@design-reviewer` for the fresh-context grade. Iterate until it
+  -   reports MATCHES, or the owner accepts named deltas (log them in
+  -   `docs/deviations.md`).
+  +   dispatch `@design-reviewer` for the fresh-context grade (or, when
+  +   subagents aren't available in your harness, run the equivalent
+  +   independent pass in a fresh context). Iterate until it reports MATCHES,
+  +   or the owner accepts named deltas (log them in `docs/deviations.md`).
+   
+   ## Existing surface
+   
+   Re-read its mockup before changing it. If the change is big enough to alter
+   the mockup, update the mockup in the same branch -- mockup and screen move
+   together or the drift compounds.
+  +4 -3
+
+init-project/templates/core/.claude/skills/security-review/SKILL.md
+  @@ -11,19 +11,20 @@ description: >-
+  -   focus" inside the code review does not substitute).
+  +   focus" inside the code review does not substitute) -- or, when subagents
+  +   aren't available in your harness, run the equivalent independent pass in
+  +   a fresh context.
+   2. Apply the `docs/SECURITY.md` delta for the new surface, or record in the
+      review notes why none is needed. A stale threat model is worse than none.
+   3. Findings become failing security tests before fixes -- the gap stays closed
+      in CI. Prove controls on the real enforcement path with the live path's
+      flags, never via a debug/introspection endpoint.
+   
+  -Matching work is high-risk tier (`AGENTS.md` `<risk-tiers>`) unless the touch
+  -is trivially contained -- when in doubt, it is not.
+  +Matching work is high-risk tier (`AGENTS.md` `<risk-tiers>`), full stop.
+  +4 -3
+
+init-project/templates/core/.claude/skills/slice/SKILL.md
+  @@ -4,21 +4,25 @@ description: >-
+  -Read the feature's entry in `docs/features.json` (id, intent, `serves:`,
+  +`docs/features.json` entries are for user-observable features and meaningful
+  +behavior changes. Light-tier chores (typos, copy tweaks, pure refactors, small
+  +fixes with no new behavior) need no entry -- quality gate green is their
+  +whole lifecycle; skip straight to step 3's light procedure. Otherwise, read
+  +the feature's entry in `docs/features.json` (id, intent, `serves:`,
+   acceptance, tier). If the work has no entry yet, add one first (next free id,
+   `status: todo`, `tests: []`) -- the array is priority-ordered, and user-visible
+   journey features lead unless the owner reorders; hardening and infra queue
+   behind the first shippable surface. The `serves:` line is the tether to
+   `docs/PRODUCT_VISION.md` -- if you cannot write one, question the feature.
+   
+   ## 2. Pick the tier
+   
+   Judge against the table in `AGENTS.md` `<risk-tiers>`. When genuinely unsure
+   between standard and high-risk, ask the owner -- that is cheaper than either
+  @@ -35,23 +39,25 @@ mistake.
+  -4. Review: dispatch `@code-reviewer` (correctness + requirements only). If the
+  -   feature is user-visible, dispatch `@design-reviewer` after green. If the
+  -   work matches the `security-review` skill's trigger, run that too.
+  +4. Review: dispatch `@code-reviewer` (correctness + requirements only; when
+  +   subagents aren't available in your harness, run the equivalent
+  +   independent pass in a fresh context instead). If the feature is
+  +   user-visible, dispatch `@design-reviewer` after green. If the work
+  +   matches the `security-review` skill's trigger, run that too.
+   5. Set `status: done` only when mapped tests pass and reviews are resolved;
+      run `python3 scripts/features_check.py` and the quality gate.
+   
+   **high-risk** -- everything in standard, plus: write the plan to
+   `docs/plans/<feature-id>.md` and get the owner's approval BEFORE implementation
+   (use `grill-me` on the plan if installed); `@security-reviewer` runs; the full
+   pyramid (unit + functional + e2e + security tests) is named at Red.
+   
+   ## 4. Architecture defaults (all tiers)
+   
+  +10 -4
+
+init-project/templates/core/AGENTS.md
+  @@ -42,40 +42,41 @@ Few and absolute -- each holds with no exceptions:
+  -| light | copy, styling tweaks, small fixes, internal refactors | build it; quality gate green |
+  +| light | copy, styling tweaks, small fixes, internal refactors | build it; quality gate green (no `features.json` entry needed) |
+   | standard | a new feature or behavior change | short plan, tests first (Red -> Green), scoped code review; design review if user-visible |
+   | high-risk | auth, payments, security-trigger matches, architecture changes | user-approved plan in `docs/plans/` + security review + full test pyramid |
+   
+   Human approval is needed in exactly two places: the mockup pick for a NEW user-visible surface, and high-risk plans. Everything else proceeds -- deviations get the conservative choice and a `docs/deviations.md` line, and the owner reviews diffs.
+   </risk-tiers>
+   <!-- /FW-BLOCK: risk-tiers -->
+   
+   <!-- FW-BLOCK: learning v3.0.0 -->
+   <learning>
+   - When reality surprises you (an API behaves differently than documented, a gate passes but the feature is dead), add the lesson to `docs/gotchas.md`.
+   - When implementation must deviate from the plan or mockup, take the conservative option, log it in `docs/deviations.md`, and keep going.
+   </learning>
+   <!-- /FW-BLOCK: learning -->
+   
+   <!-- FW-BLOCK: roster v3.0.0 -->
+   <roster>
+   Skills (on demand): `slice` (per-feature workflow, tiered), `design-loop` (mockup -> build -> screenshot-verify; frontend projects), `security-review` (the trigger definition + procedure), `tech-debt` (on-demand sweep), `select-agents` (change the agent roster). Upstream: `tdd` (Red -> Green -> Refactor), `grill-me` (plan interrogation for high-risk work).
+   
+   Subagents: `@implementer` (green-phase work in an isolated context), `@code-reviewer` (correctness + requirements review; its Stop hook re-runs the quality gate){{CODEX_ROSTER_NOTE}}, `@security-reviewer` (red-team pass on trigger), `@design-reviewer` (grades shipped screens against the approved mockup + rubric; frontend projects), `@utility` (mechanical chores). Parallel agents only for read-only work; one writer at a time.
+  +Subagents exist when Claude Code drives. On other rosters, run the same reviews as independent fresh-context passes -- the skills above define what each pass checks.
+   </roster>
+   <!-- /FW-BLOCK: roster -->
+   {{AI_DISCIPLINE_BLOCK}}
+   <!--
+   Project: {{PROJECT_NAME}}
+   Goal: {{PROJECT_GOAL}}
+   Primary user: {{PRIMARY_USER}}
+   Language: {{LANGUAGE}}
+   Frontend: {{HAS_FRONTEND}}
+   AI features: {{AI_FEATURES}}
+  +2 -1
+
+init-project/templates/core/docs/SECURITY.md
+  @@ -32,22 +32,23 @@ These apply to every project regardless of stack or subject.
+  -   lookalike); prefer dependencies more than ~a week old. Enforced by the
+  -   `deps-guard` hook, not by trust.
+  +   lookalike); prefer dependencies more than ~a week old. Enforced by committed
+  +   lockfiles, reviewed updates, and CI dependency scanning on every roster --
+  +   plus the `deps-guard` PreToolUse hook when Claude Code drives -- not by trust.
+   4. **Unbounded input** -- a huge payload buries an injection or runs up cost.
+      **Defense:** length-bound every input that enters a prompt, a log, or storage.
+   5. **Blast radius** -- assume something will be compromised; limit what it reaches.
+      **Defense:** least privilege per session; isolate production; do not give broad
+      direct production access. Fail closed on any security-check error.
+   
+   <!-- AI-SECURITY-START -->
+   ## LLM / agent risks and defenses
+   
+   These apply because this project uses prompts, LLMs, or agentic flows. If that ever
+  @@ -101,15 +102,18 @@ used, the OWASP Top 10 for LLM apps, time-boxing each category.
+  +<!-- CC-HOOKS-START -->
+   - **Hook:** `.claude/hooks/deps-guard.sh` (PreToolUse) gates dependency installs.
+  +<!-- CC-HOOKS-END -->
+   - **Tests:** the red-team checklist above lives in the test suite and runs in CI.
+  -- **Reviews:** `@security-reviewer` is MANDATORY for every slice matching the
+  -  security trigger (`.claude/skills/security-review/SKILL.md`), per `AGENTS.md`
+  -  `<hard-rules>`.
+  +- **Reviews:** an independent security red-team pass is MANDATORY for work
+  +  matching the trigger in `.claude/skills/security-review/SKILL.md` (via
+  +  `@security-reviewer` when Claude Code drives; as a manual fresh-context
+  +  pass otherwise), per `AGENTS.md` `<hard-rules>`.
+  +9 -5
+
+init-project/templates/core/docs/design/DESIGN.md
+  @@ -9,25 +9,28 @@ mockup in `mockups/`.
+  -`src/styles/tokens.css` (TypeScript) or `static/tokens.css` (Python). Rules of thumb:
+  -one type scale (fixed ratio), at most two fonts, body >= 16px; one spacing
+  -unit used everywhere; one accent color spent on the primary action only.
+  -Change a token, not a one-off value. TODO markers in the tokens file are
+  -choices still open -- settle them in the first design-loop pass.
+  +TypeScript: `src/styles/tokens.css`; Python: `static/tokens.css`; profiles
+  +without a shipped tokens file (Go/Rust in v3.0.0): define the token table
+  +right here in this file and treat it as canonical. Rules of thumb: one type
+  +scale (fixed ratio), at most two fonts, body >= 16px; one spacing unit used
+  +everywhere; one accent color spent on the primary action only. Change a
+  +token, not a one-off value. TODO markers in the tokens file (or, for Go/Rust,
+  +in this section) are choices still open -- settle them in the first
+  +design-loop pass.
+   
+   ## Aesthetic rubric (what `@design-reviewer` grades)
+   
+   1. **Mockup fidelity.** The shipped screen matches the approved mockup in
+      `mockups/` -- layout, hierarchy, states, and liveness (loading, empty,
+      error states exist and look designed, not defaulted).
+   2. **No generic-AI tells.** Automatic fail for: purple-gradient hero, a
+      three-rounded-cards feature grid, default-font-everywhere, uniform
+      border-radius on every element, centered-everything layouts, emoji as
+      icons on interactive elements.
+  +8 -5
+
+init-project/templates/core/scripts/features_check.py
+  @@ -48,34 +48,56 @@ def check() -> list[str]:
+  -        if not isinstance(ft["acceptance"], list) or not ft["acceptance"]:
+  +        acceptance = ft["acceptance"]
+  +        if not isinstance(acceptance, list) or not acceptance:
+               errors.append(f"{where}: acceptance must be a non-empty list")
+  +        else:
+  +            for j, a in enumerate(acceptance):
+  +                if not isinstance(a, str) or not a.strip():
+  +                    errors.append(
+  +                        f"{where}: acceptance[{j}] must be a non-empty string"
+  +                    )
+           tests = ft["tests"]
+           if not isinstance(tests, list):
+               errors.append(f"{where}: tests must be a list")
+               tests = []
+  -        if ft["status"] == "done":
+  -            if not tests:
+  -                errors.append(f"{where}: done with no mapped tests")
+  -            for t in tests:
+  -                test_file = str(t).split("::", 1)[0]
+  -                if not os.path.exists(test_file):
+  +        else:
+  +            for j, t in enumerate(tests):
+  +                if not isinstance(t, str) or not t.strip():
+  +                    errors.append(f"{where}: tests[{j}] must be a non-empty string")
+  +                    continue
+  +                test_file = t.split("::", 1)[0]
+  +                if not test_file:
+  +                    errors.append(f"{where}: tests[{j}] has no file part before '::'")
+  +                    continue
+  +                if os.path.isabs(test_file) or ".." in test_file.split(os.sep):
+  +                    errors.append(
+
+... (more changes truncated)
+  +19 -7
+[full diff: rtk git diff --no-compact]
