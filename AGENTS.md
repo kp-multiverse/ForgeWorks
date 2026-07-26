@@ -83,7 +83,7 @@ Beyond that, the way to fully validate an end-to-end change (bootstrap + intervi
 # release tag; to test UNRELEASED changes, override the ref with BRANCH=<branch>
 # (here, main) so install.sh fetches the skill from that branch instead of the tag.
 mkdir /tmp/template-smoke && cd /tmp/template-smoke && git init
-BRANCH=main bash <(curl -fsSL https://raw.githubusercontent.com/Kpakfar/ForgeWorks/main/bootstrap/install.sh)
+BRANCH=main bash <(curl -fsSL https://raw.githubusercontent.com/kp-multiverse/ForgeWorks/main/bootstrap/install.sh)
 # Open Claude Code, run /init-project, walk through the interview.
 # Inspect the generated tree. Confirm:
 #   - all placeholders are substituted (no leftover {{...}} in committed files)

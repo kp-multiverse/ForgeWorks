@@ -30,4 +30,4 @@ is green from the first run. Replace them with your first slice.
 - Development runs through the TDD loop with specialist subagents; see
   `AGENTS.md` `<roster>`.
 
-*Bootstrapped from [ForgeWorks](https://github.com/Kpakfar/ForgeWorks).*
+*Bootstrapped from [ForgeWorks](https://github.com/kp-multiverse/ForgeWorks).*
