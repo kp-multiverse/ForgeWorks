@@ -17,6 +17,11 @@ import re
 PLACEHOLDER_RE = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 SLUG_RE = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+STRUCTURAL_TAG_RE = re.compile(
+    r"</?(project|commands|etiquette|hard-rules|risk-tiers|learning|roster"
+    r"|ai-discipline|memory)>",
+    re.IGNORECASE,
+)
 
 LANGUAGES = ("python", "typescript", "go", "rust")
 FRONTEND_CHOICES = ("yes-spa", "yes-minimal", "no")
@@ -48,6 +53,9 @@ FEATURE_STATUSES = ("todo", "in-progress", "done", "dropped")
 FEATURE_TIERS = ("light", "standard", "high-risk")
 FEATURE_ID_RE = re.compile(r"^F\d{3}$")
 DESIGN_KEYS = ("references", "tone", "anti_reference")
+TOP_LEVEL_KEYS = ("schema", "date", "agents", "project", "stack", "security",
+                  "opt_ins", "features", "design")
+SCHEMA_VERSION = 1
 
 PROFILE_SCALARS = (
     "display_name", "language_version", "package_manager", "manifest_file",
@@ -86,6 +94,8 @@ def _check_text(errors: list[str], where: str, value: object) -> None:
     if "<!--" in cleaned or "-->" in cleaned:
         errors.append(f"{where}: must not contain HTML comment markers "
                       "(<!-- or -->) -- they would break generated files")
+    if STRUCTURAL_TAG_RE.search(cleaned):
+        errors.append(f"{where}: must not contain AGENTS.md structural tags")
     if PLACEHOLDER_RE.search(cleaned):
         errors.append(f"{where}: contains text shaped like a template "
                       "placeholder ({{UPPER_SNAKE}}); not allowed in answers")
@@ -122,13 +132,14 @@ def _check_features(errors: list[str], value: object) -> None:
         for key in FEATURE_KEYS:
             if key not in ft:
                 errors.append(f"{where}.{key}: missing")
-        fid = ft.get("id")
-        if isinstance(fid, str) and not FEATURE_ID_RE.match(fid):
-            errors.append(f"{where}.id: must match F000-F999 (got {fid!r})")
-        if isinstance(fid, str):
-            if fid in seen:
+        if "id" in ft:
+            fid = ft["id"]
+            if not isinstance(fid, str) or not FEATURE_ID_RE.match(fid):
+                errors.append(f"{where}.id: must match F000-F999 (got {fid!r})")
+            elif fid in seen:
                 errors.append(f"{where}.id: duplicate {fid}")
-            seen.add(fid)
+            else:
+                seen.add(fid)
         for key in ("title", "intent", "serves"):
             if key in ft:
                 _check_text(errors, f"{where}.{key}", ft[key])
@@ -165,6 +176,12 @@ def validate_answers(ans: object) -> dict:
     errors: list[str] = []
     if not isinstance(ans, dict):
         raise RenderError("answers file: top level must be a JSON object")
+    if ans.get("schema") != SCHEMA_VERSION:
+        errors.append(f"schema: must be exactly {SCHEMA_VERSION} "
+                      f"(got {ans.get('schema')!r})")
+    unknown_top = set(ans) - set(TOP_LEVEL_KEYS)
+    if unknown_top:
+        errors.append(f"unknown top-level key(s): {sorted(unknown_top)}")
     for section, keys in (("project", PROJECT_KEYS), ("stack", STACK_KEYS),
                           ("security", SECURITY_KEYS), ("opt_ins", OPT_IN_KEYS)):
         block = ans.get(section)
