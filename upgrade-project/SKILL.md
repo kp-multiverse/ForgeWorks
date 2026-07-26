@@ -72,8 +72,17 @@ If the project's `.claude/.template-version` (Phase 1) is below 3.0.0, stop here
 
 Walk the template tree. For every template path, decide and act:
 
-**A. File ABSENT in the project (additive).**
-- **No `{{...}}` placeholders** (e.g. `.claude/agents/security-reviewer.md`, `.claude/agents/design-reviewer.md`, `.claude/hooks/deps-guard.sh`) -> copy verbatim. `chmod +x` any `.sh`.
+**A. File ABSENT in the project (additive).** First apply the Phase 1
+roster/frontend gating, exactly like `render.py` and Phase 3-D do: a file
+under `.claude/agents/`, `.claude/hooks/`, or `.claude/settings.json`, or
+the `CLAUDE.md` symlink, is absent-but-NOT-additive when `claude-code` is
+NOT in the recovered roster -- do not copy it in (an ordinary upgrade must
+not resurrect Claude-specific mechanics a project deliberately doesn't have
+just because a later template release added a new file to that tree).
+Likewise `docs/design/`, a profile's tokens file, `.claude/skills/design-loop/`,
+and `.claude/agents/design-reviewer.md` are absent-but-NOT-additive when the
+project has no frontend. Everything else absent proceeds as below:
+- **No `{{...}}` placeholders** (e.g. `.claude/agents/security-reviewer.md`, `.claude/agents/design-reviewer.md` -- frontend + claude-code only, `.claude/hooks/deps-guard.sh` -- claude-code only) -> copy verbatim. `chmod +x` any `.sh`.
 - **Only recoverable placeholders** (`{{PROJECT_NAME}}`, `{{LANGUAGE}}`, `{{DATE}}`) -> substitute from Phase 1 and copy. This covers `docs/SECURITY.md`; then apply the AI-fence rule below.
 - **Language/tooling placeholders you cannot resolve** (no full language profile on hand) -> do NOT half-write it. Report it as "add manually" with a pointer to the template path.
 
