@@ -21,7 +21,7 @@ tool does mechanically versus what is still future work.
   Python, plain string substitution) renders the tree — every placeholder,
   conditional rule, structured-file escape, symlink, chmod, and version stamp.
   Same answers, same bytes. A golden-fixture CI job
-  (`.github/scripts/golden_test.py`) compares eight rendered answer sets —
+  (`.github/scripts/golden_test.py`) compares nine rendered answer sets —
   including a hostile-values fixture — byte-for-byte against committed
   expected trees. Only the interview itself and the package-manager dependency
   steps remain agent-executed.

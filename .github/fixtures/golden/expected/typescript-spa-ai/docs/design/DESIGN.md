@@ -17,11 +17,14 @@ mockup in `mockups/`.
 ## Tokens
 
 The canonical values live in the tokens file for your language profile:
-`src/styles/tokens.css` (TypeScript) or `static/tokens.css` (Python). Rules of thumb:
-one type scale (fixed ratio), at most two fonts, body >= 16px; one spacing
-unit used everywhere; one accent color spent on the primary action only.
-Change a token, not a one-off value. TODO markers in the tokens file are
-choices still open -- settle them in the first design-loop pass.
+TypeScript: `src/styles/tokens.css`; Python: `static/tokens.css`; profiles
+without a shipped tokens file (Go/Rust in v3.0.0): define the token table
+right here in this file and treat it as canonical. Rules of thumb: one type
+scale (fixed ratio), at most two fonts, body >= 16px; one spacing unit used
+everywhere; one accent color spent on the primary action only. Change a
+token, not a one-off value. TODO markers in the tokens file (or, for Go/Rust,
+in this section) are choices still open -- settle them in the first
+design-loop pass.
 
 ## Aesthetic rubric (what `@design-reviewer` grades)
 

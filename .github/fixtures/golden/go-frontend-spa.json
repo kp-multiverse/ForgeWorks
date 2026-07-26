@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "date": "2026-07-26",
+  "agents": [{"name": "claude-code", "status": "installed"}],
+  "project": {
+    "name": "Pillarwatch",
+    "slug": "pillarwatch",
+    "goal": "A self-hosted status page that shows the up/down history of a small team's own services, no third-party dependency.",
+    "primary_user": "An on-call engineer at a small team who wants an honest status page without paying for or trusting a SaaS status vendor.",
+    "core_problem": "Small teams either run no status page (users find out about outages from support tickets) or hand uptime data to a third-party SaaS that is one more thing to trust and pay for.",
+    "core_journey": "1. The team registers a service with a health-check URL.\n2. Pillarwatch polls it on an interval and records up/down transitions.\n3. A public page renders current status and a 90-day history bar per service.",
+    "success_measure": "A service outage shows up on the public page within one poll interval of the health check failing, with no manual step.",
+    "success_metrics": "- time from real outage to page reflecting it -- under one poll interval\n- self-hosted install time -- under 10 minutes on a single binary",
+    "riskiest_assumption": "A simple interval poll plus a small state machine (up/down/degraded) is enough signal for a small team, without needing synthetic transactions or multi-region checks.",
+    "req_ac_list": "- [ ] **REQ-AC1:** A registered service that fails its health check flips to \"down\" and the public page reflects it within one poll interval.\n- [ ] **REQ-AC2:** A service that recovers flips back to \"up\" and the incident is closed with a duration.\n- [ ] **REQ-AC3:** The public page renders a 90-day history bar per service from stored transitions.",
+    "non_goals": "- No multi-region or synthetic-transaction checks.\n- No paging/alerting integrations in the first cut -- the page itself is the notification.",
+    "other_users": "- End users of the team's product, checking whether an outage is known (read-only, no login).",
+    "constraint_time": "One weekend project; first usable cut in a few evenings.",
+    "constraint_cost": "Must run as a single small binary on a $5/month VM; no managed database requirement.",
+    "constraint_data": "Health-check results and incident history only; no user accounts or personal data collected from the public page.",
+    "first_milestone": "2026-08-09",
+    "deployment_target": "A single Linux VM, reverse-proxied behind the team's existing domain.",
+    "scale_expectations": "Under 50 registered services, polled every 30-60 seconds; a handful of concurrent public-page viewers during an incident.",
+    "integrations": "- Outbound HTTP health checks against each registered service's URL.\n- Optional outbound webhook on status change (stretch goal, not in the first cut).",
+    "in_scope_list": "- Service registration with a health-check URL and poll interval.\n- Poller with an up/down/degraded state machine and transition history.\n- Public status page with current status and a 90-day history bar per service.",
+    "pain_point": "no honest status page without paying for or trusting a SaaS vendor",
+    "product_category": "self-hosted status page",
+    "current_alternative": "a paid third-party status-page SaaS, or no status page at all",
+    "key_benefit": "an honest, self-hosted status page with no third party in the loop",
+    "key_differentiator": "single-binary self-hosted install instead of a hosted SaaS subscription",
+    "positive_reference": {
+      "ref": "the single-binary, no-frills operational feel of Uptime Kuma",
+      "location": "https://github.com/louislam/uptime-kuma"
+    },
+    "negative_reference": null
+  },
+  "stack": {
+    "language": "go",
+    "has_frontend": "yes-minimal",
+    "backend_framework": "stdlib net/http",
+    "ai_features": [],
+    "vector_db": "none",
+    "llm_provider": "none",
+    "embeddings_model": "none",
+    "database": "SQLite",
+    "uses_devcontainer": "no"
+  },
+  "security": {
+    "reads_untrusted": "no",
+    "holds_private_data": "no",
+    "acts_outward": "yes"
+  },
+  "opt_ins": {
+    "explanations": "no",
+    "seed_gotchas": "no",
+    "mem0": "no",
+    "codex_reviewer": "no"
+  },
+  "design": {
+    "references": "- Uptime Kuma -- calm, information-dense status list that stays legible mid-incident\n- Basecamp's status page -- plain, confident typography with zero marketing chrome",
+    "tone": "plain, calm, trustworthy",
+    "anti_reference": "a marketing-site status page: hero banner, gradient background, animated illustrations distracting from the actual up/down signal"
+  },
+  "features": [
+    {
+      "id": "F001",
+      "title": "Register a service and start polling it",
+      "intent": "A team can register a service with a health-check URL and poll interval, and the poller starts checking it.",
+      "serves": "journey step 1: the team registers a service with a health-check URL",
+      "acceptance": ["A newly registered service is polled at its configured interval and its first result is recorded."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F002",
+      "title": "Public status page shows current status and history",
+      "intent": "The public page renders each service's current status and a 90-day history bar from stored transitions.",
+      "serves": "REQ-AC3: the public page renders a 90-day history bar per service from stored transitions",
+      "acceptance": ["The public page shows every registered service's current status and a 90-day history bar built from its recorded transitions."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    }
+  ]
+}

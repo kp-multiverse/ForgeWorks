@@ -1,4 +1,4 @@
-# Design direction: Hostile "Fixture" & <Sons>, Ltd. `v0`
+# Design direction: Pillarwatch
 
 The visual spec for this project. The `design-loop` skill reads this before any
 mockup; `@design-reviewer` grades shipped screens against it and the approved
@@ -7,12 +7,12 @@ mockup in `mockups/`.
 ## Direction (from the setup interview)
 
 **References -- what to steal, from where:**
-- a "reference" with `backticks` & ampersands,
-plus a second line with {{lowercase braces}}
+- Uptime Kuma -- calm, information-dense status list that stays legible mid-incident
+- Basecamp's status page -- plain, confident typography with zero marketing chrome
 
-**Tone:** hostile & "quoted", with a trailing backslash \ and a $dollar
+**Tone:** plain, calm, trustworthy
 
-**Anti-reference (never let it look like this):** anything that switches on 'clever' escaping modes for {{curly}} text
+**Anti-reference (never let it look like this):** a marketing-site status page: hero banner, gradient background, animated illustrations distracting from the actual up/down signal
 
 ## Tokens
 
