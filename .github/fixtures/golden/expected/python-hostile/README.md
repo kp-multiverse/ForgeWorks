@@ -24,9 +24,10 @@ is green from the first run. Replace them with your first slice.
 ## How this project works
 
 - `AGENTS.md` is the constitution -- read it first. `CLAUDE.md` symlinks to it.
-- `docs/` holds the living documentation: product vision, requirements, structure,
-  gotchas, security threat model, and the current-task scratchpad.
+- `docs/` holds the living documentation: product vision, the machine-checked
+  feature list (`features.json`), design direction, gotchas, a deviations log,
+  high-risk plans, and the security threat model.
 - Development runs through the TDD loop with specialist subagents; see
-  `AGENTS.md` `<agent-roster>`.
+  `AGENTS.md` `<roster>`.
 
 *Bootstrapped from [ForgeWorks](https://github.com/Kpakfar/ForgeWorks).*

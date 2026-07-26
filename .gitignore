@@ -10,3 +10,6 @@ node_modules/
 # Python bytecode
 __pycache__/
 .claude/worktrees/
+
+# agent scratch workspaces (SDD ledgers, review packages) -- never ship
+.superpowers/

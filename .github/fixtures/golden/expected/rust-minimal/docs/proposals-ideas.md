@@ -1,8 +1,8 @@
 # Proposals & Ideas
 
-Free-form. Out-of-scope improvements, half-formed thoughts, things that came up during work but aren't ready to be tasks yet.
+Ideas parking lot. Free-form. Out-of-scope improvements, half-formed thoughts, things that came up during work but aren't ready to be tasks yet.
 
-Reviewed every ~2 weeks. Promote good ideas to `backlog.md` (with proper scoping), discard the rest.
+Reviewed every ~2 weeks: promote good ideas by adding a scoped entry to `docs/features.json`, discard the rest.
 
 ## Format
 

@@ -6,8 +6,8 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    // Mechanical line-cap gate (AGENTS.md <architecture-discipline>): hard cap
-    // 200 lines per file, counted strictly (blank lines and comments included).
+    // Mechanical line-cap gate: hard cap 200 lines per file, counted strictly
+    // (blank lines and comments included).
     // For a generated/vendored exception, add a config object AFTER this one
     // with `files: ['src/generated/**']` and `'max-lines': 'off'`.
     rules: {

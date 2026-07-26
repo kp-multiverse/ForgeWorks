@@ -4,7 +4,8 @@
 ///
 /// Placeholder so the scaffold passes the quality gate from the first run.
 /// Delete it (and its tests) when you build your first slice; real code
-/// follows the rules in AGENTS.md `<architecture-discipline>`.
+/// follows the conventions in `docs/language-standards.md` (one concept per
+/// file, ~100-line target, 200-line hard cap).
 pub fn greet(name: &str) -> String {
     format!("Hello, {name}!")
 }

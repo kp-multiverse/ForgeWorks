@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "features": [
+    {
+      "id": "F001",
+      "title": "Upload and categorize a CSV",
+      "intent": "Uploading a CSV yields a categorized ledger with low-confidence rows visibly flagged.",
+      "serves": "journey step 2: the app categorizes each transaction and flags anything it cannot confidently place",
+      "acceptance": [
+        "Uploading a sample CSV produces a ledger where every row has a category and low-confidence rows are visibly flagged."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F002",
+      "title": "Recategorize a flagged row",
+      "intent": "Confirming or recategorizing a flagged row updates the ledger and clears the flag.",
+      "serves": "journey step 3: the freelancer confirms or recategorizes flagged rows and exports a clean ledger",
+      "acceptance": [
+        "Recategorizing a flagged row updates its category and removes the flag from the ledger view."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F003",
+      "title": "Export the final ledger",
+      "intent": "Exporting produces a CSV with every row's final category.",
+      "serves": "differentiator: low-confidence rows are flagged instead of silently miscategorized",
+      "acceptance": [
+        "Exporting after confirming all flags produces a downloadable CSV with a category on every row."
+      ],
+      "tests": [],
+      "status": "todo",
+      "tier": "high-risk"
+    }
+  ]
+}

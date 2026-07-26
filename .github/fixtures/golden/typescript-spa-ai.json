@@ -55,5 +55,42 @@
     "seed_gotchas": "no",
     "mem0": "yes",
     "codex_reviewer": "no"
-  }
+  },
+  "design": {
+    "references": "- linear.app -- calm density, restrained color, keyboard-first affordances\n- stripe.com/docs -- typographic hierarchy that makes scanning effortless",
+    "tone": "calm, evidence-first, professional",
+    "anti_reference": "generic AI dashboard: purple gradient hero, three rounded cards, default Inter everywhere"
+  },
+  "features": [
+    {
+      "id": "F001",
+      "title": "Import a week's export",
+      "intent": "Importing a week's export yields a draft brief with every claim linked to a source item.",
+      "serves": "differentiator: every claim carries a link to its evidence",
+      "acceptance": ["Importing a sample export produces a draft with each claim carrying at least one evidence link."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F002",
+      "title": "Edit and approve a brief",
+      "intent": "Editing a paragraph and approving produces a copyable final brief.",
+      "serves": "journey step 3: the manager edits inline and copies the approved brief out",
+      "acceptance": ["After an inline edit and approve, the final brief is copyable and reflects the edit."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F003",
+      "title": "Flag unsupported claims",
+      "intent": "A claim with no supporting source is visually flagged, never silently kept.",
+      "serves": "REQ-AC3: unsupported claims must never be silently kept",
+      "acceptance": ["A drafted claim with no linked source item is visually flagged in the review UI."],
+      "tests": [],
+      "status": "todo",
+      "tier": "high-risk"
+    }
+  ]
 }

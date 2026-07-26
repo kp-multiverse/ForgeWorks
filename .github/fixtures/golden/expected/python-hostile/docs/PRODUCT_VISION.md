@@ -2,8 +2,7 @@
 
 The north star for this project. Captures the *what* and *why*. Stable across iterations.
 
-For the *how* (current sprint scope, stack, acceptance criteria), see `requirements.md`.
-For the *when* (active queued work), see `backlog.md`.
+For the enforceable feature list, see `features.json`.
 
 ---
 
@@ -25,7 +24,7 @@ an escaped newline, {{lowercase braces}}, `backticks`, & ampersands — plus a t
 or newlines; this fixture proves the renderer does not.
 - **When:** none set
 - **Where:** CI only — never deployed.
-- **How:** see the core flow in `docs/requirements.md`
+- **How:** see the core flow in `docs/features.json`
 
 ## Scope
 

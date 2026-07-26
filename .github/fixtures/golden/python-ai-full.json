@@ -59,5 +59,42 @@
     "seed_gotchas": "yes",
     "mem0": "yes",
     "codex_reviewer": "yes"
-  }
+  },
+  "design": {
+    "references": "- datasette.io -- plain, content-first layout that gets out of the way\n- a well-lit recipe card: one photo, short ingredient list, numbered steps",
+    "tone": "warm, uncluttered, mobile-first",
+    "anti_reference": "cluttered recipe blogs: ad blocks, autoplay video, ingredient list buried under a life story"
+  },
+  "features": [
+    {
+      "id": "F001",
+      "title": "Extract an editable ingredient list from a fridge photo",
+      "intent": "Uploading a clear fridge photo yields an editable ingredient list within 15 seconds.",
+      "serves": "journey step 2: the app extracts an ingredient list and shows it for one-tap correction",
+      "acceptance": ["Uploading a clear fridge photo produces an editable ingredient list within 15 seconds."],
+      "tests": [],
+      "status": "todo",
+      "tier": "high-risk"
+    },
+    {
+      "id": "F002",
+      "title": "Suggest three cookable recipes",
+      "intent": "Confirming the list yields exactly three recipe suggestions, each cookable with the confirmed ingredients plus pantry staples.",
+      "serves": "REQ-AC2: three suggestions cookable with confirmed inventory plus staples",
+      "acceptance": ["Confirming an ingredient list returns exactly three recipes, each cookable with those ingredients plus pantry staples."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F003",
+      "title": "Handle a photo with no recognizable food",
+      "intent": "A photo with no recognizable food produces a helpful empty state, not a crash or a hallucinated list.",
+      "serves": "REQ-AC4: unusable photos must degrade gracefully",
+      "acceptance": ["Uploading a photo with no recognizable food shows a helpful empty state instead of crashing or hallucinating ingredients."],
+      "tests": [],
+      "status": "todo",
+      "tier": "high-risk"
+    }
+  ]
 }

@@ -2,13 +2,11 @@
 
 This is a living document. It states what an attacker would try, the defenses in
 place, and the red-team checklist the test suite must cover. Update it whenever a
-slice matches the canonical security trigger (quoted from `AGENTS.md`
-`<delivery-evidence>`): *external input handling, dependence on untrusted
-generated output, public publishing of content, authentication or authorization,
-a tool or automation with side effects, or persistence of untrusted content* --
-or record `Security doc delta: none, because ...` in the slice's design memo.
-The rules themselves live in `AGENTS.md` `<security-discipline>`; this file is
-where they become concrete for this project.
+slice matches the security trigger: see `.claude/skills/security-review/SKILL.md`.
+When no delta is needed, record `Security doc delta: none, because ...` in the
+review notes instead. The hard rule requiring this review lives in `AGENTS.md`
+`<hard-rules>`; this file is where the threat model becomes concrete for this
+project.
 
 Fill in the `TODO` and `*<...>*` slots as the project takes shape. An empty
 threat model is a red flag in review.
@@ -45,8 +43,9 @@ These apply to every project regardless of stack or subject.
 3. **Supply-chain / slopsquatting** -- a compromised or hallucinated dependency runs
    code on dev/CI machines. **Defense:** install from the lockfile only (no blind
    updates); vet every new package (real, established, right author, not a
-   lookalike); prefer dependencies more than ~a week old. Enforced by the
-   `deps-guard` hook, not by trust.
+   lookalike); prefer dependencies more than ~a week old. Enforced by committed
+   lockfiles, reviewed updates, and CI dependency scanning on every roster --
+   plus the `deps-guard` PreToolUse hook when Claude Code drives -- not by trust.
 4. **Unbounded input** -- a huge payload buries an injection or runs up cost.
    **Defense:** length-bound every input that enters a prompt, a log, or storage.
 5. **Blast radius** -- assume something will be compromised; limit what it reaches.
@@ -112,8 +111,7 @@ used, the OWASP Top 10 for LLM apps, time-boxing each category.
 
 - **Hook:** `.claude/hooks/deps-guard.sh` (PreToolUse) gates dependency installs.
 - **Tests:** the red-team checklist above lives in the test suite and runs in CI.
-- **Hook:** `.claude/hooks/slice-audit.sh` (PreToolUse) blocks ship commits whose
-  record lacks a `Security surface:` disposition; the CI ship-audit job re-checks.
-- **Reviews:** `@security-reviewer` is MANDATORY for every slice matching the
-  canonical security trigger above, and runs at least once per iteration
-  (`AGENTS.md` `<recurring-reviews>`).
+- **Reviews:** an independent security red-team pass is MANDATORY for work
+  matching the trigger in `.claude/skills/security-review/SKILL.md` (via
+  `@security-reviewer` when Claude Code drives; as a manual fresh-context
+  pass otherwise), per `AGENTS.md` `<hard-rules>`.

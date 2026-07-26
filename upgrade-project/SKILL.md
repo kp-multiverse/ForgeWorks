@@ -1,6 +1,6 @@
 ---
 name: upgrade-project
-description: Upgrade an EXISTING project that was bootstrapped from an older version of ForgeWorks to the current structure, without clobbering hand-filled content. Reconciles the project against a fresh copy of the template: copies new always-on files that are missing, grafts new AGENTS.md rule blocks and subagent sections into the existing files while preserving project-specific content, applies the language tooling delta, and reports what still needs human review. Non-destructive and idempotent -- safe to run more than once. Use when a project already has a generated AGENTS.md and .claude/agents/ and the user says "upgrade", "/upgrade-project", "update the harness", "bring this up to the new template", or "sync the template structure". Do NOT use on an empty/uninitialized directory -- that is what /init-project is for.
+description: Upgrade an EXISTING project that was bootstrapped from an older version of ForgeWorks to the current structure, without clobbering hand-filled content. Reconciles the project against a fresh copy of the template: copies new always-on files that are missing, grafts new AGENTS.md rule blocks and subagent sections into the existing files while preserving project-specific content, applies the language tooling delta, and reports what still needs human review. Non-destructive and idempotent -- safe to run more than once, except the one-time v2->v3 migration (Phase 3-D), which is explicitly wholesale by design and runs only on the owner's accept. Use when a project already has a generated AGENTS.md and .claude/agents/ and the user says "upgrade", "/upgrade-project", "update the harness", "bring this up to the new template", or "sync the template structure". Do NOT use on an empty/uninitialized directory -- that is what /init-project is for.
 ---
 
 # upgrade-project
@@ -9,7 +9,7 @@ This skill brings an **existing** generated project up to the current template s
 
 ## Core principles
 
-- **Non-destructive.** Never overwrite a file that holds project content. Only create files that are absent, and only *insert into* existing files (never replace them wholesale).
+- **Non-destructive.** Never overwrite a file that holds project content. Only create files that are absent, and only *insert into* existing files (never replace them wholesale) -- except the one-time v2->v3 migration (Phase 3-D), which is explicitly wholesale by design and runs only on the owner's accept.
 - **Idempotent.** Every step checks "already present?" first. Running the skill twice changes nothing the second time.
 - **Automate the safe part, assist the rest.** New placeholder-free files are copied automatically. Merges into hand-edited files (`AGENTS.md`, subagents, manifest) are computed first and approved as ONE batched report (Phase 4), because merging prose is a judgment call the user signs off once.
 - **Reconcile against the live template, not a hardcoded list.** The skill diffs the project against a fresh copy of `init-project/templates/core` plus the project's own `init-project/templates/profiles/<lang>`, so files added to the template in future versions are picked up without changing this skill.
@@ -44,6 +44,7 @@ The upgrade has no interview answers on hand, so recover what it needs from the 
 - **Project name** -- from the manifest (`pyproject.toml` `[project].name`, `package.json` `"name"`, etc.) or the `AGENTS.md` metadata comment.
 - **Language** -- from the manifest file present (`pyproject.toml` -> Python, `package.json` -> TypeScript, `Cargo.toml` -> Rust, `go.mod` -> Go).
 - **AI features?** -- detect a `prompts/` dir, an LLM SDK in the manifest, or an existing `<ai-discipline>` block. Confirm with the user (yes/no).
+- **Agent roster** -- read `docs/agents.json` if present (a v2.5.0+ project). If absent, the project predates the B13 roster feature and is Claude-only by construction. If ambiguous (e.g. a hand-edited or missing file on a project that otherwise looks v2.5.0+), confirm with the user. This governs the CC-fence rule below and the Phase 3-D migration's roster gating.
 - **mem0 / persistent memory?** -- detect `docs/memory.md`, a `<memory>` block in `AGENTS.md`, or `mem0ai` in the manifest. If absent, ask the user once whether to add it (yes/no; default no).
 - **Quality-gate command** -- recover `{{QA_COMMAND}}` from `docs/language-standards.md` (the "Quality-gate command" line) or the manifest's scripts; needed to regenerate `.claude/hooks/quality-gate.sh` if missing.
 - **Codex available?** -- detect it first: an existing "Second opinion (Codex)" section in .claude/agents/code-reviewer.md or a Codex note in the AGENTS.md agent roster means the project already opted in -- keep it, do not ask and NEVER remove it on a "no". Only when no Codex trace exists, ask the user (yes/no).
@@ -56,32 +57,43 @@ Ask the user only for what you could not detect. Keep it to 2-3 questions.
 The template is `core/` (language-free) plus one `profiles/<lang>/`. Pull both the core and the project's own language profile (from Phase 1) into temp dirs to reconcile against:
 
 ```bash
-npx --yes degit@2.8.4 Kpakfar/ForgeWorks/init-project/templates/core#v2.5.0 /tmp/upgrade-core --force
-npx --yes degit@2.8.4 Kpakfar/ForgeWorks/init-project/templates/profiles/<lang>#v2.5.0 /tmp/upgrade-profile --force
-npx --yes degit@2.8.4 Kpakfar/ForgeWorks/init-project#v2.5.0 /tmp/upgrade-skill --force
+npx --yes degit@2.8.4 Kpakfar/ForgeWorks/init-project/templates/core#v3.0.0 /tmp/upgrade-core --force
+npx --yes degit@2.8.4 Kpakfar/ForgeWorks/init-project/templates/profiles/<lang>#v3.0.0 /tmp/upgrade-profile --force
+npx --yes degit@2.8.4 Kpakfar/ForgeWorks/init-project#v3.0.0 /tmp/upgrade-skill --force
 ```
 
 Use the detected language for `<lang>` (`python`, `typescript`, `go`, or `rust`). Reconcile core into the project's universal files and the profile into its language files -- **never** pull a different language's profile (that is the cross-language leak the structure exists to prevent). If the project's language has no profile folder at this version (e.g. an experimental language), reconcile `core/` only and report that the toolchain is the user's to maintain. The conditional block texts (<ai-discipline>, <memory>, the Codex sections, the gotchas seed) live in `init-project/templates/conditional/` (since v2.3.0; older releases embedded them in SKILL.md Phase 4) -- reconcile AI/memory-conditional content against `/tmp/upgrade-skill/templates/conditional/`.
 
-Reconcile against this skill's own released version (`v2.5.0`), not `main`: installing the `vX.Y.Z` upgrade skill brings a project *up to* `vX.Y.Z` -- a versioned, reviewable target. (Each release bumps this ref; see the repo `AGENTS.md` release process.)
+Reconcile against this skill's own released version (`v3.0.0`), not `main`: installing the `vX.Y.Z` upgrade skill brings a project *up to* `vX.Y.Z` -- a versioned, reviewable target. (Each release bumps this ref; see the repo `AGENTS.md` release process.)
 
 ### Phase 3: Reconcile
 
+If the project's `.claude/.template-version` (Phase 1) is below 3.0.0, stop here and run **Phase 3-D** instead -- it replaces `AGENTS.md` and the subagents wholesale rather than reconciling them block-by-block, because the v2 and v3 structures do not correspond. On decline, stop and report; the project stays on v2 semantics until the owner is ready -- do not apply a partial A-C pass to a sub-3.0.0 project. Once a project is on v3.0.0+, A-C below govern ongoing reconciliation as usual.
+
 Walk the template tree. For every template path, decide and act:
 
-**A. File ABSENT in the project (additive).**
-- **No `{{...}}` placeholders** (e.g. `.claude/agents/security-reviewer.md`, `.claude/agents/tech-debt.md`, `.claude/hooks/deps-guard.sh`) -> copy verbatim. `chmod +x` any `.sh`.
+**A. File ABSENT in the project (additive).** First apply the Phase 1
+roster/frontend gating, exactly like `render.py` and Phase 3-D do: a file
+under `.claude/agents/`, `.claude/hooks/`, or `.claude/settings.json`, or
+the `CLAUDE.md` symlink, is absent-but-NOT-additive when `claude-code` is
+NOT in the recovered roster -- do not copy it in (an ordinary upgrade must
+not resurrect Claude-specific mechanics a project deliberately doesn't have
+just because a later template release added a new file to that tree).
+Likewise `docs/design/`, a profile's tokens file, `.claude/skills/design-loop/`,
+and `.claude/agents/design-reviewer.md` are absent-but-NOT-additive when the
+project has no frontend. Everything else absent proceeds as below:
+- **No `{{...}}` placeholders** (e.g. `.claude/agents/security-reviewer.md`, `.claude/agents/design-reviewer.md` -- frontend + claude-code only, `.claude/hooks/deps-guard.sh` -- claude-code only) -> copy verbatim. `chmod +x` any `.sh`.
 - **Only recoverable placeholders** (`{{PROJECT_NAME}}`, `{{LANGUAGE}}`, `{{DATE}}`) -> substitute from Phase 1 and copy. This covers `docs/SECURITY.md`; then apply the AI-fence rule below.
 - **Language/tooling placeholders you cannot resolve** (no full language profile on hand) -> do NOT half-write it. Report it as "add manually" with a pointer to the template path.
 
   *Special cases:*
-  - `.claude/settings.json` -- if the project already has one, **merge** the `PreToolUse` hooks (deps-guard AND, since v2.1.0, `slice-audit.sh --hook`) into the existing `hooks` object; never replace the file (that would drop the project's own hooks). `slice-audit.sh` itself is placeholder-free: copy verbatim + `chmod +x`.
-  - **AI fences** (same rule everywhere a template file carries them): if the project uses AI, delete only the marker lines and keep the content; if not, delete the fenced blocks entirely. Current fences: `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-FEATURES-START/END -->` in `docs/requirements.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`.
-  - **CC fences** (since v2.5.0; same mechanic as AI fences but keyed on "claude-code in the project's agent roster" instead of AI-features): if claude-code is in the roster, delete only the marker lines and keep the content; if not, delete the fenced blocks entirely. Current fence: `<!-- CC-TREE-START/END -->` around the roster-dependent `.claude/` entries in `docs/structure.txt` (`.claude/hooks/slice-audit.sh` stays outside the fence -- it ships for every roster).
+  - `.claude/settings.json` -- if the project already has one, **merge** the `PreToolUse` deps-guard hook into the existing `hooks` object; never replace the file (that would drop the project's own hooks).
+  - **AI fences** (same rule everywhere a template file carries them): if the project uses AI, delete only the marker lines and keep the content; if not, delete the fenced blocks entirely. Current fences (v3.0.0): `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`. (Two v2.5.0 fences are gone in v3 -- one keyed on the agent roster, one in a now-retired doc; see Phase 3-D for what replaced their files.)
+  - **CC fences** (same mechanic, keyed on the Phase 1 agent roster instead of AI features): if `claude-code` is in the recovered roster, delete only the marker lines and keep the content; if not, delete the fenced block entirely. Current fence (v3.0.0): `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section.
   - **Manifest `.example` suffix** (Python): the template ships `pyproject.toml.example` so the template repo's own tooling ignores it. A generated project already has a real `pyproject.toml` -- never copy the `.example` file in as "absent"; treat it as the merge source for the existing manifest (Phase 3-C), not a new file.
   - **Profile files come from the project's OWN profile** (Phase 2 pulled `profiles/<lang>/`). Copy them verbatim where absent -- including that language's real `scripts/` (Python, Go, and Rust have `scripts/e2e.sh`; TypeScript runs e2e via an `npm run e2e` script in `package.json`). Never substitute another language's runner or a stub for a complete profile; the Go and Rust profiles have real e2e runners.
   - `.claude/hooks/quality-gate.sh` -- carries `{{QA_COMMAND}}`, which IS recoverable (Phase 1). If the hook is missing, substitute the recovered command and copy it; never report it as manual.
-  - **Discovery placeholders (interview-sourced) in an absent file** (e.g. `{{SUCCESS_MEASURE}}`, `{{NON_GOALS}}`, `{{REQ_AC_LIST}}`, the positioning and constraints values): do NOT report "add manually" and do NOT half-write `{{...}}`. Queue the file for the Phase 3-D mini-interview.
+  - **Discovery placeholders (interview-sourced) in an absent file** (e.g. `{{SUCCESS_MEASURE}}`, `{{NON_GOALS}}`, `{{REQ_AC_LIST}}`, the positioning and constraints values): do NOT report "add manually" and do NOT half-write `{{...}}`. Queue the file for the Phase 3-E mini-interview.
   - **.devcontainer/** -- respect the project's original opt-out: if the project has no .devcontainer/, do not copy it in as "absent"; note the availability once in the report instead.
   - **Renamed/reshaped placeholders** -- when a template file's placeholder changed name or shape between versions (e.g. a commented step replaced by a rendered one), recover the concrete value from the project's already-rendered copy of that file (it holds the substituted value) before falling back to the mini-interview. Do not punt.
   - `docs/agents.md` + `docs/agents.json` (v2.5.0): these carry the interview's
@@ -92,13 +104,13 @@ Walk the template tree. For every template path, decide and act:
     both files interactively.
 
 **B. File PRESENT in both (merge target).** Compare the template version against the project's. Insert what is new, preserve what the project filled in. Never blow away the project's content.
-- **`AGENTS.md`** -- deterministic via FW-BLOCK markers. Since v2.0.0 every rule block in the template is wrapped in `<!-- FW-BLOCK: <name> vX.Y.Z -->` ... `<!-- /FW-BLOCK: <name> -->`. Reconcile by marker, not judgment:
+- **`AGENTS.md`** -- deterministic via FW-BLOCK markers, and applies only to a project already on v3.0.0+. A project below v3.0.0 does not get its `AGENTS.md` reconciled block-by-block here -- **Phase 3-D** replaces it wholesale instead (the v2 and v3 block sets do not correspond). Since v2.0.0 every rule block in the template is wrapped in `<!-- FW-BLOCK: <name> vX.Y.Z -->` ... `<!-- /FW-BLOCK: <name> -->`; the current v3.0.0 block names are `project`, `commands`, `etiquette`, `hard-rules`, `risk-tiers`, `learning`, `roster` (plus the `ai-discipline` and `memory` conditionals). Reconcile by marker, not judgment:
   1. Parse the marker set in the template and in the project.
   2. Block absent in the project -> insert it (with its markers) at the same position it holds in the template.
   3. Block present with an OLDER marker version -> show the two versions side by side ONCE (in the Phase 4 report) and let the user choose; never silently overwrite.
   4. Block present at the current version -> skip (this is the idempotency check -- mechanical, not judgment).
-  5. Project block with NO markers (pre-v2 project): match by tag name (`<security-discipline>` etc.); when matched, wrap it with markers stamped at the project's "from" version so the next run is mechanical. Then continue in the SAME run: the freshly wrapped block now carries an older version, so it immediately re-enters rule 3 (older version -> side-by-side) -- wrapping is bookkeeping, not the upgrade itself. A pre-v2 project gets both the markers AND the content reconciliation in one run.
-  **Supersession registry** (complete -- extend on every rename):
+  5. Project block with NO markers, already on v3.0.0+: match by tag name; when matched, wrap it with markers stamped at the project's "from" version so the next run is mechanical, then continue in the SAME run (the freshly wrapped block re-enters rule 3). A project below v3.0.0 never reaches this rule -- it is migrated wholesale by Phase 3-D instead.
+  **Supersession registry** (v1/v2 history -- kept for reference; any project whose "old block" appears here is below v3.0.0 and is handled by Phase 3-D, not this table):
 
   | Old block | Replaced by | Since |
   |---|---|---|
@@ -107,12 +119,12 @@ Walk the template tree. For every template path, decide and act:
   After grafting, flag any superseded block present in the project for the user to remove -- do not silently delete.
 
   *Conditional blocks (`<ai-discipline>`, `<memory>`):* the fetched core `AGENTS.md` carries only the `{{AI_DISCIPLINE_BLOCK}}` / `{{MEMORY_DOC_LINE}}` placeholders, so the generic pass above cannot see these blocks' current text. When the project uses the feature (Phase 1 detection), take the block's canonical text from `/tmp/upgrade-skill/templates/conditional/` (`ai-discipline.md` / `memory-block.md`; since v2.3.0 that folder -- not SKILL.md Phase 4 -- holds the conditional texts) and reconcile it with the SAME marker rules (absent -> insert; older marker version -> side-by-side; current -> skip). When the project does not use the feature, skip -- never insert a conditional block the project opted out of.
-- **Subagents** (`implementer.md`, `test-spec-writer.md`, `code-reviewer.md`) -- graft sections the template added (e.g. the implementer "step back / full picture" section, the test-spec-writer pyramid table, the `{{CODEX_REVIEW_STEP}}` slot) if absent. If the user customized a subagent, surface the diff rather than overwriting.
+- **Subagents** (`implementer.md`, `code-reviewer.md`, `security-reviewer.md`, `design-reviewer.md`) -- graft sections the template added (e.g. the implementer's high-risk-plan check, the `{{CODEX_REVIEW_STEP}}` slot in `code-reviewer.md`) if absent. If the user customized a subagent, surface the diff rather than overwriting.
 - **Any other file present in both** (hooks, .mcp.json, workflows, docs templates) -- diff it against the fetched template version. If the project's copy is byte-identical to an OLDER template release (no hand edits), queue the template's current version as a straight update in the batch report. If the project's copy differs from every template version (hand-edited), show the diff side-by-side in the report and let the user choose -- never overwrite silently, and never assume the template is ahead: the project may carry a fix the template lacks (report that upstream).
 
 **C. Tooling delta (language-gated).** Apply the toolchain changes between the project's "from" version (Phase 1 stamp) and this release, for the project's language only. Compare the freshly-fetched profile's manifest / scripts / CI against the project's and surface the diffs.
 
-*Language-independent CI delta (since v2.1.0):* the generated `.github/workflows/qa.yml` gained a `ship-audit` job (full-history checkout, validates changed `docs/ships/` records via `slice-audit.sh --check` / `--history`). It has no placeholders: if the project's `qa.yml` lacks the job, graft it verbatim from the fetched template (show the diff first, as always).
+*Language-independent CI delta (since v3.0.0):* the generated `.github/workflows/qa.yml` carries a `features-check` job (validates `docs/features.json` via `scripts/features_check.py`; replaced the v2 `ship-audit` job, see Phase 3-D). It has no placeholders: if the project's `qa.yml` lacks the job, graft it verbatim from the fetched template (show the diff first, as always).
 
 *Language-independent CI delta (since v2.2.0) -- pinned actions:* every `uses:` in the fetched template's `qa.yml` and in the profile's `ci_setup_steps` is pinned to a full commit SHA (`owner/repo@<40-hex> # vX`), and the Go golangci-lint install step downloads a pinned `install.sh` and verifies its sha256 instead of piping curl to sh. If the project's `qa.yml` still has tag-only `uses:` pins or a pipe-to-shell install step, propose the fetched template's pinned versions of those lines (show the diff first, as always).
 
@@ -127,7 +139,7 @@ The high-value deltas per language:
 - **Rust** -- ensure `scripts/qa.sh` runs the full verify chain in order (`scripts/linecap.sh` -- the mechanical 200-line cap, exceptions in a committed `.linecap-ignore` -- then `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo check`, `cargo test`); e2e tests are `#[ignore]`-tagged in `tests/e2e.rs` and run only via `scripts/e2e.sh` (`cargo test --test e2e -- --ignored`), never in the fast gate; `rust-toolchain.toml` pins the toolchain (channel + `clippy`/`rustfmt` components); and CI sets up Rust via the SHA-pinned `actions-rust-lang/setup-rust-toolchain` action with `rustflags: ""` (the scripts alone define strictness).
 Show each proposed change against the project's current file before applying; don't overwrite hand-edits. For an experimental language with no profile, leave clearly-marked TODOs and report them.
 
-**D. Mini-interview (discovery placeholders).** Collect every queued
+**E. Mini-interview (discovery placeholders).** Collect every queued
 interview-sourced placeholder from 3-A, dedupe, and ask the user ONLY those
 questions, batched in one message (use the matching Part A question wording
 from `init-project/SKILL.md`). Substitute the answers and write the files.
@@ -135,21 +147,126 @@ This replaces "add manually": the upgrade ends with zero `{{...}}` on disk and
 zero punted files. If the user declines a question, write
 `TODO(interview-skipped)` -- never a raw placeholder.
 
+A project already on v3.0.0+ ends its Phase 3 work here (A-B-C-E) -- go
+straight to **Phase 4** and never touch the section below; Phase 3-D runs
+INSTEAD of this A-B-C-E block, not after it, and only for a project the
+routing note at the top of this phase already sent here for being below
+v3.0.0. (Phase 3-D's own step 6 folds A and C back in against the v3
+template once the wholesale swap makes the project v3-shaped -- B and E stay
+superseded; see that step.)
+
+### Phase 3-D: v2 -> v3 migration (template-version < 3.0.0)
+
+v3 replaced the enforcement architecture. When `.claude/.template-version` is
+below 3.0.0, offer the migration as one explicit, all-or-nothing step (mixing
+v2 and v3 half-states is worse than either); each step checks for
+already-migrated state and skips it, so a re-run after a partial failure is
+safe.
+
+**First, apply the Phase 1 agent roster the same way `render.py` does.**
+`.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the
+`CLAUDE.md` symlink are only written/rewritten when `claude-code` is in the
+roster recovered in Phase 1 -- a Codex-only v2 project gets the v3 skills
+and docs in steps 2-3 below but no Claude subagent files, and step 1's
+`AGENTS.md` swap uses the roster-conditional `<roster>` wording, not the
+unconditional v2 one. Design artifacts (`docs/design/`, the `design-loop`
+skill, `@design-reviewer`, the profile tokens file) are only migrated when
+the project has a frontend (detect from the old
+`docs/requirements.md`/backlog, or ask once if undetectable) -- independent
+of roster. On accept:
+
+1. **Constitution.** Replace `AGENTS.md` wholesale with the freshly rendered
+   v3 one, carrying forward: the project header facts, the A10 style-reference
+   lines, and the commands (recoverable from the old `<development-process>` /
+   `<quality-gate>` blocks). Show the old file's project-specific additions
+   (blocks the project added itself, gotcha-style lines) and graft them into
+   `<project>`/`<learning>` or report them.
+2. **New files.** Copy in unconditionally (any roster): the `slice`,
+   `security-review`, and `tech-debt` skills, plus `select-agents` if it is
+   not already present (a v2.5.0+ project may already have it),
+   `scripts/features_check.py`, `docs/deviations.md`, and
+   `docs/plans/README.md` -- these are plain-markdown procedures and docs,
+   not Claude-specific mechanics. If the project has a frontend,
+   additionally copy `docs/design/` + the profile tokens file + the
+   `design-loop` skill (also roster-independent) -- but before writing
+   `docs/design/DESIGN.md`, ask the owner the same V1 (two or three REAL
+   products or sites this should feel like, and what specifically to take
+   from each) and V2 (three tone words, plus one anti-reference: "never let
+   it look like ...") questions `init-project` asks, in one batched message,
+   and substitute `{{DESIGN_REFERENCES}}` / `{{DESIGN_TONE}}` /
+   `{{DESIGN_ANTI_REFERENCE}}` with the answers. If the owner declines,
+   substitute `TODO(interview-skipped)` for all three -- never leave a raw
+   `{{...}}` on disk. ONLY when `claude-code` is in the roster (recovered
+   above): rewrite `.claude/agents/implementer.md` / `code-reviewer.md` /
+   `security-reviewer.md` to the v3 versions (project-local edits are shown
+   side-by-side, never silently lost), and, for a frontend project,
+   additionally write `.claude/agents/design-reviewer.md`. A non-Claude
+   roster gets the skills and docs above but no `.claude/agents/` tree --
+   report that as expected, not a gap.
+3. **features.json skeleton.** Build `docs/features.json` from the project's
+   `docs/backlog.md` rows + `docs/requirements.md` REQ-ACs. Every row needs
+   all eight `features_check.py`-required keys, never a partial entry: `id`
+   (next free `F000`-`F999`), `title` and `intent` from the backlog row's own
+   text, `serves` naming the vision-level reason (differentiator or journey
+   step) the row exists for, `acceptance` as a non-empty list of non-empty
+   strings sourced from the row's matching `docs/requirements.md` REQ-ACs
+   (or, when no REQ-AC maps to it, the backlog row's own description turned
+   into one acceptance sentence -- never an empty list). Then: Shipped rows
+   -> `status: "in-progress"` with `tests: []` and `notes: "shipped in v2;
+   map tests to promote to done"` **flagged for curation** (the report's top
+   action item is mapping tests and promoting each row to `done`); Active/
+   queued rows -> `todo`. Tier: rows default to `tier: "standard"`; rows
+   whose text matches the `security-review` skill's trigger get
+   `"high-risk"`; the report tells the owner to adjust. Ordering:
+   user-visible journey features first.
+4. **Mockup rescue.** Move any discovered mockups (`.local/mockups/*.html`,
+   files the backlog links) into `docs/design/mockups/` with feature-id names;
+   list claude.ai artifact URLs found in docs for the owner to export.
+5. **Retire.** Delete `.claude/hooks/slice-audit.sh`, the settings.json entry
+   for it, the qa.yml `ship-audit` job (replace with the `features-check`
+   job), `.claude/agents/tech-debt.md`, `.claude/agents/test-spec-writer.md`.
+   Leave `docs/ships/`, `docs/designs/`, `docs/current-task/`, `docs/backlog.md`,
+   `docs/requirements.md`, `docs/structure.txt` ON DISK (history has value) but
+   report them as retired -- the owner deletes when ready.
+6. **Reconcile the rest in the same pass.** The wholesale swap and retirements
+   above only replace what does not correspond between v2 and v3
+   (`AGENTS.md`, the subagents, the feature list, the retired docs). Once
+   they are done the project IS v3-shaped, so also run **Phase 3-A** (copy
+   in new always-on template files -- e.g. `docs/deviations.md`,
+   `docs/plans/README.md` if step 2 has not already added them, and any
+   other file this release added that step 2 did not enumerate) and
+   **Phase 3-C** (the language tooling delta -- e.g. the TypeScript
+   eslint-family bump, the Go `-race` gate step) against the fetched v3
+   template, in this same migration pass. Only **Phase 3-B** (block-by-block
+   `AGENTS.md`/subagent grafting -- superseded by step 1's wholesale
+   constitution swap, which already carries the full v3 block set) and
+   **Phase 3-E** (the discovery mini-interview -- superseded by step 2's own
+   design V1/V2 questions and the curation report) stay out of this pass.
+7. **Report** everything: grafts, curation debts (test mapping!), retired
+   files, the A/C reconciliation just applied, and that the memo/ship
+   ceremony no longer applies. Then go to **Phase 4** to apply the combined
+   change set; a later upgrade run (now on v3.0.0+) uses A-B-C-E as normal.
+
 ### Phase 4: One report, one approval, then verify and stamp
 
 1. Compute the ENTIRE change set first (3-A copies, 3-B grafts, 3-C tooling
-   deltas, 3-D answers). Present ONE report with five buckets: **copy verbatim**,
-   **graft (new blocks, by name)**, **substitute (with the values)**,
-   **needs your answer (the mini-interview questions)**, **superseded (flagged
-   for removal)**. Collect the mini-interview answers and a single yes.
+   deltas, 3-E answers -- or, for a project below v3.0.0 that accepted the
+   3-D migration, that migration's own change set). Present ONE report with
+   five buckets: **copy verbatim**, **graft (new blocks, by name)**,
+   **substitute (with the values)**, **needs your answer (the mini-interview
+   questions)**, **superseded (flagged for removal)**. Collect the
+   mini-interview answers and a single yes.
 2. Apply everything. `chmod +x` new scripts/hooks.
-3. Ensure `docs/designs/`, `docs/probes/`, and `docs/ships/` exist (copy their
-   READMEs from the template if absent) -- they are the gate's working
-   directories; `docs/ships/` is where the v2.1.0 slice-audit looks for records.
-4. Run the project's quality gate and confirm it still passes; fix any breakage
-   the upgrade introduced before finishing.
-5. **Only after the gate passes,** write the new version to
-   `.claude/.template-version`.
+3. Ensure `docs/plans/`, `docs/probes/`, and -- for frontend projects --
+   `docs/design/mockups/` exist (copy their READMEs from the template if
+   absent) -- they are the gate's working directories.
+4. Run BOTH the project's language quality gate AND `python3
+   scripts/features_check.py`; fix any breakage the upgrade introduced (a
+   3-D migration commonly needs this -- shipped rows land `in-progress`, not
+   `done`, precisely so this check is green on the first post-migration run)
+   before finishing.
+5. **Only after BOTH the gate and `features_check.py` pass,** write the new
+   version to `.claude/.template-version`.
 6. Close with: "Upgraded <from> -> <to> in one run. Review the diff and commit
    on your branch. Nothing was overwritten without being shown first."
 
@@ -160,8 +277,8 @@ zero punted files. If the user declines a question, write
 - **Looks empty / uninitialized.** Stop. Tell the user to run `/init-project`.
 - **`degit` fails (no network/npx).** Stop with the cause; the upgrade needs the current template to reconcile against.
 - **The project's `AGENTS.md` was heavily rewritten.** Do not force the merge. Show the missing blocks and let the user place them; surface, don't overwrite.
-- **Re-run after a partial upgrade.** Fine -- idempotent. Already-present files and blocks are skipped.
+- **Re-run after a partial upgrade.** A-C are idempotent; a partially-applied Phase 3-D re-run is safe too, because each step starts by checking what already landed -- skip what's present. Already-present files and blocks are skipped.
 
 ## Note for template maintainers
 
-This skill reconciles against `templates/core` + the project's `templates/profiles/<lang>`, so a **new always-on, placeholder-free file** added to `core/` is picked up automatically. You must touch this skill only when you add: a file with new tooling placeholders (extend the Phase 3-A special cases), a tooling-delta step for a language profile (extend Phase 3-C), or a new `AGENTS.md` rule block -- which needs (a) FW-BLOCK markers in the template and (b) a supersession-registry row (Phase 3-B) if it replaces an old block. New interview-sourced placeholders must also be added to the Phase 3-A discovery list so the Phase 3-D mini-interview picks them up. Renamed placeholders and conditional-block (`<ai-discipline>`, `<memory>`) changes also must be reflected in the Phase 3-A special cases -- both are recovery rules, not new files, so they are easy to forget. See the repo `AGENTS.md` `<editing-the-upgrade-skill>`.
+This skill reconciles against `templates/core` + the project's `templates/profiles/<lang>`, so a **new always-on, placeholder-free file** added to `core/` is picked up automatically. You must touch this skill only when you add: a file with new tooling placeholders (extend the Phase 3-A special cases), a tooling-delta step for a language profile (extend Phase 3-C), or a new `AGENTS.md` rule block -- which needs (a) FW-BLOCK markers in the template and (b) a supersession-registry row (Phase 3-B) if it replaces an old block. New interview-sourced placeholders must also be added to the Phase 3-A discovery list so the Phase 3-E mini-interview picks them up. Renamed placeholders and conditional-block (`<ai-discipline>`, `<memory>`) changes also must be reflected in the Phase 3-A special cases -- both are recovery rules, not new files, so they are easy to forget. See the repo `AGENTS.md` `<editing-the-upgrade-skill>`.

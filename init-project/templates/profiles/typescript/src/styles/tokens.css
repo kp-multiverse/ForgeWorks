@@ -1,0 +1,43 @@
+/* Design tokens -- the single source for color, type, and spacing.
+   Change a token here, never a one-off value in a component.
+   TODO markers are open choices: settle them in the first design-loop pass
+   against docs/design/DESIGN.md. */
+
+:root {
+  /* Type: one scale, max two families. TODO: pick the display family. */
+  --font-body: system-ui, sans-serif;
+  --font-display: var(--font-body); /* TODO */
+  --text-base: 1rem; /* >= 16px body */
+  --text-ratio: 1.25;
+  --text-lg: calc(var(--text-base) * var(--text-ratio));
+  --text-xl: calc(var(--text-lg) * var(--text-ratio));
+  --text-2xl: calc(var(--text-xl) * var(--text-ratio));
+
+  /* Spacing: one unit, everything is a multiple. */
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+
+  /* Color: neutrals + ONE accent, spent on the primary action.
+     TODO: replace with the palette chosen in the first design pass. */
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f4;
+  --color-text: #1c1917;
+  --color-text-muted: #57534e;
+  --color-accent: #1d4ed8; /* TODO */
+  --color-danger: #b91c1c;
+
+  --radius: 4px;
+  --border: 1px solid #d6d3d1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1917;
+    --color-surface: #292524;
+    --color-text: #fafaf9;
+    --color-text-muted: #a8a29e;
+    --border: 1px solid #44403c;
+  }
+}

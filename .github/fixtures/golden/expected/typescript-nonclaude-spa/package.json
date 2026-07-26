@@ -1,0 +1,23 @@
+{
+  "name": "ledgerline",
+  "version": "0.1.0",
+  "description": "A web app that turns a freelancer's raw bank CSV export into a categorized income/expense ledger.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "qa": "eslint . && prettier --check . && tsc --noEmit && vitest run",
+    "fix": "eslint . --fix && prettier --write .",
+    "e2e": "playwright test --pass-with-no-tests",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.2",
+    "eslint": "^10.8.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^3.2.6"
+  }
+}

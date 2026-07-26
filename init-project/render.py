@@ -36,7 +36,7 @@ from render_schema import (
 
 # Stamped into .claude/.template-version when the bootstrap install did not
 # already write one. Bump on release (see the repo AGENTS.md <release-process>).
-TEMPLATE_VERSION = "v2.5.0"
+TEMPLATE_VERSION = "v3.0.0"
 
 AI_FENCE_START_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-START -->\s*$")
 AI_FENCE_END_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-END -->\s*$")
@@ -60,6 +60,7 @@ FREE_TEXT_PLACEHOLDERS = {
     "CURRENT_ALTERNATIVE", "KEY_BENEFIT", "KEY_DIFFERENTIATOR",
     "BACKEND_FRAMEWORK", "VECTOR_DB", "LLM_PROVIDER", "EMBEDDINGS_MODEL",
     "DATABASE", "POSITIVE_REFERENCE_TEXT", "NEGATIVE_REFERENCE_TEXT",
+    "DESIGN_REFERENCES", "DESIGN_TONE", "DESIGN_ANTI_REFERENCE",
 }
 
 NO_BROWSER_STEP = "# no browser needed for this project's e2e suite"
@@ -183,6 +184,10 @@ def build_mapping(ans: dict, prof: dict, cond_dir: str) -> dict[str, str]:
     # E2E_BROWSER_INSTALL is a profile scalar but never a placeholder on its
     # own; only the derived step above lands in files.
     mapping.pop("E2E_BROWSER_INSTALL", None)
+    design = ans["design"] or {"references": "", "tone": "", "anti_reference": ""}
+    mapping["DESIGN_REFERENCES"] = design["references"]
+    mapping["DESIGN_TONE"] = design["tone"]
+    mapping["DESIGN_ANTI_REFERENCE"] = design["anti_reference"]
     return mapping
 
 
@@ -274,7 +279,7 @@ def apply_insertions(text: str, relpath: str, ans: dict, cond_dir: str) -> str:
                 and all(sec[k] == "yes" for k in SECURITY_KEYS))
     if relpath == "AGENTS.md" and ans["opt_ins"]["mem0"] == "yes":
         block = _conditional(cond_dir, "memory-block.md").rstrip("\n")
-        text = insert_after(text, "<!-- /FW-BLOCK: library-docs -->\n",
+        text = insert_after(text, "<!-- /FW-BLOCK: learning -->\n",
                             "\n" + block + "\n", relpath)
     if relpath == "docs/gotchas.md" and ans["opt_ins"]["seed_gotchas"] == "yes":
         seed = _conditional(cond_dir, "gotchas-seed.md").rstrip("\n")
@@ -299,14 +304,6 @@ def apply_insertions(text: str, relpath: str, ans: dict, cond_dir: str) -> str:
         text = insert_after(
             text, 'Review each row "through the lens of an attacker."\n',
             "\n" + profile_line + "\n", relpath)
-    if relpath == "docs/requirements.md" and trifecta:
-        note = ("**Lethal trifecta: PRESENT.** All three answers above are yes "
-                "for a single LLM agent. Break one leg -- split the agent, drop "
-                "a capability, or gate the action behind a human -- and record "
-                "the break here and in `docs/SECURITY.md`.")
-        text = insert_after(
-            text, "Full threat model and defenses: `docs/SECURITY.md`.\n",
-            "\n" + note + "\n", relpath)
     return text
 
 
@@ -316,11 +313,22 @@ def skip_file(relpath: str, source: str, ans: dict) -> bool:
     parts = relpath.split(os.sep)
     if source == "profile" and relpath == "profile.json":
         return True  # renderer input, never part of a generated project
-    if relpath == os.path.join(".claude", "hooks", "slice-audit.sh"):
-        return False  # agent-neutral: CI invokes it as a plain script
-                      # (`bash .claude/hooks/slice-audit.sh`) regardless of roster
-    if (parts[0] == ".claude" and not claude_selected(ans)):
-        return True  # Claude Code not in the roster: no agents/hooks/skills/settings
+    no_frontend = ans["stack"]["has_frontend"] == "no"
+    if no_frontend and parts[:2] == ["docs", "design"]:
+        return True
+    if no_frontend and os.path.basename(relpath) == "tokens.css":
+        return True
+    if no_frontend and relpath == os.path.join(
+            ".claude", "agents", "design-reviewer.md"):
+        return True
+    if no_frontend and parts[:3] == [".claude", "skills", "design-loop"]:
+        return True
+    if (parts[0] == ".claude" and not claude_selected(ans)
+            and parts[:2] != [".claude", "skills"]):
+        return True  # Claude Code not in the roster: no agents/hooks/settings/symlink
+        # (.claude/skills/ ships regardless -- plain-markdown procedures any
+        # driving agent can read; only the Claude-specific mechanics they
+        # invoke, e.g. subagents/hooks, are unavailable without Claude Code)
     if parts[0] == ".devcontainer" and ans["stack"]["uses_devcontainer"] == "no":
         return True
     if parts[:2] == ["docs", "explanations"] and ans["opt_ins"]["explanations"] == "no":
@@ -387,6 +395,12 @@ def post_steps(out_dir: str, ans: dict) -> None:
                           for a in ans["agents"]]}
     with open(agents_json, "w", encoding="utf-8", newline="") as f:
         json.dump(payload, f, indent=2, sort_keys=True)
+        f.write("\n")
+    # Machine-checked feature list -- the enforceable spec (see AGENTS.md).
+    features_json = os.path.join(out_dir, "docs", "features.json")
+    payload = {"schema": 1, "features": ans["features"]}
+    with open(features_json, "w", encoding="utf-8", newline="") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
         f.write("\n")
     # Template version stamp is ALWAYS written (upgrade-project depends on it),
     # even when the roster has no claude-code (bootstrap normally writes it first).

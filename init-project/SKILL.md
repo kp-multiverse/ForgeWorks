@@ -1,6 +1,6 @@
 ---
 name: init-project
-description: Bootstrap a new project with five focused subagents (test-spec-writer, implementer, code-reviewer, security-reviewer, tech-debt), a static+test quality-gate hook, a supply-chain guard hook, Context7 MCP, CI (fast gate plus an end-to-end job), PR template, pre-commit config, dev container, a threat-model doc, and structured documentation. Stack-agnostic at its core: language and tooling choices live in this skill's interview, not in the template files. Use this skill whenever a project is uninitialized (no docs/structure.txt or .claude/agents/), when the user says "init", "bootstrap", "set up this project", "/init-project", or describes wanting to start a new AI engineering project. Interviews the user deeply about scope, the heart of the project, security profile, and stack, then generates AGENTS.md, .claude/, .mcp.json, docs/, .github/, .devcontainer/, scripts/, and a manifest tailored to the chosen language. Pairs with the upstream `tdd` and `grill-me` skills from mattpocock/skills, installed during bootstrap.
+description: Bootstrap a new project with five focused subagents (implementer, code-reviewer, security-reviewer, design-reviewer, utility), a machine-checked feature list (docs/features.json) enforced in CI, a static+test quality-gate hook, a supply-chain guard hook, Context7 MCP, CI (a fast gate, a separate end-to-end job, and a features-check job), PR template, pre-commit config, dev container, a threat-model doc, and structured documentation. Stack-agnostic at its core: language and tooling choices live in this skill's interview, not in the template files. Use this skill whenever a project is uninitialized (no docs/features.json or .claude/agents/), when the user says "init", "bootstrap", "set up this project", "/init-project", or describes wanting to start a new AI engineering project. Interviews the user deeply about scope, the heart of the project, visual direction for frontend projects, security profile, and stack, then generates AGENTS.md, .claude/ (agents, hooks, and the slice/design-loop/security-review/tech-debt/select-agents skills), .mcp.json, docs/ (including features.json and, for frontend projects, docs/design/), .github/, .devcontainer/, scripts/features_check.py, and a manifest tailored to the chosen language. Pairs with the upstream `tdd` and `grill-me` skills from mattpocock/skills, installed during bootstrap.
 ---
 
 # init-project
@@ -18,22 +18,24 @@ This skill bootstraps a new project with a structured, agent-driven workflow. Th
 A fully structured project with:
 
 - `AGENTS.md` and `CLAUDE.md` (symlinked): the constitution, stack-agnostic core
-- `.claude/agents/`: five focused subagents (test-spec-writer, implementer, code-reviewer, security-reviewer, tech-debt)
+- `.claude/agents/`: `implementer`, `code-reviewer`, `security-reviewer`, `utility`, and (frontend projects only) `design-reviewer`
+- `.claude/skills/`: the generated skills `slice` (per-feature workflow, tiered by risk), `design-loop` (mockup-approve-build-verify loop, frontend projects only), `security-review`, `tech-debt`, and `select-agents`
 - `.claude/hooks/quality-gate.sh`: deterministic static+test gate triggered by code-reviewer
 - `.claude/hooks/deps-guard.sh` + `.claude/settings.json`: best-effort supply-chain guard (PreToolUse hook)
 - `.mcp.json`: Context7 MCP server for live library docs
-- `.github/workflows/qa.yml`: CI running the quality gate (fast) and a separate end-to-end job on pull requests and pushes to main
+- `.github/workflows/qa.yml`: CI running the quality gate (fast), a separate end-to-end job, and a `features-check` job that validates `docs/features.json`, on pull requests and pushes to main
 - `.github/pull_request_template.md`: short PR checklist
 - `.pre-commit-config.yaml`: local pre-commit hooks (language-specific portion populated from your profile)
-- `docs/`: living documentation (structure, requirements, language-standards, gotchas, backlog, SECURITY, current-task)
+- `docs/`: living documentation -- `PRODUCT_VISION.md`, `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/`, `probes/`, `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
+- `scripts/features_check.py`: validates `docs/features.json` against its schema; also runs as the CI `features-check` job
 - `.devcontainer/`: portable development environment (if chosen)
 - `README.md` + `.env.example`: project readme (commands, flow) and a documented, secret-free env template
 - A minimal green scaffold for the chosen language (a placeholder module + a passing test) so the quality gate passes on the first run
-- The chosen language's runners: a non-mutating quality gate (`qa`), a local auto-fix (`fix`), and a separate end-to-end runner (shell scripts for Python/Go, npm scripts for TypeScript)
+- The chosen language's runners: a non-mutating quality gate (`qa`), a local auto-fix (`fix`), and a separate end-to-end runner (shell scripts for Python/Go/Rust, npm scripts for TypeScript)
 - `{{MANIFEST_FILE}}`: dependency + tool config + bundled scripts entry
 - A working venv / node_modules / equivalent via the chosen package manager (skipped if dev container is chosen; deps install inside the container instead)
 
-The TDD methodology is provided by the upstream `tdd` skill from `mattpocock/skills`, installed during this skill's Phase 1. Three subagents pair with the loop (test-spec-writer, implementer, code-reviewer); two more run on a recurring cadence (security-reviewer, tech-debt). Main context drives; subagents are escape hatches for complex phases.
+The TDD methodology is provided by the upstream `tdd` skill from `mattpocock/skills`, installed during this skill's Phase 1. The `slice` skill drives each feature through the risk tier's procedure; subagents are escape hatches for complex phases within it: `@implementer` for green-phase work, `@code-reviewer` for correctness review (every standard/high-risk slice), `@design-reviewer` after green on user-visible surfaces, `@security-reviewer` on the security trigger, and `@utility` for mechanical chores. Main context drives.
 
 ---
 
@@ -59,7 +61,7 @@ npx skills@latest add mattpocock/skills
 
 Required skills (must be installed): `tdd`, `grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`.
 
-After the user picks them in the skills picker, verify `tdd` and `grill-me` are present before proceeding. `grill-me` is what powers the planning pass (Phase 2 and the per-slice `<planning-discipline>`); do not skip it. If the user refuses or skips, stop and explain why bootstrap cannot continue without `tdd` and `grill-me`.
+After the user picks them in the skills picker, verify `tdd` and `grill-me` are present before proceeding. `grill-me` is what powers the planning pass (Phase 2's interview, and the `slice` skill's high-risk-tier plan review); do not skip it. If the user refuses or skips, stop and explain why bootstrap cannot continue without `tdd` and `grill-me`.
 
 ### Phase 2: Interview
 
@@ -69,7 +71,7 @@ Start from the **heart of the project**: the one flow that, if it works, makes t
 
 **Be proactive about what's missing.** The complaint that drove this design is interviews that record what the user says and stop there. After the core questions, run one explicit "what haven't we talked about?" pass and name the gaps yourself: error and empty states, the unhappy path, auth and who can see what, scale, observability, the riskiest assumption. Tell the user what you think they have not considered. A good interview leaves the user thinking "I hadn't thought of that."
 
-Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (it is deleted after Phase 5 verification).
+Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (deleted partway through Phase 5, before the quality-gate run -- see Phase 5).
 
 The interview has two parts, in this order: **Part A -- product discovery** (the
 project itself; this is where surprises are killed) and **Part B -- stack and
@@ -107,10 +109,13 @@ complete "that ..." (e.g. "turns what you have into what you can cook").
 #### A3. Acceptance criteria for the first iteration
 
 Ask for 3-5 numbered, observable statements that, when all true, mean the MVP
-works. These become `REQ-AC1..n` in `docs/requirements.md` -- the iteration
-contract every slice cites. Probe each until it is verifiable by hand: "How
-would you check this one?" Reject vague criteria ("it should be fast") and
-help sharpen them ("p95 under 2s on 1k documents").
+works. These become the `acceptance` array of the first entries in
+`docs/features.json` -- there is no separate requirements doc for them to live
+in. (A feature's `serves:` line points at `docs/PRODUCT_VISION.md` instead --
+the differentiator or journey step the feature exists for -- see Phase 4.)
+Probe each until it is verifiable by hand: "How would you check this one?"
+Reject vague criteria ("it should be fast") and help sharpen them ("p95 under
+2s on 1k documents").
 
 #### A4. Non-goals
 
@@ -150,7 +155,7 @@ they are recorded as deferred, not built.
 
 #### A10. Style references
 
-Every project drifts without a style anchor. Pick one positive reference for the agent to pattern-match.
+Every project drifts without a style anchor. Pick one positive reference for the agent to pattern-match (code-shape only -- visual style is V1/V2).
 
 - **Positive reference (required):** a concrete artifact -- public repo URL, deployed product, folder on disk, design system, or screenshot directory -- that this project should resemble in shape and idioms. Ask: "Is there a project you have looked at and thought 'I want this codebase to feel like that one'?"
 - **Negative reference (optional):** a concrete artifact whose shape you want to avoid.
@@ -178,6 +183,28 @@ Python, TypeScript, Go, and Rust each have a **complete profile** (`templates/pr
   - **yes-minimal**: Streamlit, Gradio, plain HTML
   - **no**: API-only or notebook-only
 
+If not `no` and the language chosen in B1 is Go or Rust, say so honestly: those
+profiles ship no `tokens.css` yet in v3.0.0 -- `docs/design/DESIGN.md` still
+renders with its tokens section, but there is no starter tokens file to edit
+until one is added to the profile.
+
+#### V1. Visual references (only when the project has a frontend)
+
+Two or three REAL products or sites this should feel like, and what
+specifically to take from each ("linear.app -- the calm density", not just a
+name). These are visual anchors, distinct from A10's codebase-shape reference.
+Push past "something clean": ask what the user actually admires opening daily.
+
+#### V2. Tone and anti-reference (only when the project has a frontend)
+
+- Three tone words (e.g. "calm, technical, warm").
+- One anti-reference: "never let it look like ..." (a product, or a named
+  cliche). If the user shrugs, offer the default: "generic AI dashboard:
+  purple gradient hero, three rounded cards, default font everywhere".
+
+V1 and V2 are asked ONLY when B2 is not `no`; when B2 is `no`, skip them and
+record the answers-file `design` key as `null`.
+
 #### B3. Backend framework (if applicable)
 
 Offer the menu for the chosen language; do not improvise:
@@ -195,7 +222,10 @@ Offer the menu for the chosen language; do not improvise:
   - Evals (LLM output testing)?
   - Streaming responses?
 
-Record answers for `requirements.md` and to scaffold relevant test categories.
+Record answers to scaffold relevant test categories; a non-empty answer here
+turns on `{{AI_DISCIPLINE_BLOCK}}` in `AGENTS.md` and the AI-only sections of
+`docs/SECURITY.md`, `.claude/agents/implementer.md`, and
+`.claude/agents/code-reviewer.md`.
 
 #### B5. LLM provider and embeddings model
 - Provider: OpenAI / Anthropic / Google / Together / OpenRouter / local (Ollama / LM Studio) / multiple via a router
@@ -214,7 +244,7 @@ Trade-offs:
 
 #### B8. Security profile
 
-Three quick yes/no questions that set the project's threat model (these seed `docs/SECURITY.md` and `docs/requirements.md`):
+Three quick yes/no questions that set the project's threat model (these seed `docs/SECURITY.md`):
 
 - Does it **read untrusted content** (web pages, user uploads, third-party API or tool results, inbound messages)?
 - Does it **hold private data** (user records, secrets, anything not public)?
@@ -272,9 +302,14 @@ answers file as the top-level `agents` list and, after render, lives on as the
 RUNTIME config `docs/agents.json` (+ the `docs/agents.md` matrix) -- changeable
 any time via `/select-agents`, never frozen at bootstrap.
 
-If `claude-code` is NOT selected: warn that the enforcement stack (subagents,
-hooks, settings, skills) will not be generated, and that the bootstrap-installed
-files under `.claude/skills/` are inert and safe to delete after Phase 5.
+If `claude-code` is NOT selected: warn that the Claude-specific enforcement
+stack (subagents, hooks, settings, the `CLAUDE.md` symlink) will not be
+generated, but the five generated `.claude/skills/` procedures (`slice`,
+`security-review`, `tech-debt`, `select-agents`, and -- frontend projects --
+`design-loop`) still will, as plain-markdown procedures for the driving agent
+to read and follow manually. Only the bootstrap-installed helper skills
+(`init-project` itself and the Phase 1 `mattpocock/skills` pack) are inert
+and safe to delete after Phase 5.
 
 ### Phase 3: Confirm the plan -- show the filled docs, not a settings list
 
@@ -287,10 +322,12 @@ to the user BEFORE generating -- surprises must surface here, not after:
 > {key benefit}. Unlike {alternative}, we {differentiator}.
 > **Core flow:** {numbered steps}
 > **Acceptance criteria:** {REQ-AC1..n}
+> **First features (ordered):** {id: title -- serves ...}
 > **Non-goals:** {list}   **Constraints:** {time / cost / data}
 > **Deployment:** {target}   **Scale:** {expectations}
 > **Integrations (each will need a reality probe):** {list}
 > **Success metric:** {metric}   **Riskiest assumption:** {assumption}
+> **Design direction:** {references} / tone {words} / never {anti-reference} (frontend only)
 >
 > Stack: {language}, frontend {answer}, backend {answer}, DB {answer},
 > AI {list or none}, LLM {provider or none}, dev container {yes/no},
@@ -319,9 +356,11 @@ the renderer:
 - `templates/conditional/` -- the canonical texts of the conditional blocks: `ai-discipline.md`, `memory-block.md`, `memory-doc-line.md`, `codex-review-step.md`, `codex-roster-note.md`, `gotchas-seed.md`, the per-agent roster snippets under `agents/`, and the roster-wide `agents/no-claude-note.md` (rendered when `claude-code` is absent). Edit them THERE; this file only points at them.
 
 **Step 1 -- write the answers file** at `docs/_init-answers.json`, exactly in
-this schema. All four sections and every key are required; yes/no fields are the
-literal strings `"yes"`/`"no"`; multi-line values use `\n`. Example (values
-abbreviated -- yours carry the real interview content):
+this schema. All top-level keys (`schema`, `date`, `agents`, `project`,
+`stack`, `security`, `opt_ins`, `features`, `design`) and every key within the
+four object sections are required; yes/no fields are the literal strings
+`"yes"`/`"no"`; multi-line values use `\n`. Example (values abbreviated --
+yours carry the real interview content):
 
 ```json
 {
@@ -378,6 +417,33 @@ abbreviated -- yours carry the real interview content):
     "seed_gotchas": "yes",
     "mem0": "no",
     "codex_reviewer": "no"
+  },
+  "features": [
+    {
+      "id": "F001",
+      "title": "Extract an editable ingredient list from a fridge photo",
+      "intent": "Uploading a clear fridge photo yields an editable ingredient list within 15 seconds.",
+      "serves": "journey step 2: the app extracts an ingredient list and shows it for one-tap correction",
+      "acceptance": ["Uploading a clear fridge photo produces an editable ingredient list within 15 seconds."],
+      "tests": [],
+      "status": "todo",
+      "tier": "high-risk"
+    },
+    {
+      "id": "F002",
+      "title": "Suggest three cookable recipes",
+      "intent": "Confirming the list yields exactly three recipe suggestions, each cookable with the confirmed ingredients plus pantry staples.",
+      "serves": "journey step 3: the app retrieves three matching recipes and adapts each to the confirmed inventory",
+      "acceptance": ["Confirming an ingredient list returns exactly three recipes, each cookable with those ingredients plus pantry staples."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    }
+  ],
+  "design": {
+    "references": "- datasette.io -- plain, content-first layout that gets out of the way\n- a well-lit recipe card: one photo, short ingredient list, numbered steps",
+    "tone": "warm, uncluttered, mobile-first",
+    "anti_reference": "cluttered recipe blogs: ad blocks, autoplay video, ingredient list buried under a life story"
   }
 }
 ```
@@ -390,6 +456,8 @@ Field rules the renderer enforces (it fails closed with a precise message):
 - Rule zero still holds: no bare `TODO` in any answer. The only allowed form is `TODO(interview-skipped)` when the user explicitly refused a question. `date` is today, ISO format.
 - `vector_db`, `llm_provider`, `embeddings_model`, `database`, `backend_framework`: write `none` (or `none (CLI/library)` for the framework) when not applicable.
 - `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.
+- `features` (top-level, required, non-empty): each entry needs `id` (`F000`-`F999`, unique), `title`, `intent`, `serves`, `acceptance` (non-empty list of strings), `tests` (list of strings -- `[]` at bootstrap, filled in as the test files are named), `status` (all `"todo"` at bootstrap; `in-progress` / `done` / `dropped` only apply later), and `tier` (`light` / `standard` / `high-risk`, per the `<risk-tiers>` table in `AGENTS.md`). Derive 3-7 features from A2's core journey, using A3's acceptance criteria as the source for each feature's `acceptance` array -- order them user-visible-journey-first (hardening and infra queue behind the first shippable surface) -- and give each a `serves:` line naming the differentiator or journey step it exists for from `docs/PRODUCT_VISION.md` (e.g. "differentiator: <the A2 key differentiator>" or "journey step 2: <the step>"). There is no requirements doc for `serves:` to cite a `REQ-ACn` label back to -- name the vision-level reason, not the criterion. An optional ninth key, `notes`, is unused at bootstrap (every feature starts `todo`) but becomes required later -- `scripts/features_check.py` fails a `dropped` feature that has no reason recorded in `notes`.
+- `design` (top-level): an object with `references`, `tone`, `anti_reference` (V1/V2) when `stack.has_frontend` is not `"no"`; `null` when it is `"no"`.
 
 **Step 2 -- run the renderer** from the project root:
 
@@ -415,24 +483,29 @@ fixtures in the template repo CI:
 | 1 | Substitutes every placeholder in the tables below (core + the chosen profile only), re-indenting multi-line values to the placeholder's own column so YAML stays valid. |
 | 2 | Escapes free-text answers per target format: JSON-escaped in `.json`, TOML-escaped in `.toml`, verbatim in Markdown/text -- hostile quotes/newlines/braces land as text, never as structure. Free text in any other file type is a hard error. |
 | 3 | AI features selected -> renders `{{AI_DISCIPLINE_BLOCK}}` from `templates/conditional/ai-discipline.md`; none -> empty. |
-| 4 | AI fences: AI on -> strips only the marker lines and keeps the content; AI off -> deletes the whole fenced blocks in `docs/SECURITY.md`, `docs/requirements.md`, `.claude/agents/implementer.md`, `.claude/agents/code-reviewer.md`. |
+| 4 | AI fences: AI on -> strips only the marker lines and keeps the content; AI off -> deletes the whole fenced blocks in `docs/SECURITY.md` (AI-SECURITY, AI-REDTEAM), `.claude/agents/implementer.md` (AI-IMPL), `.claude/agents/code-reviewer.md` (AI-REVIEW). |
 | 5 | Style references (A10): renders the positive/negative reference lines, or the "no positive reference yet" comment / empty string. |
 | 6 | B9 `explanations: no` -> `docs/explanations/` is not generated. |
 | 7 | B10 `seed_gotchas: yes` -> inserts the three starter entries from `templates/conditional/gotchas-seed.md` into `docs/gotchas.md`. |
-| 8 | B11 `mem0: yes` -> keeps `docs/memory.md`, renders the memory doc line, inserts the `<memory>` block (from `templates/conditional/memory-block.md`) between `<library-docs>` and `<tools>`; `no` -> none of those. The `mem0ai` dependency itself is added in Phase 4.5. |
+| 8 | B11 `mem0: yes` -> keeps `docs/memory.md`, renders `{{MEMORY_DOC_LINE}}` in `AGENTS.md`'s `<project>` block, and inserts the `<memory>` block (from `templates/conditional/memory-block.md`, see rule 21 for the anchor); `no` -> none of those. The `mem0ai` dependency itself is added in Phase 4.5. |
 | 9 | B12 `codex_reviewer: yes` -> renders `{{CODEX_REVIEW_STEP}}` and `{{CODEX_ROSTER_NOTE}}` from `templates/conditional/codex-*.md`; `no` -> both empty. |
-| 10 | B8: seeds the security-profile line into `docs/SECURITY.md`; if all three answers are `yes` AND AI features are on, writes the lethal-trifecta-PRESENT note into `docs/SECURITY.md` and `docs/requirements.md`. |
+| 10 | B8: seeds the security-profile line into `docs/SECURITY.md`; if all three answers are `yes` AND AI features are on, appends the lethal-trifecta-PRESENT note to that same insertion. |
 | 11 | B7 `uses_devcontainer: no` -> `.devcontainer/` is not generated. |
 | 12 | B2 + profile: renders `{{E2E_BROWSER_INSTALL_STEP}}` as the browser-install step (UI project with a profile `e2e_browser_install`) or the "no browser needed" comment. |
 | 13 | Renames profile manifests shipped with an `.example` suffix (`pyproject.toml.example` -> `pyproject.toml`). Core files are never renamed (`.env.example` stays). |
 | 14 | Creates the `CLAUDE.md` -> `AGENTS.md` symlink (a one-line pointer file where symlinks are unavailable), `chmod +x` on `.claude/hooks/*.sh` and `scripts/*.sh`, and stamps `.claude/.template-version` (with this release's version) if the bootstrap `install.sh` did not already write it. |
 | 15 | Fails closed if any `{{...}}` placeholder survives anywhere in the output. |
-| 16 | B13: when `claude-code` is NOT in `agents`, the `.claude/` tree (agents, hooks, settings, skills) and the `CLAUDE.md` symlink are not generated -- EXCEPT `.claude/hooks/slice-audit.sh`, which ships for every roster (it is agent-neutral; the generated CI workflow invokes it as a plain script) and is `chmod +x`'d regardless. The `.claude/.template-version` stamp is always written. A `claude-code` entry with `"status": "planned"` still counts as selected for this rule -- the full tree is still generated; `status` only affects `docs/agents.json` and the matrix status note (rule 17). |
-| 17 | B13: renders `{{AGENT_MATRIX}}` in `docs/agents.md` from `templates/conditional/agents/<name>.md` (planned agents get a status note) and writes the machine-readable roster `docs/agents.json` (name, status, offload roles). When `claude-code` is NOT in `agents`, an honest-omission note (`templates/conditional/agents/no-claude-note.md`) is appended as the final section of `docs/agents.md`, spelling out what was skipped and that `docs/SECURITY.md` / `docs/language-standards.md` / `docs/structure.txt` mandates fall to the driving agent manually. |
-| 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. Current fence: `<!-- CC-TREE-START/END -->` around the roster-dependent `.claude/` entries in `docs/structure.txt` (`.claude/hooks/slice-audit.sh` is listed outside the fence since it ships for every roster). |
+| 16 | B13: when `claude-code` is NOT in `agents`, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the `CLAUDE.md` symlink are not generated -- these are the Claude-specific enforcement mechanics (subagents, hooks, settings). `.claude/skills/` (`slice`, `security-review`, `tech-debt`, `select-agents`, and -- frontend only -- `design-loop`) ships regardless of roster: they are plain-markdown procedures any driving agent can read and follow, not Claude Code slash commands. `.claude/.template-version` is likewise always written by post-processing (rule 14) regardless of roster. A `claude-code` entry with `"status": "planned"` still counts as selected for this rule -- the agents/hooks/settings tree is still generated; `status` only affects `docs/agents.json` and the matrix status note (rule 17). |
+| 17 | B13: renders `{{AGENT_MATRIX}}` in `docs/agents.md` from `templates/conditional/agents/<name>.md` (planned agents get a status note) and writes the machine-readable roster `docs/agents.json` (name, status, offload roles). When `claude-code` is NOT in `agents`, an honest-omission note (`templates/conditional/agents/no-claude-note.md`) is appended as the final section of `docs/agents.md`, spelling out what was skipped and that `docs/SECURITY.md` / `docs/language-standards.md` mandates -- and keeping `docs/features.json` current -- fall to the driving agent manually. |
+| 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. Current instance: `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section (the hook is a Claude Code enforcement mechanic, so other rosters do not get the bullet). |
+| 19 | Writes `docs/features.json` from the answers' `features` list (schema 1). |
+| 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/), the profile tokens.css, `@design-reviewer`, and the `design-loop` skill; `has_frontend: no` skips all of them. |
+| 21 | mem0 memory block inserts after `<!-- /FW-BLOCK: learning -->`. |
 
-Keep `docs/_init-answers.json` until Phase 5 verification passes, then delete it
-(`rm docs/_init-answers.json`) -- its content lives on in the rendered docs.
+Keep `docs/_init-answers.json` until Phase 5's placeholder grep and
+`features_check.py` pass, then delete it (`rm docs/_init-answers.json`)
+BEFORE running the quality gate -- it is transient renderer working state,
+not project content, and its content lives on in the rendered docs.
 
 ### Phase 4.5: Install dependencies
 
@@ -451,7 +524,7 @@ intent to packages, per language:
 - **Go** -- HTTP: stdlib `net/http` (no dep) or `chi`/`gin`; Postgres: `github.com/jackc/pgx/v5`; LLM: the provider's official Go SDK or `net/http`. Add via `go get`.
 - **Rust** -- HTTP server: `axum` or `actix-web` (+ `tokio`); Postgres: `sqlx`; LLM: the provider's official Rust SDK or `reqwest`. Add via `cargo add`.
 
-Choose the smallest set that covers the answers; do not add a database/vector/LLM dep the project did not ask for. If B11 chose mem0, also add `mem0ai` (Python: `DEPS_VETTED=1 uv add mem0ai`; for other languages, add the equivalent client or leave a clearly-marked note in `docs/requirements.md` if none is established).
+Choose the smallest set that covers the answers; do not add a database/vector/LLM dep the project did not ask for. If B11 chose mem0, also add `mem0ai` (Python: `DEPS_VETTED=1 uv add mem0ai`; for other languages, add the equivalent client or leave a clearly-marked note in `docs/gotchas.md` if none is established).
 
 **Then install.** If `{{USES_DEVCONTAINER}}` is `no`:
 
@@ -474,27 +547,48 @@ First, confirm the **core** files (every project, every language) exist:
 test -f AGENTS.md && test -f README.md && test -f .env.example && \
 test -f .mcp.json && test -f .claude/.template-version && \
 test -f .github/workflows/qa.yml && test -f .github/pull_request_template.md && \
-test -d docs && test -f docs/PRODUCT_VISION.md && test -f docs/SECURITY.md && \
-test -f docs/language-standards.md && \
+test -f docs/PRODUCT_VISION.md && test -f docs/features.json && \
+test -f docs/SECURITY.md && test -f docs/language-standards.md && \
+test -f docs/deviations.md && test -f docs/plans/README.md && \
 test -f docs/agents.md && test -f docs/agents.json && \
-test -f docs/designs/README.md && test -f docs/probes/README.md && test -f docs/ships/README.md
+test -f scripts/features_check.py && python3 scripts/features_check.py && \
+test -f .claude/skills/slice/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
+test -f .claude/skills/tech-debt/SKILL.md && test -f .claude/skills/select-agents/SKILL.md
 ```
 
-Then, ONLY when `claude-code` is in the B13 roster, confirm the enforcement
-tree landed:
+(`.claude/skills/` ships for every roster -- plain-markdown procedures, not
+Claude Code slash commands -- so this check is unconditional.)
+
+Then, ONLY when `claude-code` is in the B13 roster, confirm the Claude-specific
+enforcement tree landed:
 
 ```bash
 test -L CLAUDE.md && test -d .claude/agents && \
-test -f .claude/agents/security-reviewer.md && test -f .claude/agents/tech-debt.md && \
+test -f .claude/agents/code-reviewer.md && test -f .claude/agents/security-reviewer.md && \
 test -f .claude/agents/utility.md && \
-test -f .claude/settings.json && test -f .claude/hooks/deps-guard.sh && \
-test -f .claude/hooks/slice-audit.sh && test -x .claude/hooks/slice-audit.sh && \
-test -f .claude/skills/select-agents/SKILL.md
+test -f .claude/settings.json && test -f .claude/hooks/deps-guard.sh
 ```
 
-When `claude-code` is NOT in the roster: skip that block, and tell the user
-the bootstrap-installed `.claude/skills/` trees (init-project itself and the
-Phase 1 skill pack) are inert for their agents and safe to delete.
+And, ONLY when the project has a frontend (B2 not `no`), also confirm the
+design tree landed:
+
+```bash
+test -f docs/design/DESIGN.md && test -f .claude/skills/design-loop/SKILL.md
+```
+
+(this pair ships for any frontend project regardless of which agents drive
+it). ONLY when `claude-code` is also in the roster, additionally confirm
+`test -f .claude/agents/design-reviewer.md`.
+
+When `claude-code` is NOT in the roster: skip the Claude-specific enforcement
+block above, and tell the user the bootstrap-installed skill helpers --
+`init-project` itself and the Phase 1 `mattpocock/skills` pack (`tdd`,
+`grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`) -- are inert for
+their agents and safe to delete. This does NOT include the five generated
+`.claude/skills/` procedures checked above (`slice`, `security-review`,
+`tech-debt`, `select-agents`, `design-loop`): those are the project's own
+canonical procedures and the driving agent should read and follow them even
+without Claude Code.
 
 Then confirm the chosen profile landed: its manifest (`{{MANIFEST_FILE}}`) exists, and the green-scaffold source + test exist (Python `src/example.py`+`tests/test_example.py`; TypeScript `src/example.ts`+`tests/example.test.ts`; Go `greet.go`+`greet_test.go`; Rust `src/lib.rs` (with its in-file unit test) + `tests/e2e.rs` + `rust-toolchain.toml`).
 
@@ -504,11 +598,15 @@ Then check no unresolved placeholders remain:
 ! grep -rn '{{[A-Z0-9_]*}}' . --include='*.md' --include='*.txt' --include='*.toml' --include='*.yml' --include='*.yaml' --include='*.json' --include='*.sh' --include='*.py' --include='*.ts' --include='*.go' --include='*.rs' --include='*.mod' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=skills 2>/dev/null
 ```
 
-(`--exclude-dir=skills` skips only the installed skill trees under `.claude/skills/`; the generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
+(`--exclude-dir=skills` skips every dir literally named `skills`, which covers both the bootstrap-installed helper skills and this project's own generated `.claude/skills/` procedures -- those never carry unsubstituted placeholders (there are none in `templates/core/.claude/skills/` to begin with), so excluding them is safe. The generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
+
+Now delete the renderer input, BEFORE running the quality gate: `rm
+docs/_init-answers.json` (its content lives on in the rendered docs). It is
+transient working state, not project content -- a project language's gate
+(e.g. TypeScript's prettier check) has no reason to see it, and leaving it
+on disk into the gate run is a bug, not a convenience.
 
 Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
-
-Once verification passes, delete the renderer input: `rm docs/_init-answers.json` (its content lives on in the rendered docs).
 
 Report what was generated, then hand off:
 
@@ -516,7 +614,7 @@ Report what was generated, then hand off:
 > 1. {{If dev container}}: Reopen in dev container, then run `{{INSTALL_COMMAND}}` inside. {{Else}}: Deps are already installed; `{{QA_COMMAND}}` is green on the fresh scaffold. Use `{{FIX_COMMAND}}` to auto-format locally.
 > 2. Initialize git: `git add . && git commit -m 'chore: bootstrap project'`. Push to enable CI.
 > 3. Restart Claude Code so `.mcp.json` (Context7) registers.
-> 4. Start your first task -- replace `src/example.py` and `tests/test_example.py` with your first slice."
+> 4. Start your first task -- run the `slice` skill against the first entry in `docs/features.json`, replacing `src/example.py` and `tests/test_example.py` with your first slice."
 
 Then, if the repo has a GitHub remote and `gh` is available, offer (do not run unasked) to enable branch protection -- the generated CI is merge-blocking only once the repo requires its checks:
 
@@ -525,7 +623,7 @@ gh api -X PUT "repos/{owner}/{repo}/branches/main/protection" \
   -F 'required_status_checks[strict]=true' \
   -F 'required_status_checks[contexts][]=qa' \
   -F 'required_status_checks[contexts][]=e2e' \
-  -F 'required_status_checks[contexts][]=ship-audit' \
+  -F 'required_status_checks[contexts][]=features-check' \
   -F 'enforce_admins=false' -F 'required_pull_request_reviews=null' -F 'restrictions=null'
 ```
 
@@ -550,19 +648,19 @@ Any new placeholder must be added here, to the answers schema (or
 | `{{PROJECT_SLUG}}` | A1 -- derived: lowercase, hyphenated, valid package/module identifier |
 | `{{PRIMARY_USER}}` | A1 |
 | `{{CORE_PROBLEM}}` | A2 |
-| `{{CORE_JOURNEY}}` | A2 (the heart: the core user-visible flow, as steps) |
+| `{{CORE_JOURNEY}}` | A2 (the heart: the core user-visible flow, as steps) -- answers-file only (no template consumer in v3.0.0; feeds `docs/PRODUCT_VISION.md` narrative and the `features[].serves` "journey step" phrasing the agent writes by hand, not a direct substitution) |
 | `{{SUCCESS_MEASURE}}` | A2 (what success looks like, concretely) |
-| `{{RISKIEST_ASSUMPTION}}` | A2 (the assumption that sinks the project if wrong) |
-| `{{REQ_AC_LIST}}` | A3 -- rendered as `- [ ] **REQ-ACn:** <criterion>` lines |
+| `{{RISKIEST_ASSUMPTION}}` | A2 (the assumption that sinks the project if wrong) -- answers-file only (no template consumer in v3.0.0) |
+| `{{REQ_AC_LIST}}` | A3 -- kept in the answers file as the raw `- [ ] **REQ-ACn:** <criterion>` lines the interview collected; answers-file only (no template consumer in v3.0.0 -- no `docs/requirements.md` exists to render it into). A3's criteria are the source for each feature's `acceptance` array in Phase 4, not for this placeholder. |
 | `{{NON_GOALS}}` | A4 (bullet list) |
-| `{{OTHER_USERS}}` | A9 (bullet list; `- none identified yet` if empty) |
-| `{{CONSTRAINT_TIME}}` | A5 |
-| `{{CONSTRAINT_COST}}` | A5 (includes LLM/API budget when AI is in scope) |
-| `{{CONSTRAINT_DATA}}` | A5 |
+| `{{OTHER_USERS}}` | A9 (bullet list; `- none identified yet` if empty) -- answers-file only (no template consumer in v3.0.0) |
+| `{{CONSTRAINT_TIME}}` | A5 -- answers-file only (no template consumer in v3.0.0) |
+| `{{CONSTRAINT_COST}}` | A5 (includes LLM/API budget when AI is in scope) -- answers-file only (no template consumer in v3.0.0) |
+| `{{CONSTRAINT_DATA}}` | A5 -- answers-file only (no template consumer in v3.0.0) |
 | `{{FIRST_MILESTONE}}` | A5 -- derived date or `none set` |
 | `{{DEPLOYMENT_TARGET}}` | A6 |
-| `{{SCALE_EXPECTATIONS}}` | A7 |
-| `{{INTEGRATIONS}}` | A8 (bullet list; `- none` if none) |
+| `{{SCALE_EXPECTATIONS}}` | A7 -- answers-file only (no template consumer in v3.0.0) |
+| `{{INTEGRATIONS}}` | A8 (bullet list; `- none` if none) -- answers-file only (no template consumer in v3.0.0) |
 | `{{PAIN_POINT}}` | A2 (positioning) |
 | `{{PRODUCT_CATEGORY}}` | A2 (positioning) |
 | `{{CURRENT_ALTERNATIVE}}` | A2 (positioning) |
@@ -570,21 +668,24 @@ Any new placeholder must be added here, to the answers schema (or
 | `{{KEY_DIFFERENTIATOR}}` | A2 (positioning) |
 | `{{IN_SCOPE_LIST}}` | Derived from A2 core flow + A3 criteria (bullet list) |
 | `{{SUCCESS_METRICS}}` | A2 success measure rendered as 1-3 `- <metric> -- target` lines |
-| `{{READS_UNTRUSTED}}` | B8 (`yes`/`no`) |
-| `{{HOLDS_PRIVATE_DATA}}` | B8 (`yes`/`no`) |
-| `{{ACTS_OUTWARD}}` | B8 (`yes`/`no`) |
+| `{{READS_UNTRUSTED}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0; documents what the B8 answer means, and the security-profile line in `docs/SECURITY.md` is written directly by renderer rule 10, not through this placeholder) |
+| `{{HOLDS_PRIVATE_DATA}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0), same as above |
+| `{{ACTS_OUTWARD}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0), same as above |
 | `{{E2E_BROWSER_INSTALL_STEP}}` | Derived from B2 + profile `e2e_browser_install` (renderer rule 12) |
 | `{{LANGUAGE}}` | B1 |
 | `{{HAS_FRONTEND}}` | B2 |
-| `{{BACKEND_FRAMEWORK}}` | B3 |
+| `{{BACKEND_FRAMEWORK}}` | B3 -- answers-file only (no template consumer in v3.0.0) |
 | `{{AI_FEATURES}}` | B4 (comma-separated) |
-| `{{VECTOR_DB}}` | B4 |
-| `{{LLM_PROVIDER}}` | B5 |
-| `{{EMBEDDINGS_MODEL}}` | B5 |
-| `{{DATABASE}}` | B6 |
+| `{{VECTOR_DB}}` | B4 -- answers-file only (no template consumer in v3.0.0) |
+| `{{LLM_PROVIDER}}` | B5 -- answers-file only (no template consumer in v3.0.0) |
+| `{{EMBEDDINGS_MODEL}}` | B5 -- answers-file only (no template consumer in v3.0.0) |
+| `{{DATABASE}}` | B6 -- answers-file only (no template consumer in v3.0.0) |
 | `{{USES_DEVCONTAINER}}` | B7 (`yes`/`no`) |
 | `{{POSITIVE_REFERENCE_TEXT}}` | A10 -- rendered line (Phase 4 renderer table, rule 5) |
 | `{{NEGATIVE_REFERENCE_TEXT}}` | A10 -- rendered line, may be empty |
+| `{{DESIGN_REFERENCES}}` | V1 -- bullet list; empty string when `design` is `null` |
+| `{{DESIGN_TONE}}` | V2 -- tone words; empty string when `design` is `null` |
+| `{{DESIGN_ANTI_REFERENCE}}` | V2 -- anti-reference; empty string when `design` is `null` |
 | `{{MEMORY_DOC_LINE}}` | Derived from B11 (`templates/conditional/memory-doc-line.md`, or empty) |
 | `{{AI_DISCIPLINE_BLOCK}}` | Derived from B4 (`templates/conditional/ai-discipline.md`, or empty) |
 | `{{CODEX_REVIEW_STEP}}` | Derived from B12 -- `templates/conditional/codex-review-step.md`, or empty |
@@ -592,7 +693,9 @@ Any new placeholder must be added here, to the answers schema (or
 | `{{AGENT_MATRIX}}` | Derived from B13 -- per-agent sections from `templates/conditional/agents/`, joined |
 | `{{DATE}}` | today, ISO format (`date` in the answers file) |
 
-B9 (`explanations`), B10 (`seed_gotchas`), and B11 (`mem0`) have no placeholder of their own: they are switches in the answers file's `opt_ins` section that turn renderer rules 6-8 on or off. B8 (security profile) renders its three `yes`/`no` placeholders above and additionally seeds the threat model (renderer rule 10).
+B9 (`explanations`), B10 (`seed_gotchas`), and B11 (`mem0`) have no placeholder of their own: they are switches in the answers file's `opt_ins` section that turn renderer rules 6-8 on or off.
+
+Rows marked **answers-file only (no template consumer in v3.0.0)** above are still asked, still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRODUCT_VISION.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all nine golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
 
 ### Language-derived placeholders (from the profile)
 
@@ -764,8 +867,8 @@ ci_setup_steps: |
   - name: Set up Node
     uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
     with:
-      node-version: "22"
-      cache: "npm"
+      node-version: '22'
+      cache: 'npm'
   - name: Install deps
     run: npm ci
 
@@ -961,7 +1064,7 @@ Refuse unless they explicitly confirm overwriting. Show what would be overwritte
 This is a hard failure. The `tdd` skill is required. Stop and ask the user to install Node.js, then re-run.
 
 **Package manager not available for chosen language.**
-Stop with a clear install link for the chosen language's package manager (`uv`, `pnpm`, `cargo`, `go`).
+Stop with a clear install link for the chosen language's package manager (`uv`, `npm`, `cargo`, `go`).
 
 **Context7 MCP fails to start after bootstrap.**
 Check that `npx` is available. The Context7 server in `.mcp.json` uses `npx -y @upstash/context7-mcp@3.2.3`. If npx is broken, document the failure in `docs/gotchas.md` and instruct the user to either fix npx or remove the Context7 entry from `.mcp.json`.
@@ -972,14 +1075,10 @@ Check that `npx` is available. The Context7 server in `.mcp.json` uses `npx -y @
 
 Once bootstrap completes, the project enters normal mode. The agent should:
 
-1. Read `AGENTS.md` on every new conversation
-2. Read `docs/structure.txt`, `docs/requirements.md`, and `docs/language-standards.md` first when starting work; read `docs/SECURITY.md` for any task touching auth, input, external content, or tools -- the main-context driver reads this doc set once per session; subagent briefs name the docs each task needs, not the full set every hop
-3. Run the `<planning-discipline>` pass before EVERY non-trivial slice or new feature, not only the first: brainstorm the options, then grill the chosen one (with `grill-me`) -- name the full test plan (unit + functional + e2e + security) before writing code, build the mockup first when the slice makes a significant UI/UX choice, and write the design memo (docs/designs/) -- the user must approve it before any code (see <investigation-discipline>)
-4. Use `docs/current-task/task.md` as shared memory across agents during a task
-5. Use the upstream `tdd` skill (mattpocock/skills) for the Red to Green to Refactor methodology
-6. Delegate to subagents (`@test-spec-writer`, `@implementer`, `@code-reviewer`) for complex phases; run `@security-reviewer` and `@tech-debt` on their recurring cadence
-7. Override subagent models per call (`model: haiku | sonnet | opus` in the Agent invocation) to match cost to complexity
-8. Query Context7 (via the `.mcp.json` MCP server) for library API details rather than relying on training memory
-9. Update `docs/gotchas.md`, `docs/structure.txt`, and `docs/SECURITY.md` when a task surfaces a lesson or changes layout/attack surface
+1. Read `AGENTS.md` on every new conversation.
+2. Run the `slice` skill for each feature in `docs/features.json` (`design-loop` first for any new user-visible surface).
+3. Treat `docs/features.json` as the spec -- keep statuses honest; a feature is not `done` until its mapped tests exist and pass, and a dropped feature keeps its entry with a reason in `notes`, never a deletion.
+4. Run reviews at the ceremony the risk tier calls for (`AGENTS.md` `<risk-tiers>`): `@code-reviewer` on standard/high-risk work, `@design-reviewer` on user-visible surfaces, `@security-reviewer` when the `security-review` skill's trigger matches.
+5. Log deviations from a plan or mockup in `docs/deviations.md`, and collect lessons the project pays for in `docs/gotchas.md`.
 
 This skill is no longer needed after bootstrap. It can be deleted from `.claude/skills/` if the user wants to keep the project minimal.

@@ -2,8 +2,7 @@
 
 The north star for this project. Captures the *what* and *why*. Stable across iterations.
 
-For the *how* (current sprint scope, stack, acceptance criteria), see `requirements.md`.
-For the *when* (active queued work), see `backlog.md`.
+For the enforceable feature list, see `features.json`.
 
 ---
 
@@ -23,7 +22,7 @@ we **validates and quarantines at the front door instead of repairing downstream
 - **Why:** Partner feeds break silently (bad encodings, missing fields, wrong dates) and corrupt the downstream pipeline; validation happens too late, after ingestion.
 - **When:** 2026-07-26
 - **Where:** Internal service in the company Kubernetes cluster.
-- **How:** see the core flow in `docs/requirements.md`
+- **How:** see the core flow in `docs/features.json`
 
 ## Scope
 

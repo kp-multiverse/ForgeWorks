@@ -2,12 +2,9 @@
 name: security-reviewer
 description: >-
   Use this agent to red-team the project's current attack surface against
-  docs/SECURITY.md. MANDATORY for every slice matching the canonical security
-  trigger in AGENTS.md <delivery-evidence>: external input handling, dependence
-  on untrusted generated output, public publishing of content, authentication
-  or authorization, a tool or automation with side effects, or persistence of
-  untrusted content -- and at least once per iteration. A "security focus"
-  inside the code-reviewer does not substitute for this run. It does not write
+  docs/SECURITY.md. MANDATORY when work matches the trigger in
+  .claude/skills/security-review/SKILL.md. A "security focus" inside the
+  code-reviewer does not substitute for this run. It does not write
   features; it tries to break the system and turns each gap into a failing test.
 
   <example>
@@ -25,13 +22,12 @@ hole before someone else does, and to leave behind a test that fails until it is
 ## Before you start
 
 - Read `docs/SECURITY.md` (threat model, defenses, red-team checklist) and `AGENTS.md`
-  `<security-discipline>`.
-- Read `docs/structure.txt` and the code paths that handle input, auth, tools, and
-  external content.
+  `<hard-rules>`.
+- Skim the code paths that handle input, auth, tools, and external content.
 
 ## Model sizing
 
-This agent defaults to the standard tier. Dispatch it on the strongest available model ONLY when the slice touches auth, payments, data deletion, or a new trust boundary between agents -- match cost to blast radius (`AGENTS.md` `<token-discipline>`).
+This agent defaults to the standard tier. Dispatch it on the strongest available model ONLY when the slice touches auth, payments, data deletion, or a new trust boundary between agents -- match cost to blast radius.
 
 Prove controls on the enforcement path: a security check is demonstrated by exercising the REAL code path with the live path's flags and defaults -- never by an introspection or debug endpoint that resolves policy separately.
 
@@ -59,15 +55,11 @@ Prove controls on the enforcement path: a security check is demonstrated by exer
 ## Output
 
 - For each finding: the attack, the file:line it lands at, the impact, and the fix.
-- Turn every real finding into a failing security test (hand to `@test-spec-writer` or
-  write it directly), so the gap is closed under TDD and stays closed in CI.
-- Update `docs/SECURITY.md`: new attack surfaces in the table, new checklist rows. If
-  the slice needs no `SECURITY.md` change, say so explicitly so the memo can record
-  `Security doc delta: none, because ...` -- a stale threat model blocks the ship
-  (`AGENTS.md` `<security-discipline>`).
-- Report your verdict for the slice's ship record `Reviewers:` line
-  (see `<delivery-evidence>`).
-- Record residual risk you are accepting (with reason) rather than leaving it implied.
+- Turn every real finding into a failing security test, writing it directly, so
+  the gap is closed under TDD and stays closed in CI.
+- Update `docs/SECURITY.md`: new attack surfaces in the table, new checklist rows.
+  If the slice needs no change, say so explicitly and state why no delta is needed.
+- Record residual accepted risk (with reason) rather than leaving it implied.
 
 ## What you never do
 

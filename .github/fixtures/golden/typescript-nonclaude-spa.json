@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "date": "2026-07-25",
+  "agents": [{"name": "codex", "status": "installed"}],
+  "project": {
+    "name": "Ledgerline",
+    "slug": "ledgerline",
+    "goal": "A web app that turns a freelancer's raw bank CSV export into a categorized income/expense ledger.",
+    "primary_user": "A solo freelancer who dreads sorting a quarter's transactions before filing taxes.",
+    "core_problem": "Bank CSV exports are flat and uncategorized; freelancers currently hand-sort hundreds of rows in a spreadsheet before every filing.",
+    "core_journey": "1. The freelancer uploads a bank CSV export.\n2. The app categorizes each transaction and flags anything it cannot confidently place.\n3. The freelancer confirms or recategorizes flagged rows and exports a clean ledger.",
+    "success_measure": "A freelancer produces a confirmed, exportable ledger from a raw CSV in under ten minutes, down from an afternoon.",
+    "success_metrics": "- time to exported ledger -- under 10 minutes\n- rows requiring manual recategorization -- under 10% on the reference export",
+    "riskiest_assumption": "A rules-based categorizer can place most transactions correctly without needing an LLM in the loop.",
+    "req_ac_list": "- [ ] **REQ-AC1:** Uploading a CSV yields a categorized ledger with low-confidence rows visibly flagged.\n- [ ] **REQ-AC2:** Confirming or recategorizing a flagged row updates the ledger and clears the flag.\n- [ ] **REQ-AC3:** Exporting produces a CSV with every row's final category.",
+    "non_goals": "- No bank API integrations in the first iteration; CSV upload only.\n- No multi-currency support; single-currency ledgers only.",
+    "other_users": "- Bookkeepers reviewing a client's ledger (deferred).",
+    "constraint_time": "Four weeks to a usable first version.",
+    "constraint_cost": "No paid services; the categorizer must run without any external API calls.",
+    "constraint_data": "Bank exports may contain account numbers; uploads are processed in memory and never written to disk.",
+    "first_milestone": "2026-08-30",
+    "deployment_target": "Static SPA hosted on the freelancer's own infra.",
+    "scale_expectations": "Single user per deployment, a few uploads per month.",
+    "integrations": "- Bank CSV export (file upload only).",
+    "in_scope_list": "- CSV upload and rules-based categorization.\n- Low-confidence flagging and manual recategorization.\n- Clean CSV export of the final ledger.",
+    "pain_point": "dreads sorting a quarter's transactions before filing taxes",
+    "product_category": "CSV ledger categorizer",
+    "current_alternative": "hand-sorting rows in a spreadsheet",
+    "key_benefit": "categorizes automatically and only asks about what it is unsure of",
+    "key_differentiator": "low-confidence rows are flagged instead of silently miscategorized",
+    "positive_reference": {
+      "ref": "the clean tabular editing of airtable.com",
+      "location": "https://www.airtable.com"
+    },
+    "negative_reference": null
+  },
+  "stack": {
+    "language": "typescript",
+    "has_frontend": "yes-spa",
+    "backend_framework": "none (CLI/library)",
+    "ai_features": [],
+    "vector_db": "none",
+    "llm_provider": "none",
+    "embeddings_model": "none",
+    "database": "none",
+    "uses_devcontainer": "no"
+  },
+  "security": {
+    "reads_untrusted": "no",
+    "holds_private_data": "yes",
+    "acts_outward": "no"
+  },
+  "opt_ins": {
+    "explanations": "no",
+    "seed_gotchas": "no",
+    "mem0": "no",
+    "codex_reviewer": "no"
+  },
+  "design": {
+    "references": "- airtable.com -- dense tabular editing that stays legible at speed\n- linear.app -- calm density, restrained color, keyboard-first affordances",
+    "tone": "calm, precise, unhurried",
+    "anti_reference": "generic spreadsheet clone: default browser table styling, no visual hierarchy, red/green the only signal"
+  },
+  "features": [
+    {
+      "id": "F001",
+      "title": "Upload and categorize a CSV",
+      "intent": "Uploading a CSV yields a categorized ledger with low-confidence rows visibly flagged.",
+      "serves": "journey step 2: the app categorizes each transaction and flags anything it cannot confidently place",
+      "acceptance": ["Uploading a sample CSV produces a ledger where every row has a category and low-confidence rows are visibly flagged."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F002",
+      "title": "Recategorize a flagged row",
+      "intent": "Confirming or recategorizing a flagged row updates the ledger and clears the flag.",
+      "serves": "journey step 3: the freelancer confirms or recategorizes flagged rows and exports a clean ledger",
+      "acceptance": ["Recategorizing a flagged row updates its category and removes the flag from the ledger view."],
+      "tests": [],
+      "status": "todo",
+      "tier": "standard"
+    },
+    {
+      "id": "F003",
+      "title": "Export the final ledger",
+      "intent": "Exporting produces a CSV with every row's final category.",
+      "serves": "differentiator: low-confidence rows are flagged instead of silently miscategorized",
+      "acceptance": ["Exporting after confirming all flags produces a downloadable CSV with a category on every row."],
+      "tests": [],
+      "status": "todo",
+      "tier": "high-risk"
+    }
+  ]
+}
