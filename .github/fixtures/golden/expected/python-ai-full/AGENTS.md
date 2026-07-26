@@ -50,7 +50,7 @@ Pick the tier by judgment against this table; the `slice` skill has the per-tier
 
 | Tier | Typical work | Ceremony |
 |---|---|---|
-| light | copy, styling tweaks, small fixes, internal refactors | build it; quality gate green |
+| light | copy, styling tweaks, small fixes, internal refactors | build it; quality gate green (no `features.json` entry needed) |
 | standard | a new feature or behavior change | short plan, tests first (Red -> Green), scoped code review; design review if user-visible |
 | high-risk | auth, payments, security-trigger matches, architecture changes | user-approved plan in `docs/plans/` + security review + full test pyramid |
 
@@ -77,6 +77,7 @@ Read relevant memories at session start; write one only when the fact is durable
 Skills (on demand): `slice` (per-feature workflow, tiered), `design-loop` (mockup -> build -> screenshot-verify; frontend projects), `security-review` (the trigger definition + procedure), `tech-debt` (on-demand sweep), `select-agents` (change the agent roster). Upstream: `tdd` (Red -> Green -> Refactor), `grill-me` (plan interrogation for high-risk work).
 
 Subagents: `@implementer` (green-phase work in an isolated context), `@code-reviewer` (correctness + requirements review; its Stop hook re-runs the quality gate) plus an independent Codex second-opinion pass, `@security-reviewer` (red-team pass on trigger), `@design-reviewer` (grades shipped screens against the approved mockup + rubric; frontend projects), `@utility` (mechanical chores). Parallel agents only for read-only work; one writer at a time.
+Subagents exist when Claude Code drives. On other rosters, run the same reviews as independent fresh-context passes -- the skills above define what each pass checks.
 </roster>
 <!-- /FW-BLOCK: roster -->
 <!-- FW-BLOCK: ai-discipline v3.0.0 -->

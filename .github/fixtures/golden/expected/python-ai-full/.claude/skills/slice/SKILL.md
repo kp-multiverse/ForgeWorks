@@ -11,7 +11,11 @@ description: >-
 
 ## 1. Anchor
 
-Read the feature's entry in `docs/features.json` (id, intent, `serves:`,
+`docs/features.json` entries are for user-observable features and meaningful
+behavior changes. Light-tier chores (typos, copy tweaks, pure refactors, small
+fixes with no new behavior) need no entry -- quality gate green is their
+whole lifecycle; skip straight to step 3's light procedure. Otherwise, read
+the feature's entry in `docs/features.json` (id, intent, `serves:`,
 acceptance, tier). If the work has no entry yet, add one first (next free id,
 `status: todo`, `tests: []`) -- the array is priority-ordered, and user-visible
 journey features lead unless the owner reorders; hardening and infra queue
@@ -42,9 +46,11 @@ mistake.
 3. Red -> Green with the `tdd` skill: failing tests first (mapped to the
    acceptance criteria), then minimal code, then refactor. Update the feature's
    `tests` array as you name them.
-4. Review: dispatch `@code-reviewer` (correctness + requirements only). If the
-   feature is user-visible, dispatch `@design-reviewer` after green. If the
-   work matches the `security-review` skill's trigger, run that too.
+4. Review: dispatch `@code-reviewer` (correctness + requirements only; when
+   subagents aren't available in your harness, run the equivalent
+   independent pass in a fresh context instead). If the feature is
+   user-visible, dispatch `@design-reviewer` after green. If the work
+   matches the `security-review` skill's trigger, run that too.
 5. Set `status: done` only when mapped tests pass and reviews are resolved;
    run `python3 scripts/features_check.py` and the quality gate.
 

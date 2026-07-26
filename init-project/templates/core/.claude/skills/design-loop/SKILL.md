@@ -28,9 +28,10 @@ prevent the default look; do not start from a blank aesthetic.
    loading, empty, and error get designed, not defaulted.
 5. **Verify visually.** Run the app, screenshot the surface in its real states
    (wide + narrow), and compare against the mockup and rubric yourself; then
-   dispatch `@design-reviewer` for the fresh-context grade. Iterate until it
-   reports MATCHES, or the owner accepts named deltas (log them in
-   `docs/deviations.md`).
+   dispatch `@design-reviewer` for the fresh-context grade (or, when
+   subagents aren't available in your harness, run the equivalent
+   independent pass in a fresh context). Iterate until it reports MATCHES,
+   or the owner accepts named deltas (log them in `docs/deviations.md`).
 
 ## Existing surface
 

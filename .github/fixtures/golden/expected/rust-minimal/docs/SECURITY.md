@@ -74,6 +74,7 @@ used, the OWASP Top 10 for LLM apps, time-boxing each category.
 
 - **Hook:** `.claude/hooks/deps-guard.sh` (PreToolUse) gates dependency installs.
 - **Tests:** the red-team checklist above lives in the test suite and runs in CI.
-- **Reviews:** `@security-reviewer` is MANDATORY for every slice matching the
-  security trigger (`.claude/skills/security-review/SKILL.md`), per `AGENTS.md`
-  `<hard-rules>`.
+- **Reviews:** an independent security red-team pass is MANDATORY for work
+  matching the trigger in `.claude/skills/security-review/SKILL.md` (via
+  `@security-reviewer` when Claude Code drives; as a manual fresh-context
+  pass otherwise), per `AGENTS.md` `<hard-rules>`.
