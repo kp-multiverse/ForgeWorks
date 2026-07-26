@@ -44,6 +44,7 @@ The upgrade has no interview answers on hand, so recover what it needs from the 
 - **Project name** -- from the manifest (`pyproject.toml` `[project].name`, `package.json` `"name"`, etc.) or the `AGENTS.md` metadata comment.
 - **Language** -- from the manifest file present (`pyproject.toml` -> Python, `package.json` -> TypeScript, `Cargo.toml` -> Rust, `go.mod` -> Go).
 - **AI features?** -- detect a `prompts/` dir, an LLM SDK in the manifest, or an existing `<ai-discipline>` block. Confirm with the user (yes/no).
+- **Agent roster** -- read `docs/agents.json` if present (a v2.5.0+ project). If absent, the project predates the B13 roster feature and is Claude-only by construction. If ambiguous (e.g. a hand-edited or missing file on a project that otherwise looks v2.5.0+), confirm with the user. This governs the CC-fence rule below and the Phase 3-D migration's roster gating.
 - **mem0 / persistent memory?** -- detect `docs/memory.md`, a `<memory>` block in `AGENTS.md`, or `mem0ai` in the manifest. If absent, ask the user once whether to add it (yes/no; default no).
 - **Quality-gate command** -- recover `{{QA_COMMAND}}` from `docs/language-standards.md` (the "Quality-gate command" line) or the manifest's scripts; needed to regenerate `.claude/hooks/quality-gate.sh` if missing.
 - **Codex available?** -- detect it first: an existing "Second opinion (Codex)" section in .claude/agents/code-reviewer.md or a Codex note in the AGENTS.md agent roster means the project already opted in -- keep it, do not ask and NEVER remove it on a "no". Only when no Codex trace exists, ask the user (yes/no).
@@ -79,7 +80,7 @@ Walk the template tree. For every template path, decide and act:
   *Special cases:*
   - `.claude/settings.json` -- if the project already has one, **merge** the `PreToolUse` deps-guard hook into the existing `hooks` object; never replace the file (that would drop the project's own hooks).
   - **AI fences** (same rule everywhere a template file carries them): if the project uses AI, delete only the marker lines and keep the content; if not, delete the fenced blocks entirely. Current fences (v3.0.0): `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-IMPL-START/END -->` in `.claude/agents/implementer.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/code-reviewer.md`. (Two v2.5.0 fences are gone in v3 -- one keyed on the agent roster, one in a now-retired doc; see Phase 3-D for what replaced their files.)
-  - **CC fences** (same mechanic, keyed on `claude-code` being in the roster instead of AI features): if the project uses Claude Code, delete only the marker lines and keep the content; if not, delete the fenced block entirely. Current fence (v3.0.0): `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section.
+  - **CC fences** (same mechanic, keyed on the Phase 1 agent roster instead of AI features): if `claude-code` is in the recovered roster, delete only the marker lines and keep the content; if not, delete the fenced block entirely. Current fence (v3.0.0): `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section.
   - **Manifest `.example` suffix** (Python): the template ships `pyproject.toml.example` so the template repo's own tooling ignores it. A generated project already has a real `pyproject.toml` -- never copy the `.example` file in as "absent"; treat it as the merge source for the existing manifest (Phase 3-C), not a new file.
   - **Profile files come from the project's OWN profile** (Phase 2 pulled `profiles/<lang>/`). Copy them verbatim where absent -- including that language's real `scripts/` (Python, Go, and Rust have `scripts/e2e.sh`; TypeScript runs e2e via an `npm run e2e` script in `package.json`). Never substitute another language's runner or a stub for a complete profile; the Go and Rust profiles have real e2e runners.
   - `.claude/hooks/quality-gate.sh` -- carries `{{QA_COMMAND}}`, which IS recoverable (Phase 1). If the hook is missing, substitute the recovered command and copy it; never report it as manual.
@@ -153,19 +154,17 @@ v2 and v3 half-states is worse than either); each step checks for
 already-migrated state and skips it, so a re-run after a partial failure is
 safe.
 
-**First, recover the roster and frontend gating, exactly like `render.py`
-does.** Read `docs/agents.json` if present (a v2.5.0+ project); if absent,
-the project predates the B13 roster feature and is Claude-only by
-construction. Apply that roster the same way the renderer does everywhere
-below: `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the
+**First, apply the Phase 1 agent roster the same way `render.py` does.**
+`.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the
 `CLAUDE.md` symlink are only written/rewritten when `claude-code` is in the
-roster -- a Codex-only v2 project gets the v3 skills and docs in steps 2-3
-below but no Claude subagent files, and step 1's `AGENTS.md` swap uses the
-roster-conditional `<roster>` wording, not the unconditional v2 one. Design
-artifacts (`docs/design/`, the `design-loop` skill, `@design-reviewer`, the
-profile tokens file) are only migrated when the project has a frontend
-(detect from the old `docs/requirements.md`/backlog, or ask once if
-undetectable) -- independent of roster. On accept:
+roster recovered in Phase 1 -- a Codex-only v2 project gets the v3 skills
+and docs in steps 2-3 below but no Claude subagent files, and step 1's
+`AGENTS.md` swap uses the roster-conditional `<roster>` wording, not the
+unconditional v2 one. Design artifacts (`docs/design/`, the `design-loop`
+skill, `@design-reviewer`, the profile tokens file) are only migrated when
+the project has a frontend (detect from the old
+`docs/requirements.md`/backlog, or ask once if undetectable) -- independent
+of roster. On accept:
 
 1. **Constitution.** Replace `AGENTS.md` wholesale with the freshly rendered
    v3 one, carrying forward: the project header facts, the A10 style-reference
@@ -196,9 +195,16 @@ undetectable) -- independent of roster. On accept:
    roster gets the skills and docs above but no `.claude/agents/` tree --
    report that as expected, not a gap.
 3. **features.json skeleton.** Build `docs/features.json` from the project's
-   `docs/backlog.md` rows + `docs/requirements.md` REQ-ACs: Shipped rows ->
-   `status: "in-progress"` with `tests: []` and `notes: "shipped in v2; map
-   tests to promote to done"` **flagged for curation** (the report's top
+   `docs/backlog.md` rows + `docs/requirements.md` REQ-ACs. Every row needs
+   all eight `features_check.py`-required keys, never a partial entry: `id`
+   (next free `F000`-`F999`), `title` and `intent` from the backlog row's own
+   text, `serves` naming the vision-level reason (differentiator or journey
+   step) the row exists for, `acceptance` as a non-empty list of non-empty
+   strings sourced from the row's matching `docs/requirements.md` REQ-ACs
+   (or, when no REQ-AC maps to it, the backlog row's own description turned
+   into one acceptance sentence -- never an empty list). Then: Shipped rows
+   -> `status: "in-progress"` with `tests: []` and `notes: "shipped in v2;
+   map tests to promote to done"` **flagged for curation** (the report's top
    action item is mapping tests and promoting each row to `done`); Active/
    queued rows -> `todo`. Tier: rows default to `tier: "standard"`; rows
    whose text matches the `security-review` skill's trigger get
