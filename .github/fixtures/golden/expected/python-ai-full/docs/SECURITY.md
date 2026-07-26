@@ -43,8 +43,9 @@ These apply to every project regardless of stack or subject.
 3. **Supply-chain / slopsquatting** -- a compromised or hallucinated dependency runs
    code on dev/CI machines. **Defense:** install from the lockfile only (no blind
    updates); vet every new package (real, established, right author, not a
-   lookalike); prefer dependencies more than ~a week old. Enforced by the
-   `deps-guard` hook, not by trust.
+   lookalike); prefer dependencies more than ~a week old. Enforced by committed
+   lockfiles, reviewed updates, and CI dependency scanning on every roster --
+   plus the `deps-guard` PreToolUse hook when Claude Code drives -- not by trust.
 4. **Unbounded input** -- a huge payload buries an injection or runs up cost.
    **Defense:** length-bound every input that enters a prompt, a log, or storage.
 5. **Blast radius** -- assume something will be compromised; limit what it reaches.
