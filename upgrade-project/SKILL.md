@@ -139,8 +139,11 @@ zero punted files. If the user declines a question, write
 
 A project already on v3.0.0+ ends its Phase 3 work here (A-B-C-E) -- go
 straight to **Phase 4** and never touch the section below; Phase 3-D runs
-INSTEAD of A-C-E, not after them, and only for a project the routing note at
-the top of this phase already sent here for being below v3.0.0.
+INSTEAD of this A-B-C-E block, not after it, and only for a project the
+routing note at the top of this phase already sent here for being below
+v3.0.0. (Phase 3-D's own step 6 folds A and C back in against the v3
+template once the wholesale swap makes the project v3-shaped -- B and E stay
+superseded; see that step.)
 
 ### Phase 3-D: v2 -> v3 migration (template-version < 3.0.0)
 
@@ -148,7 +151,21 @@ v3 replaced the enforcement architecture. When `.claude/.template-version` is
 below 3.0.0, offer the migration as one explicit, all-or-nothing step (mixing
 v2 and v3 half-states is worse than either); each step checks for
 already-migrated state and skips it, so a re-run after a partial failure is
-safe. On accept:
+safe.
+
+**First, recover the roster and frontend gating, exactly like `render.py`
+does.** Read `docs/agents.json` if present (a v2.5.0+ project); if absent,
+the project predates the B13 roster feature and is Claude-only by
+construction. Apply that roster the same way the renderer does everywhere
+below: `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the
+`CLAUDE.md` symlink are only written/rewritten when `claude-code` is in the
+roster -- a Codex-only v2 project gets the v3 skills and docs in steps 2-3
+below but no Claude subagent files, and step 1's `AGENTS.md` swap uses the
+roster-conditional `<roster>` wording, not the unconditional v2 one. Design
+artifacts (`docs/design/`, the `design-loop` skill, `@design-reviewer`, the
+profile tokens file) are only migrated when the project has a frontend
+(detect from the old `docs/requirements.md`/backlog, or ask once if
+undetectable) -- independent of roster. On accept:
 
 1. **Constitution.** Replace `AGENTS.md` wholesale with the freshly rendered
    v3 one, carrying forward: the project header facts, the A10 style-reference
@@ -156,12 +173,14 @@ safe. On accept:
    `<quality-gate>` blocks). Show the old file's project-specific additions
    (blocks the project added itself, gotcha-style lines) and graft them into
    `<project>`/`<learning>` or report them.
-2. **New files.** Copy in unconditionally: the `slice`, `security-review`,
-   and `tech-debt` skills, plus `select-agents` if it is not already present
-   (a v2.5.0+ project may already have it), `scripts/features_check.py`,
-   `docs/deviations.md`, and `docs/plans/README.md`. If the project has a
-   frontend, additionally copy `docs/design/` + `@design-reviewer` + the
-   profile tokens file + the `design-loop` skill -- but before writing
+2. **New files.** Copy in unconditionally (any roster): the `slice`,
+   `security-review`, and `tech-debt` skills, plus `select-agents` if it is
+   not already present (a v2.5.0+ project may already have it),
+   `scripts/features_check.py`, `docs/deviations.md`, and
+   `docs/plans/README.md` -- these are plain-markdown procedures and docs,
+   not Claude-specific mechanics. If the project has a frontend,
+   additionally copy `docs/design/` + the profile tokens file + the
+   `design-loop` skill (also roster-independent) -- but before writing
    `docs/design/DESIGN.md`, ask the owner the same V1 (two or three REAL
    products or sites this should feel like, and what specifically to take
    from each) and V2 (three tone words, plus one anti-reference: "never let
@@ -169,17 +188,22 @@ safe. On accept:
    and substitute `{{DESIGN_REFERENCES}}` / `{{DESIGN_TONE}}` /
    `{{DESIGN_ANTI_REFERENCE}}` with the answers. If the owner declines,
    substitute `TODO(interview-skipped)` for all three -- never leave a raw
-   `{{...}}` on disk. Rewrite `.claude/agents/implementer.md` /
-   `code-reviewer.md` / `security-reviewer.md` to the v3 versions
-   (project-local edits are shown side-by-side, never silently lost).
+   `{{...}}` on disk. ONLY when `claude-code` is in the roster (recovered
+   above): rewrite `.claude/agents/implementer.md` / `code-reviewer.md` /
+   `security-reviewer.md` to the v3 versions (project-local edits are shown
+   side-by-side, never silently lost), and, for a frontend project,
+   additionally write `.claude/agents/design-reviewer.md`. A non-Claude
+   roster gets the skills and docs above but no `.claude/agents/` tree --
+   report that as expected, not a gap.
 3. **features.json skeleton.** Build `docs/features.json` from the project's
    `docs/backlog.md` rows + `docs/requirements.md` REQ-ACs: Shipped rows ->
-   `status: done` with `tests: []` **flagged for curation** (the check fails
-   on done-without-tests, so the report's top action item is mapping tests or
-   temporarily marking rows `in-progress`); Active/queued rows -> `todo`.
-   Tier: rows default to `tier: "standard"`; rows whose text matches the
-   `security-review` skill's trigger get `"high-risk"`; the report tells the
-   owner to adjust. Ordering: user-visible journey features first.
+   `status: "in-progress"` with `tests: []` and `notes: "shipped in v2; map
+   tests to promote to done"` **flagged for curation** (the report's top
+   action item is mapping tests and promoting each row to `done`); Active/
+   queued rows -> `todo`. Tier: rows default to `tier: "standard"`; rows
+   whose text matches the `security-review` skill's trigger get
+   `"high-risk"`; the report tells the owner to adjust. Ordering:
+   user-visible journey features first.
 4. **Mockup rescue.** Move any discovered mockups (`.local/mockups/*.html`,
    files the backlog links) into `docs/design/mockups/` with feature-id names;
    list claude.ai artifact URLs found in docs for the owner to export.
@@ -189,11 +213,24 @@ safe. On accept:
    Leave `docs/ships/`, `docs/designs/`, `docs/current-task/`, `docs/backlog.md`,
    `docs/requirements.md`, `docs/structure.txt` ON DISK (history has value) but
    report them as retired -- the owner deletes when ready.
-6. **Report** everything: grafts, curation debts (test mapping!), retired
-   files, and that the memo/ship ceremony no longer applies. Then go straight
-   to **Phase 4** to apply the change set -- a migration does not also run
-   A-C-E in the same pass; a later upgrade run (now on v3.0.0+) uses A-C-E as
-   normal.
+6. **Reconcile the rest in the same pass.** The wholesale swap and retirements
+   above only replace what does not correspond between v2 and v3
+   (`AGENTS.md`, the subagents, the feature list, the retired docs). Once
+   they are done the project IS v3-shaped, so also run **Phase 3-A** (copy
+   in new always-on template files -- e.g. `docs/deviations.md`,
+   `docs/plans/README.md` if step 2 has not already added them, and any
+   other file this release added that step 2 did not enumerate) and
+   **Phase 3-C** (the language tooling delta -- e.g. the TypeScript
+   eslint-family bump, the Go `-race` gate step) against the fetched v3
+   template, in this same migration pass. Only **Phase 3-B** (block-by-block
+   `AGENTS.md`/subagent grafting -- superseded by step 1's wholesale
+   constitution swap, which already carries the full v3 block set) and
+   **Phase 3-E** (the discovery mini-interview -- superseded by step 2's own
+   design V1/V2 questions and the curation report) stay out of this pass.
+7. **Report** everything: grafts, curation debts (test mapping!), retired
+   files, the A/C reconciliation just applied, and that the memo/ship
+   ceremony no longer applies. Then go to **Phase 4** to apply the combined
+   change set; a later upgrade run (now on v3.0.0+) uses A-B-C-E as normal.
 
 ### Phase 4: One report, one approval, then verify and stamp
 
@@ -208,10 +245,13 @@ safe. On accept:
 3. Ensure `docs/plans/`, `docs/probes/`, and -- for frontend projects --
    `docs/design/mockups/` exist (copy their READMEs from the template if
    absent) -- they are the gate's working directories.
-4. Run the project's quality gate and confirm it still passes; fix any breakage
-   the upgrade introduced before finishing.
-5. **Only after the gate passes,** write the new version to
-   `.claude/.template-version`.
+4. Run BOTH the project's language quality gate AND `python3
+   scripts/features_check.py`; fix any breakage the upgrade introduced (a
+   3-D migration commonly needs this -- shipped rows land `in-progress`, not
+   `done`, precisely so this check is green on the first post-migration run)
+   before finishing.
+5. **Only after BOTH the gate and `features_check.py` pass,** write the new
+   version to `.claude/.template-version`.
 6. Close with: "Upgraded <from> -> <to> in one run. Review the diff and commit
    on your branch. Nothing was overwritten without being shown first."
 
