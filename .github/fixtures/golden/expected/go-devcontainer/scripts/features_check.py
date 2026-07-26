@@ -55,20 +55,42 @@ def check() -> list[str]:
             errors.append(f"{where}: status must be one of {sorted(STATUSES)}")
         if ft["tier"] not in TIERS:
             errors.append(f"{where}: tier must be one of {sorted(TIERS)}")
-        if not isinstance(ft["acceptance"], list) or not ft["acceptance"]:
+        acceptance = ft["acceptance"]
+        if not isinstance(acceptance, list) or not acceptance:
             errors.append(f"{where}: acceptance must be a non-empty list")
+        else:
+            for j, a in enumerate(acceptance):
+                if not isinstance(a, str) or not a.strip():
+                    errors.append(
+                        f"{where}: acceptance[{j}] must be a non-empty string"
+                    )
         tests = ft["tests"]
         if not isinstance(tests, list):
             errors.append(f"{where}: tests must be a list")
             tests = []
-        if ft["status"] == "done":
-            if not tests:
-                errors.append(f"{where}: done with no mapped tests")
-            for t in tests:
-                test_file = str(t).split("::", 1)[0]
-                if not os.path.exists(test_file):
+        else:
+            for j, t in enumerate(tests):
+                if not isinstance(t, str) or not t.strip():
+                    errors.append(f"{where}: tests[{j}] must be a non-empty string")
+                    continue
+                test_file = t.split("::", 1)[0]
+                if not test_file:
+                    errors.append(f"{where}: tests[{j}] has no file part before '::'")
+                    continue
+                if os.path.isabs(test_file) or ".." in test_file.split(os.sep):
+                    errors.append(
+                        f"{where}: tests[{j}] must be a repo-relative "
+                        f"path with no '..' component: {test_file}"
+                    )
+                    continue
+                if ft["status"] == "done" and not os.path.isfile(test_file):
                     errors.append(f"{where}: cited test file missing: {test_file}")
-        if ft["status"] == "dropped" and not str(ft.get("notes") or "").strip():
+        if ft["status"] == "done" and not tests:
+            errors.append(f"{where}: done with no mapped tests")
+        notes = ft.get("notes")
+        if "notes" in ft and not isinstance(notes, str):
+            errors.append(f"{where}: notes must be a string")
+        if ft["status"] == "dropped" and not str(notes or "").strip():
             errors.append(f"{where}: dropped without a reason in notes")
     return errors
 
