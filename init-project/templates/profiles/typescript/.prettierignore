@@ -17,3 +17,7 @@ test-results
 # the first run regardless of answers.
 docs/agents.json
 docs/features.json
+# Transient renderer input (docs/_init-answers.json), deleted after Phase 5 --
+# never part of the committed project, but prettier would otherwise see it
+# if the gate runs before that deletion.
+docs/_init-answers.json

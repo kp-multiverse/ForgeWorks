@@ -71,7 +71,7 @@ Start from the **heart of the project**: the one flow that, if it works, makes t
 
 **Be proactive about what's missing.** The complaint that drove this design is interviews that record what the user says and stop there. After the core questions, run one explicit "what haven't we talked about?" pass and name the gaps yourself: error and empty states, the unhappy path, auth and who can see what, scale, observability, the riskiest assumption. Tell the user what you think they have not considered. A good interview leaves the user thinking "I hadn't thought of that."
 
-Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (it is deleted after Phase 5 verification).
+Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (deleted partway through Phase 5, before the quality-gate run -- see Phase 5).
 
 The interview has two parts, in this order: **Part A -- product discovery** (the
 project itself; this is where surprises are killed) and **Part B -- stack and
@@ -502,8 +502,10 @@ fixtures in the template repo CI:
 | 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/), the profile tokens.css, `@design-reviewer`, and the `design-loop` skill; `has_frontend: no` skips all of them. |
 | 21 | mem0 memory block inserts after `<!-- /FW-BLOCK: learning -->`. |
 
-Keep `docs/_init-answers.json` until Phase 5 verification passes, then delete it
-(`rm docs/_init-answers.json`) -- its content lives on in the rendered docs.
+Keep `docs/_init-answers.json` until Phase 5's placeholder grep and
+`features_check.py` pass, then delete it (`rm docs/_init-answers.json`)
+BEFORE running the quality gate -- it is transient renderer working state,
+not project content, and its content lives on in the rendered docs.
 
 ### Phase 4.5: Install dependencies
 
@@ -598,9 +600,13 @@ Then check no unresolved placeholders remain:
 
 (`--exclude-dir=skills` skips every dir literally named `skills`, which covers both the bootstrap-installed helper skills and this project's own generated `.claude/skills/` procedures -- those never carry unsubstituted placeholders (there are none in `templates/core/.claude/skills/` to begin with), so excluding them is safe. The generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
 
-Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+Now delete the renderer input, BEFORE running the quality gate: `rm
+docs/_init-answers.json` (its content lives on in the rendered docs). It is
+transient working state, not project content -- a project language's gate
+(e.g. TypeScript's prettier check) has no reason to see it, and leaving it
+on disk into the gate run is a bug, not a convenience.
 
-Once verification passes, delete the renderer input: `rm docs/_init-answers.json` (its content lives on in the rendered docs).
+Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
 
 Report what was generated, then hand off:
 
