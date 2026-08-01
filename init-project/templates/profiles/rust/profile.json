@@ -11,6 +11,7 @@
   "e2e_command": "bash scripts/e2e.sh",
   "e2e_browser_install": "",
   "test_runner": "cargo test",
+  "test_path_regex": "^tests/",
   "test_command": "cargo test",
   "lint_tool": "clippy",
   "lint_command": "cargo clippy --all-targets -- -D warnings",

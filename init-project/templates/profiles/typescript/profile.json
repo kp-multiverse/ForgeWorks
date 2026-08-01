@@ -11,6 +11,7 @@
   "e2e_command": "npm run e2e",
   "e2e_browser_install": "npx playwright install --with-deps chromium",
   "test_runner": "vitest",
+  "test_path_regex": "\\.(test|spec)\\.[jt]sx?$|^tests/",
   "test_command": "npx vitest run",
   "lint_tool": "eslint",
   "lint_command": "npx eslint .",
