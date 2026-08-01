@@ -61,13 +61,14 @@ FREE_TEXT_PLACEHOLDERS = {
     "BACKEND_FRAMEWORK", "VECTOR_DB", "LLM_PROVIDER", "EMBEDDINGS_MODEL",
     "DATABASE", "POSITIVE_REFERENCE_TEXT", "NEGATIVE_REFERENCE_TEXT",
     "DESIGN_REFERENCES", "DESIGN_TONE", "DESIGN_ANTI_REFERENCE",
+    "PRD_SURFACES",
 }
 
 NO_BROWSER_STEP = "# no browser needed for this project's e2e suite"
 
 # Offload roles each agent can cover in docs/agents.json. The file is a
-# RUNTIME config: users edit it (or run /select-agents) when the roster
-# changes mid-project; these are only the rendered starting values.
+# RUNTIME config: users edit it directly when the roster changes mid-project;
+# these are only the rendered starting values.
 AGENT_ROLES = {
     "claude-code": ["orchestrator", "utility", "second_opinion", "heavy_batch"],
     "codex": ["second_opinion", "heavy_batch"],
@@ -110,6 +111,9 @@ def build_mapping(ans: dict, prof: dict, cond_dir: str) -> dict[str, str]:
         f"Anti-pattern material: {neg['location']}."
         if neg else ""
     )
+    surfaces = p["surfaces"]
+    surfaces_text = ("\n".join(f"- {s}" for s in surfaces)
+                     if surfaces else "- (no user-facing surfaces -- API/CLI product)")
     if s["has_frontend"] != "no" and prof["e2e_browser_install"]:
         browser_step = ("- name: Install browsers\n"
                         f"  run: {prof['e2e_browser_install']}")
@@ -122,8 +126,8 @@ def build_mapping(ans: dict, prof: dict, cond_dir: str) -> dict[str, str]:
                                os.path.join("agents", agent["name"] + ".md")).rstrip("\n")
         if agent["status"] == "planned":
             snippet += ("\n\n> Status: **planned** -- selected in the interview but not "
-                        "detected as installed. Run `/select-agents` (or edit "
-                        "`docs/agents.json`) once it is available.")
+                        "detected as installed. Edit `docs/agents.json` once it "
+                        "is available.")
         matrix_parts.append(snippet)
     if not claude_selected(ans):
         matrix_parts.append(_conditional(
@@ -152,6 +156,7 @@ def build_mapping(ans: dict, prof: dict, cond_dir: str) -> dict[str, str]:
         "KEY_DIFFERENTIATOR": p["key_differentiator"],
         "POSITIVE_REFERENCE_TEXT": positive_text,
         "NEGATIVE_REFERENCE_TEXT": negative_text,
+        "PRD_SURFACES": surfaces_text,
         "LANGUAGE": prof["display_name"], "HAS_FRONTEND": s["has_frontend"],
         "BACKEND_FRAMEWORK": s["backend_framework"],
         "AI_FEATURES": ", ".join(s["ai_features"]) if ai_on else "none",
@@ -318,11 +323,6 @@ def skip_file(relpath: str, source: str, ans: dict) -> bool:
         return True
     if no_frontend and os.path.basename(relpath) == "tokens.css":
         return True
-    if no_frontend and relpath == os.path.join(
-            ".claude", "agents", "design-reviewer.md"):
-        return True
-    if no_frontend and parts[:3] == [".claude", "skills", "design-loop"]:
-        return True
     if (parts[0] == ".claude" and not claude_selected(ans)
             and parts[:2] != [".claude", "skills"]):
         return True  # Claude Code not in the roster: no agents/hooks/settings/symlink
@@ -363,6 +363,10 @@ def render_file(src: str, dst: str, relpath: str, ans: dict,
                         start_re=CC_FENCE_START_RE, end_re=CC_FENCE_END_RE)
     text = substitute(text, relpath, mapping)
     text = apply_insertions(text, relpath, ans, cond_dir)
+    if relpath == "AGENTS.md" and len(text.splitlines()) > 100:
+        raise RenderError(
+            f"AGENTS.md rendered to {len(text.splitlines())} lines; "
+            "hard cap is 100 (spec: context economy)")
     with open(dst, "w", encoding="utf-8", newline="") as f:
         f.write(text)
     shutil.copymode(src, dst)

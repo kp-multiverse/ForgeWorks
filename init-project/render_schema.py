@@ -39,6 +39,7 @@ PROJECT_KEYS = (
     "scale_expectations", "integrations", "in_scope_list", "pain_point",
     "product_category", "current_alternative", "key_benefit",
     "key_differentiator", "positive_reference", "negative_reference",
+    "surfaces",
 )
 STACK_KEYS = (
     "language", "has_frontend", "backend_framework", "ai_features",
@@ -62,7 +63,7 @@ PROFILE_SCALARS = (
     "install_command", "add_dep_command", "qa_command", "fix_command",
     "e2e_command", "e2e_browser_install", "test_runner", "test_command",
     "lint_tool", "lint_command", "format_tool", "format_command", "type_tool",
-    "type_command", "precommit_install_command",
+    "type_command", "precommit_install_command", "test_path_regex",
 )
 PROFILE_LISTS = ("ci_setup_steps", "precommit_hooks", "library_docs_urls")
 # notes key in profile.json -> placeholder name (singular/plural is irregular).
@@ -114,6 +115,14 @@ def _check_reference(errors: list[str], where: str, value: object) -> None:
         return
     _check_text(errors, f"{where}.ref", value["ref"])
     _check_text(errors, f"{where}.location", value["location"])
+
+
+def _check_surfaces(errors: list[str], where: str, value: object) -> None:
+    if not isinstance(value, list):
+        errors.append(f"{where}: must be a list of non-empty strings ([] allowed)")
+        return
+    for i, item in enumerate(value):
+        _check_text(errors, f"{where}[{i}]", item)
 
 
 def _check_features(errors: list[str], value: object) -> None:
@@ -202,6 +211,8 @@ def validate_answers(ans: object) -> dict:
     for key in PROJECT_KEYS:
         if key in ("positive_reference", "negative_reference"):
             _check_reference(errors, f"project.{key}", project[key])
+        elif key == "surfaces":
+            _check_surfaces(errors, "project.surfaces", project[key])
         else:
             _check_text(errors, f"project.{key}", project[key])
     if isinstance(project.get("slug"), str) and not SLUG_RE.match(project["slug"]):
