@@ -2,7 +2,7 @@
 
 This is a living document. It states what an attacker would try, the defenses in
 place, and the red-team checklist the test suite must cover. Update it whenever a
-slice matches the security trigger: see `.claude/skills/security-review/SKILL.md`.
+feature matches the security trigger: see `.claude/skills/security-review/SKILL.md`.
 When no delta is needed, record `Security doc delta: none, because ...` in the
 review notes instead. The hard rule requiring this review lives in `AGENTS.md`
 `<hard-rules>`; this file is where the threat model becomes concrete for this

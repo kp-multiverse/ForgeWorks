@@ -27,7 +27,7 @@ hole before someone else does, and to leave behind a test that fails until it is
 
 ## Model sizing
 
-This agent defaults to the standard tier. Dispatch it on the strongest available model ONLY when the slice touches auth, payments, data deletion, or a new trust boundary between agents -- match cost to blast radius.
+This agent defaults to the standard tier. Dispatch it on the strongest available model ONLY when the feature touches auth, payments, data deletion, or a new trust boundary between agents -- match cost to blast radius.
 
 Prove controls on the enforcement path: a security check is demonstrated by exercising the REAL code path with the live path's flags and defaults -- never by an introspection or debug endpoint that resolves policy separately.
 
@@ -58,7 +58,7 @@ Prove controls on the enforcement path: a security check is demonstrated by exer
 - Turn every real finding into a failing security test, writing it directly, so
   the gap is closed under TDD and stays closed in CI.
 - Update `docs/SECURITY.md`: new attack surfaces in the table, new checklist rows.
-  If the slice needs no change, say so explicitly and state why no delta is needed.
+  If the feature needs no change, say so explicitly and state why no delta is needed.
 - Record residual accepted risk (with reason) rather than leaving it implied.
 
 ## What you never do

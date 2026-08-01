@@ -4,8 +4,7 @@ Which agentic coders drive this project, what each one actually gets, and
 where work should be offloaded. Two files carry this:
 
 - **`docs/agents.json`** -- the machine-readable roster (this doc's source of
-  truth). It is a RUNTIME config: edit it directly, or run `/select-agents`
-  (Claude Code) to re-probe what is installed and rewrite both files. Rules in
+  truth). It is a RUNTIME config: edit it directly. Rules in
   `AGENTS.md` read the roster from the JSON, so a change applies immediately --
   no re-render, no re-bootstrap.
 - **This file** -- the human-readable matrix below.
