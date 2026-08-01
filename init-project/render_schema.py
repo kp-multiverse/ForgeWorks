@@ -18,8 +18,8 @@ PLACEHOLDER_RE = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 SLUG_RE = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 STRUCTURAL_TAG_RE = re.compile(
-    r"</?(project|commands|etiquette|hard-rules|risk-tiers|learning|roster"
-    r"|ai-discipline|memory)>",
+    r"</?(project|commands|etiquette|hard-rules|tiers|communication|context"
+    r"|learning|roster|ai-discipline|memory)>",
     re.IGNORECASE,
 )
 
@@ -39,6 +39,7 @@ PROJECT_KEYS = (
     "scale_expectations", "integrations", "in_scope_list", "pain_point",
     "product_category", "current_alternative", "key_benefit",
     "key_differentiator", "positive_reference", "negative_reference",
+    "surfaces",
 )
 STACK_KEYS = (
     "language", "has_frontend", "backend_framework", "ai_features",
@@ -48,9 +49,10 @@ STACK_KEYS = (
 SECURITY_KEYS = ("reads_untrusted", "holds_private_data", "acts_outward")
 OPT_IN_KEYS = ("explanations", "seed_gotchas", "mem0", "codex_reviewer")
 FEATURE_KEYS = ("id", "title", "intent", "serves", "acceptance", "tests",
-                "status", "tier")
+                "status", "tier", "surface")
+FEATURE_OPTIONAL_KEYS = ("mockup",)
 FEATURE_STATUSES = ("todo", "in-progress", "done", "dropped")
-FEATURE_TIERS = ("light", "standard", "high-risk")
+FEATURE_TIERS = ("chore", "feature")
 FEATURE_ID_RE = re.compile(r"^F\d{3}$")
 DESIGN_KEYS = ("references", "tone", "anti_reference")
 TOP_LEVEL_KEYS = ("schema", "date", "agents", "project", "stack", "security",
@@ -62,7 +64,7 @@ PROFILE_SCALARS = (
     "install_command", "add_dep_command", "qa_command", "fix_command",
     "e2e_command", "e2e_browser_install", "test_runner", "test_command",
     "lint_tool", "lint_command", "format_tool", "format_command", "type_tool",
-    "type_command", "precommit_install_command",
+    "type_command", "precommit_install_command", "test_path_regex",
 )
 PROFILE_LISTS = ("ci_setup_steps", "precommit_hooks", "library_docs_urls")
 # notes key in profile.json -> placeholder name (singular/plural is irregular).
@@ -116,6 +118,14 @@ def _check_reference(errors: list[str], where: str, value: object) -> None:
     _check_text(errors, f"{where}.location", value["location"])
 
 
+def _check_surfaces(errors: list[str], where: str, value: object) -> None:
+    if not isinstance(value, list):
+        errors.append(f"{where}: must be a list of non-empty strings ([] allowed)")
+        return
+    for i, item in enumerate(value):
+        _check_text(errors, f"{where}[{i}]", item)
+
+
 def _check_features(errors: list[str], value: object) -> None:
     if not isinstance(value, list) or not value:
         errors.append("features: must be a non-empty list of feature objects")
@@ -126,7 +136,7 @@ def _check_features(errors: list[str], value: object) -> None:
         if not isinstance(ft, dict):
             errors.append(f"{where}: must be an object")
             continue
-        extra = set(ft) - set(FEATURE_KEYS) - {"notes"}
+        extra = set(ft) - set(FEATURE_KEYS) - set(FEATURE_OPTIONAL_KEYS) - {"notes"}
         if extra:
             errors.append(f"{where}: unknown keys {sorted(extra)}")
         for key in FEATURE_KEYS:
@@ -147,6 +157,10 @@ def _check_features(errors: list[str], value: object) -> None:
             errors.append(f"{where}.status: must be one of {FEATURE_STATUSES}")
         if "tier" in ft and ft["tier"] not in FEATURE_TIERS:
             errors.append(f"{where}.tier: must be one of {FEATURE_TIERS}")
+        if "surface" in ft:
+            _check_text(errors, f"{where}.surface", ft["surface"])
+        if "mockup" in ft:
+            _check_text(errors, f"{where}.mockup", ft["mockup"])
         acc = ft.get("acceptance")
         if "acceptance" in ft and (not isinstance(acc, list) or not acc
                                    or any(not isinstance(a, str) or not a.strip()
@@ -202,6 +216,8 @@ def validate_answers(ans: object) -> dict:
     for key in PROJECT_KEYS:
         if key in ("positive_reference", "negative_reference"):
             _check_reference(errors, f"project.{key}", project[key])
+        elif key == "surfaces":
+            _check_surfaces(errors, "project.surfaces", project[key])
         else:
             _check_text(errors, f"project.{key}", project[key])
     if isinstance(project.get("slug"), str) and not SLUG_RE.match(project["slug"]):

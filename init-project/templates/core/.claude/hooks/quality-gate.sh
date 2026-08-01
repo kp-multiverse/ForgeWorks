@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # .claude/hooks/quality-gate.sh
 #
-# Triggered by the code-reviewer subagent on Stop (auto-converted to
+# Triggered by the reviewer subagent on Stop (auto-converted to
 # SubagentStop). Runs the bundled quality-gate command for this project.
 #
 # The exact command is set by /init-project from the language and tooling
@@ -28,7 +28,7 @@ echo
 if ! {{QA_COMMAND}}; then
   echo
   echo "FAILED: Quality gate did not pass." >&2
-  echo "The code-reviewer subagent cannot complete until QA is green." >&2
+  echo "The reviewer subagent cannot complete until QA is green." >&2
   exit 2
 fi
 

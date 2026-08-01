@@ -10,7 +10,7 @@ bash scripts/qa.sh           # run the quality gate (lint, format check, types, 
 ```
 
 The scaffold ships a placeholder module and a passing test so the quality gate
-is green from the first run. Replace them with your first slice.
+is green from the first run. Replace them with your first feature.
 
 ## Commands
 
@@ -23,10 +23,12 @@ is green from the first run. Replace them with your first slice.
 ## How this project works
 
 - `AGENTS.md` is the constitution -- read it first. `CLAUDE.md` symlinks to it.
-- `docs/` holds the living documentation: product vision, the machine-checked
-  feature list (`features.json`), design direction, gotchas, a deviations log,
-  high-risk plans, and the security threat model.
-- Development runs through the TDD loop with specialist subagents; see
-  `AGENTS.md` `<roster>`.
+- `docs/PRD.md` states the product; `docs/features.json` is the
+  machine-checked feature list, rendered into `docs/BACKLOG.md`.
+  `docs/LEDGER.md` records every state change live.
+- Each feature runs through the one iteration loop -- GRILL, RED, GREEN,
+  REVIEW (one `@reviewer` pass), MERGE -- see the `iteration` skill. Plans
+  live in `docs/plans/` while active and move to `docs/plans/archive/` at
+  merge.
 
 *Bootstrapped from [ForgeWorks](https://github.com/kp-multiverse/ForgeWorks).*

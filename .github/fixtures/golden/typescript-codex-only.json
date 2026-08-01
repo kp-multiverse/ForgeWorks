@@ -1,8 +1,16 @@
 {
   "schema": 1,
   "date": "2026-07-12",
-  "agents": [{"name": "codex", "status": "installed"},
-             {"name": "antigravity", "status": "planned"}],
+  "agents": [
+    {
+      "name": "codex",
+      "status": "installed"
+    },
+    {
+      "name": "antigravity",
+      "status": "planned"
+    }
+  ],
   "project": {
     "name": "Linkcheck",
     "slug": "linkcheck",
@@ -30,7 +38,8 @@
     "key_benefit": "catches dead links locally before they ship",
     "key_differentiator": "one fast local command, no service to configure",
     "positive_reference": null,
-    "negative_reference": null
+    "negative_reference": null,
+    "surfaces": []
   },
   "stack": {
     "language": "typescript",
@@ -61,20 +70,26 @@
       "title": "Report a dead link with file:line",
       "intent": "Running against a folder with one dead link exits non-zero and prints the link with file:line.",
       "serves": "REQ-AC1: dead links must be reported precisely and fail the run",
-      "acceptance": ["Running the CLI on a folder with one dead link exits non-zero and prints that link's file and line."],
+      "acceptance": [
+        "Running the CLI on a folder with one dead link exits non-zero and prints that link's file and line."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F002",
       "title": "Exit clean on a healthy docs tree",
       "intent": "A fully healthy docs tree exits zero with a one-line summary.",
       "serves": "REQ-AC2: a clean tree must not be flagged",
-      "acceptance": ["Running the CLI on a docs tree with no dead links exits zero and prints a one-line summary."],
+      "acceptance": [
+        "Running the CLI on a docs tree with no dead links exits zero and prints a one-line summary."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "light"
+      "tier": "chore",
+      "surface": "none"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 This is a living document. It states what an attacker would try, the defenses in
 place, and the red-team checklist the test suite must cover. Update it whenever a
-slice matches the security trigger: see `.claude/skills/security-review/SKILL.md`.
+feature matches the security trigger: see `.claude/skills/security-review/SKILL.md`.
 When no delta is needed, record `Security doc delta: none, because ...` in the
 review notes instead. The hard rule requiring this review lives in `AGENTS.md`
 `<hard-rules>`; this file is where the threat model becomes concrete for this
@@ -16,7 +16,7 @@ threat model is a red flag in review.
 List every place untrusted data enters the system, and every consequential action
 it can reach. Review each row "through the lens of an attacker."
 
-Security profile (from the setup interview, B8): reads untrusted content: **yes**; holds private data: **yes**; acts on the outside world: **no**.
+Security profile (chosen during setup): reads untrusted content: **yes**; holds private data: **yes**; acts on the outside world: **no**.
 
 | External input | Where it enters | What it can reach |
 |---|---|---|
@@ -111,5 +111,5 @@ used, the OWASP Top 10 for LLM apps, time-boxing each category.
 - **Tests:** the red-team checklist above lives in the test suite and runs in CI.
 - **Reviews:** an independent security red-team pass is MANDATORY for work
   matching the trigger in `.claude/skills/security-review/SKILL.md` (via
-  `@security-reviewer` when Claude Code drives; as a manual fresh-context
-  pass otherwise), per `AGENTS.md` `<hard-rules>`.
+  the reviewer's security lens when Claude Code drives; as a manual
+  fresh-context pass otherwise), per `AGENTS.md` `<hard-rules>`.

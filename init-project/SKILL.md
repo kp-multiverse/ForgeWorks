@@ -1,6 +1,6 @@
 ---
 name: init-project
-description: Bootstrap a new project with five focused subagents (implementer, code-reviewer, security-reviewer, design-reviewer, utility), a machine-checked feature list (docs/features.json) enforced in CI, a static+test quality-gate hook, a supply-chain guard hook, Context7 MCP, CI (a fast gate, a separate end-to-end job, and a features-check job), PR template, pre-commit config, dev container, a threat-model doc, and structured documentation. Stack-agnostic at its core: language and tooling choices live in this skill's interview, not in the template files. Use this skill whenever a project is uninitialized (no docs/features.json or .claude/agents/), when the user says "init", "bootstrap", "set up this project", "/init-project", or describes wanting to start a new AI engineering project. Interviews the user deeply about scope, the heart of the project, visual direction for frontend projects, security profile, and stack, then generates AGENTS.md, .claude/ (agents, hooks, and the slice/design-loop/security-review/tech-debt/select-agents skills), .mcp.json, docs/ (including features.json and, for frontend projects, docs/design/), .github/, .devcontainer/, scripts/features_check.py, and a manifest tailored to the chosen language. Pairs with the upstream `tdd` and `grill-me` skills from mattpocock/skills, installed during bootstrap.
+description: Bootstrap a new project through a short conversation (at most 5 questions -- the agent infers everything else and states its defaults) that ends in an owner-approved one-page PRD, then generates two focused subagents (reviewer, utility), the `iteration` skill (the one per-feature workflow: chores build straight through, features run GRILL -> RED -> GREEN -> REVIEW -> MERGE), a machine-checked feature list (docs/features.json: two tiers chore/feature, a surface + mockup field, enforced in CI), docs/PRD.md, docs/LEDGER.md, docs/BACKLOG.md, a static+test quality-gate hook, a tamper guard, a supply-chain guard hook, Context7 MCP, CI (a fast gate, a separate end-to-end job, and a features-check job), PR template, pre-commit config, dev container, a threat-model doc, and structured documentation. Stack-agnostic at its core: language and tooling choices live in this skill's interview, not in the template files. Use this skill whenever a project is uninitialized (no docs/features.json or .claude/agents/), when the user says "init", "bootstrap", "set up this project", "/init-project", or describes wanting to start a new AI engineering project. Generates AGENTS.md, .claude/ (the reviewer/utility agents, hooks, and the iteration/security-review/tech-debt skills), .mcp.json, docs/ (including features.json and, for frontend projects, docs/design/), .github/, .devcontainer/, scripts/ (features_check.py, backlog.py, tamper_check.py, factory_doctor.sh), and a manifest tailored to the chosen language. Pairs with the upstream `tdd` and `grill-me` skills from mattpocock/skills, installed during bootstrap.
 ---
 
 # init-project
@@ -17,17 +17,20 @@ This skill bootstraps a new project with a structured, agent-driven workflow. Th
 
 A fully structured project with:
 
-- `AGENTS.md` and `CLAUDE.md` (symlinked): the constitution, stack-agnostic core
-- `.claude/agents/`: `implementer`, `code-reviewer`, `security-reviewer`, `utility`, and (frontend projects only) `design-reviewer`
-- `.claude/skills/`: the generated skills `slice` (per-feature workflow, tiered by risk), `design-loop` (mockup-approve-build-verify loop, frontend projects only), `security-review`, `tech-debt`, and `select-agents`
-- `.claude/hooks/quality-gate.sh`: deterministic static+test gate triggered by code-reviewer
+- `AGENTS.md` and `CLAUDE.md` (symlinked): the constitution, stack-agnostic core, hard-capped at 100 lines
+- `.claude/agents/`: `reviewer` (the single REVIEW pass: plan conformance, correctness, design fidelity, security) and `utility` (mechanical chores)
+- `.claude/skills/`: the generated skills `iteration` (the one per-feature workflow: chore or GRILL -> RED -> GREEN -> REVIEW -> MERGE), `security-review`, and `tech-debt`
+- `.claude/hooks/quality-gate.sh`: deterministic static+test gate triggered by the reviewer's Stop hook
 - `.claude/hooks/deps-guard.sh` + `.claude/settings.json`: best-effort supply-chain guard (PreToolUse hook)
 - `.mcp.json`: Context7 MCP server for live library docs
 - `.github/workflows/qa.yml`: CI running the quality gate (fast), a separate end-to-end job, and a `features-check` job that validates `docs/features.json`, on pull requests and pushes to main
 - `.github/pull_request_template.md`: short PR checklist
 - `.pre-commit-config.yaml`: local pre-commit hooks (language-specific portion populated from your profile)
-- `docs/`: living documentation -- `PRODUCT_VISION.md`, `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/`, `probes/`, `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
+- `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (live factory state, evidence per line), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/` (+ `plans/archive/` for merged features), `archive/` (overflow when a budgeted doc grows past its cap), `probes/`, `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
 - `scripts/features_check.py`: validates `docs/features.json` against its schema; also runs as the CI `features-check` job
+- `scripts/backlog.py`: regenerates `docs/BACKLOG.md` from `docs/features.json`
+- `scripts/tamper_check.py`: flags an unexplained change to a test, fixture, or gate config (the hard-rules tamper guard)
+- `scripts/factory_doctor.sh`: prunes stale git worktrees and merged feature branches
 - `.devcontainer/`: portable development environment (if chosen)
 - `README.md` + `.env.example`: project readme (commands, flow) and a documented, secret-free env template
 - A minimal green scaffold for the chosen language (a placeholder module + a passing test) so the quality gate passes on the first run
@@ -35,7 +38,7 @@ A fully structured project with:
 - `{{MANIFEST_FILE}}`: dependency + tool config + bundled scripts entry
 - A working venv / node_modules / equivalent via the chosen package manager (skipped if dev container is chosen; deps install inside the container instead)
 
-The TDD methodology is provided by the upstream `tdd` skill from `mattpocock/skills`, installed during this skill's Phase 1. The `slice` skill drives each feature through the risk tier's procedure; subagents are escape hatches for complex phases within it: `@implementer` for green-phase work, `@code-reviewer` for correctness review (every standard/high-risk slice), `@design-reviewer` after green on user-visible surfaces, `@security-reviewer` on the security trigger, and `@utility` for mechanical chores. Main context drives.
+The TDD methodology is provided by the upstream `tdd` skill from `mattpocock/skills`, installed during this skill's Phase 1. The `iteration` skill is the only per-feature workflow: chores build straight through the quality gate; features run GRILL -> RED -> GREEN -> REVIEW -> MERGE with hard caps. Main context drives GRILL and GREEN itself -- there is no implementer subagent; `@reviewer` is the escape hatch for the single REVIEW pass (fresh context, evidence required, four lenses: plan conformance, correctness, design fidelity, security), and `@utility` handles mechanical chores off the critical path.
 
 ---
 
@@ -61,284 +64,75 @@ npx skills@latest add mattpocock/skills
 
 Required skills (must be installed): `tdd`, `grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`.
 
-After the user picks them in the skills picker, verify `tdd` and `grill-me` are present before proceeding. `grill-me` is what powers the planning pass (Phase 2's interview, and the `slice` skill's high-risk-tier plan review); do not skip it. If the user refuses or skips, stop and explain why bootstrap cannot continue without `tdd` and `grill-me`.
-
-### Phase 2: Interview
-
-This is a planning interview, not a form. Do not be lazy here and do not just transcribe answers -- interrogate them. Run the `grill-me` skill (from mattpocock/skills) to drive it; if unavailable, mirror its style: probe assumptions, surface trade-offs, ask the follow-up.
-
-Start from the **heart of the project**: the one flow that, if it works, makes the project worth building. Get that crisp before anything about stack or tooling. Ask the questions below one at a time (or in tight groups of 2-3 if obviously related), but treat A1-A2 as a real discovery, not a single line each.
-
-**Be proactive about what's missing.** The complaint that drove this design is interviews that record what the user says and stop there. After the core questions, run one explicit "what haven't we talked about?" pass and name the gaps yourself: error and empty states, the unhappy path, auth and who can see what, scale, observability, the riskiest assumption. Tell the user what you think they have not considered. A good interview leaves the user thinking "I hadn't thought of that."
-
-Collect answers as you go directly into `docs/_init-answers.json` -- the renderer input whose schema is defined in Phase 4 (deleted partway through Phase 5, before the quality-gate run -- see Phase 5).
-
-The interview has two parts, in this order: **Part A -- product discovery** (the
-project itself; this is where surprises are killed) and **Part B -- stack and
-options** (machinery). Rule zero: **nothing this interview can elicit ships as a
-TODO in the generated docs.** When an answer is vague, grill it: "How would you
-verify that?", "What breaks first?", "Give me a real example input and output."
-
-**Part A -- product discovery**
-
-#### A1. Project name and one-sentence goal
-- What's the project called?
-- In one sentence, what does it do and for whom?
-
-Probe: who is the *primary* user? If they list multiple, narrow to one for the MVP.
-
-From the name, derive a **`{{PROJECT_SLUG}}`** for use in manifests / module paths: lowercase, ASCII, words joined by hyphens, no spaces or punctuation (e.g. "My Project!" -> `my-project`). The display `{{PROJECT_NAME}}` is for prose only; the slug is what goes into a package name, `package.json` name, or Go module path -- raw display names break TOML/JSON/`go.mod`. If the derived slug is empty or invalid, ask the user for one.
-
-#### A2. The core problem, the heart, and the positioning
-- What problem is this solving that existing tools don't solve well? Why now?
-- **The heart:** describe the single most important user-visible flow end to end -- the one that, if it works, makes the whole thing worth building. This is what the first slices target.
-- What does success look like concretely? How will you know the flow works (a metric, an example output, a user reaction)?
-- What is the riskiest assumption -- the one thing that, if wrong, sinks the project? Plan to test it early.
-
-Probe until these are concrete. If the answers are abstract, ask for a worked example (a real input and the output it should produce).
-
-Also pin the positioning while you are here (these feed `docs/PRODUCT_VISION.md`
-directly -- do not leave them for later): what CATEGORY is this product
-(one noun phrase), what is the user's PAIN in one line, what is the CURRENT
-ALTERNATIVE they use today, what is the KEY BENEFIT in one line, and what is the
-KEY DIFFERENTIATOR versus that alternative? Phrase each so the assembled
-positioning statement reads as ONE grammatical sentence: the pain must complete
-"who ..." (e.g. "stares at a full fridge with no dinner idea"), the benefit must
-complete "that ..." (e.g. "turns what you have into what you can cook").
-
-#### A3. Acceptance criteria for the first iteration
-
-Ask for 3-5 numbered, observable statements that, when all true, mean the MVP
-works. These become the `acceptance` array of the first entries in
-`docs/features.json` -- there is no separate requirements doc for them to live
-in. (A feature's `serves:` line points at `docs/PRODUCT_VISION.md` instead --
-the differentiator or journey step the feature exists for -- see Phase 4.)
-Probe each until it is verifiable by hand: "How would you check this one?"
-Reject vague criteria ("it should be fast") and help sharpen them ("p95 under
-2s on 1k documents").
-
-#### A4. Non-goals
-
-What will this project deliberately NOT do in the first iteration? Get at least
-two concrete non-goals. These render into `{{NON_GOALS}}` -- they are the main
-defense against scope surprises.
-
-#### A5. Constraints
-
-- Time: deadline or cadence (sprint, hackathon, side project)? Derive the first
-  milestone date if one exists.
-- Cost: any budget, INCLUDING an LLM/API budget if AI features are likely?
-- Data: corpus size, allowed sources, licensing constraints?
-
-#### A6. Deployment target
-
-Where does this run for its users -- local CLI, internal tool, public web app,
-mobile, embedded? And where will it be hosted or deployed first (a laptop, a
-VPS, a PaaS, on-prem)?
-
-#### A7. Scale and performance expectations
-
-Order of magnitude for the first iteration: how many users, requests, and how
-much data? Any hard latency expectation on the core flow? "Just me, small" is a
-fine answer -- but it must be recorded, not assumed.
-
-#### A8. External systems and integrations
-
-What existing systems, third-party APIs, or data sources must this talk to?
-List each. Every one of these will need a reality probe (`docs/probes/`) before
-any code builds on it -- say so now so it is not a surprise later.
-
-#### A9. Other user segments
-
-Besides the primary user (A1): who else might use this later? One line each;
-they are recorded as deferred, not built.
-
-#### A10. Style references
-
-Every project drifts without a style anchor. Pick one positive reference for the agent to pattern-match (code-shape only -- visual style is V1/V2).
-
-- **Positive reference (required):** a concrete artifact -- public repo URL, deployed product, folder on disk, design system, or screenshot directory -- that this project should resemble in shape and idioms. Ask: "Is there a project you have looked at and thought 'I want this codebase to feel like that one'?"
-- **Negative reference (optional):** a concrete artifact whose shape you want to avoid.
-
-Save the location (URL or path) for each. If the user has nothing for the positive reference, suggest picking one before the first real slice; leave a TBD placeholder for now.
-
-**Part B -- stack and options**
-
-#### B1. Language
-
-```
-  1) Python       (uv, ruff, mypy, pytest)            [complete]
-  2) TypeScript   (npm, eslint, prettier, tsc, vitest) [complete]
-  3) Go           (go mod, golangci-lint, go test)     [complete]
-  4) Rust         (cargo, clippy, rustfmt)             [complete]
-  5) Other        (manual setup)                       [not yet -- experimental]
-```
-
-Python, TypeScript, Go, and Rust each have a **complete profile** (`templates/profiles/<lang>/`) with a working toolchain and a green-on-first-run scaffold -- pick any of them and the quality gate passes immediately. "Other" is not yet built; see "Experimental languages" below before generating one.
-
-#### B2. Frontend
-
-- Will this project have a frontend in this sprint?
-  - **yes-spa**: full SPA (React, Next, Vue, etc.)
-  - **yes-minimal**: Streamlit, Gradio, plain HTML
-  - **no**: API-only or notebook-only
-
-If not `no` and the language chosen in B1 is Go or Rust, say so honestly: those
-profiles ship no `tokens.css` yet in v3.0.0 -- `docs/design/DESIGN.md` still
-renders with its tokens section, but there is no starter tokens file to edit
-until one is added to the profile.
-
-#### V1. Visual references (only when the project has a frontend)
-
-Two or three REAL products or sites this should feel like, and what
-specifically to take from each ("linear.app -- the calm density", not just a
-name). These are visual anchors, distinct from A10's codebase-shape reference.
-Push past "something clean": ask what the user actually admires opening daily.
-
-#### V2. Tone and anti-reference (only when the project has a frontend)
-
-- Three tone words (e.g. "calm, technical, warm").
-- One anti-reference: "never let it look like ..." (a product, or a named
-  cliche). If the user shrugs, offer the default: "generic AI dashboard:
-  purple gradient hero, three rounded cards, default font everywhere".
-
-V1 and V2 are asked ONLY when B2 is not `no`; when B2 is `no`, skip them and
-record the answers-file `design` key as `null`.
-
-#### B3. Backend framework (if applicable)
-
-Offer the menu for the chosen language; do not improvise:
-
-- Python: 1) FastAPI  2) Flask  3) Streamlit/Gradio only  4) none (CLI/library)
-- TypeScript: 1) Next.js  2) Express  3) Fastify  4) none (CLI/library)
-- Go: 1) stdlib net/http  2) chi  3) gin  4) none (CLI/library)
-- Rust: 1) axum  2) actix-web  3) none (CLI/library)
-
-#### B4. AI features
-
-- Will this project use:
-  - RAG (retrieval-augmented generation)? Vector DB choice: pgvector / Chroma / Pinecone / Qdrant
-  - LLM agents (multi-step reasoning)?
-  - Evals (LLM output testing)?
-  - Streaming responses?
-
-Record answers to scaffold relevant test categories; a non-empty answer here
-turns on `{{AI_DISCIPLINE_BLOCK}}` in `AGENTS.md` and the AI-only sections of
-`docs/SECURITY.md`, `.claude/agents/implementer.md`, and
-`.claude/agents/code-reviewer.md`.
-
-#### B5. LLM provider and embeddings model
-- Provider: OpenAI / Anthropic / Google / Together / OpenRouter / local (Ollama / LM Studio) / multiple via a router
-- Embeddings model: name (e.g. `text-embedding-3-small`, `bge-large-en-v1.5`)
-
-#### B6. Database / persistence (if applicable)
-- None / SQLite / Postgres / DuckDB / KV store / file-based
-
-#### B7. Dev container?
-- Do you want to run this project in a dev container? (yes / no)
-- If yes, base image defaults to the language profile's recommendation.
-
-Trade-offs:
-- **Yes:** isolated environment, reproducible across machines, matches production, and confines what an agent with broad permissions can touch on the host filesystem.
-- **No:** simpler setup, no Docker required, easier if you're on a constrained machine or just prototyping.
-
-#### B8. Security profile
-
-Three quick yes/no questions that set the project's threat model (these seed `docs/SECURITY.md`):
-
-- Does it **read untrusted content** (web pages, user uploads, third-party API or tool results, inbound messages)?
-- Does it **hold private data** (user records, secrets, anything not public)?
-- Does it **act on the outside world** (send messages/email, write to external systems, make purchases, run tools with side effects)?
-
-Any "yes" means the security blocks and red-team tests matter. All three "yes" on a single LLM agent is the **lethal trifecta** -- flag it explicitly and note in `docs/SECURITY.md` how the project breaks one leg (split the agent, drop a capability, or gate the action behind a human).
-
-#### B9. Per-slice explanation memos (opt-in)
-
-> "Do you want a plain-English memo generated when each slice ships? Useful for learning projects, handoffs, and codebases that need to be defended in review. Skip if you do not need the trail."
-
-Yes / No. Default: No.
-
-#### B10. Seed `gotchas.md` with three starter entries (opt-in)
-
-> "Do you want `docs/gotchas.md` pre-seeded with three generic lessons (patch the cause not the symptom; trust artifacts not summaries; handle external I/O at one boundary)? Demonstrates the file's purpose and shape."
-
-Yes / No. Default: Yes.
-
-#### B11. Pre-wire mem0 for persistent memory (opt-in)
-
-> "Does this project need persistent memory across sessions (user preferences, agent state, conversation history)? If yes, mem0 is added as a dependency in local library mode."
-
-Yes / No. Default: No. Link: https://github.com/mem0ai/mem0
-
-#### B12. Codex as a second-opinion reviewer (opt-in)
-
-Ask ONLY if `codex` is in the B13 roster (B13 is asked first); otherwise record `"no"` silently.
-
-> "Do you have the Codex CLI available? If so, the code-reviewer can run an independent Codex pass for a second perspective on important changes."
-
-Yes / No. Default: No. If yes, the generated `code-reviewer` agent includes a step to invoke Codex and reconcile its findings.
-
-#### B13. Agent roster -- which agentic coders drive this project
-
-Asked BEFORE B12 in the conversation (B12 only applies when `codex` is in the
-roster; the numbering is historical).
-
-First PROBE, do not guess: check which agent CLIs are installed
-(`command -v codex`, `command -v cursor`, `command -v agy || command -v antigravity`,
-`command -v gemini`, plus any the user names -- matches the probe list in the
-`/select-agents` skill). Claude Code counts as installed when this interview
-runs inside it. Then ask:
-
-> "Which agentic coders will drive this project? (multi-select)
->  - claude-code {installed?} -- full enforcement: subagents, hooks, /select-agents
->  - codex {installed?} -- rules + dispatch target (codex exec)
->  - antigravity {installed?} -- rules + dispatch target
->  - cursor {installed?} -- rules, interactive second opinion
->  - other -- rules only; roles assigned manually"
-
-Default: `claude-code` alone. At least one required. A selected agent that is
-not installed is recorded with `"status": "planned"`. The roster lands in the
-answers file as the top-level `agents` list and, after render, lives on as the
-RUNTIME config `docs/agents.json` (+ the `docs/agents.md` matrix) -- changeable
-any time via `/select-agents`, never frozen at bootstrap.
-
-If `claude-code` is NOT selected: warn that the Claude-specific enforcement
-stack (subagents, hooks, settings, the `CLAUDE.md` symlink) will not be
-generated, but the five generated `.claude/skills/` procedures (`slice`,
-`security-review`, `tech-debt`, `select-agents`, and -- frontend projects --
-`design-loop`) still will, as plain-markdown procedures for the driving agent
-to read and follow manually. Only the bootstrap-installed helper skills
-(`init-project` itself and the Phase 1 `mattpocock/skills` pack) are inert
-and safe to delete after Phase 5.
-
-### Phase 3: Confirm the plan -- show the filled docs, not a settings list
-
-Render (in memory) the discovery content that will land in the docs and show it
-to the user BEFORE generating -- surprises must surface here, not after:
-
-> "Here is what your docs will say. Correct anything that reads wrong.
->
-> **Positioning:** For {primary user} who {pain}, {name} is a {category} that
-> {key benefit}. Unlike {alternative}, we {differentiator}.
-> **Core flow:** {numbered steps}
-> **Acceptance criteria:** {REQ-AC1..n}
-> **First features (ordered):** {id: title -- serves ...}
-> **Non-goals:** {list}   **Constraints:** {time / cost / data}
-> **Deployment:** {target}   **Scale:** {expectations}
-> **Integrations (each will need a reality probe):** {list}
-> **Success metric:** {metric}   **Riskiest assumption:** {assumption}
-> **Design direction:** {references} / tone {words} / never {anti-reference} (frontend only)
->
-> Stack: {language}, frontend {answer}, backend {answer}, DB {answer},
-> AI {list or none}, LLM {provider or none}, dev container {yes/no},
-> security profile {three answers}{trifecta warning if all three},
-> opt-ins: memos {y/n}, gotchas seed {y/n}, mem0 {y/n}, Codex {y/n}; agents: {roster with installed/planned marks}.
->
-> This will create approximately {N} files. Proceed?"
-
-Read the assembled positioning sentence aloud; if it does not survive being spoken, fix the phrasing with the user before generating.
-
-Wait for confirmation and apply corrections before Phase 4.
+After the user picks them in the skills picker, verify `tdd` and `grill-me` are present before proceeding. `grill-me` is what powers the planning pass (Phase 2's conversation, and the `iteration` skill's GRILL step for every feature); do not skip it. If the user refuses or skips, stop and explain why bootstrap cannot continue without `tdd` and `grill-me`.
+
+### Phase 2 -- the conversation (at most 5 questions)
+
+This is a conversation, not a form: run the `grill-me` skill (from
+mattpocock/skills) to drive it; if unavailable, mirror its style -- probe
+assumptions, surface trade-offs, ask the follow-up. Collect answers directly
+into `docs/_init-answers.json` as you go -- the renderer input whose schema is
+defined in Phase 4 (deleted partway through Phase 5, before the quality-gate
+run -- see Phase 5). Rule zero: **nothing this conversation can elicit ships
+as a TODO in the generated docs.** When an answer is vague, grill it: "How
+would you verify that?", "What breaks first?", "Give me a real example input
+and output."
+
+Open with ONE prompt: "Describe the product you want -- what it does, for
+whom, and anything you already know you want technically." Then infer
+everything possible from the answer and ask ONLY what is missing from this
+list, one question at a time, multiple-choice where possible:
+
+1. **What & for whom** -- only if the description left the product or its
+   primary user unclear.
+2. **Language** -- only if not inferable (menu: Python / TypeScript / Go /
+   Rust; "Other" is not built). "A CLI in Rust" needs no question.
+3. **Frontend?** -- infer from the product type when obvious. If yes, ONE
+   follow-up: "Name a product whose look you like, and one you hate"
+   (feeds the design tokens and anti-reference). If the language is Go or
+   Rust, say so honestly: those profiles ship no `tokens.css` yet --
+   `docs/design/DESIGN.md` still renders with its tokens section, but there
+   is no starter tokens file to edit until one is added to the profile.
+4. **Security-sensitive?** -- "Will this hold real user data, payments,
+   auth, take input from strangers, or send data out to external systems?"
+   Shapes the SECURITY.md defaults and the AI-security fences (the
+   outbound leg answers `acts_outward` directly, instead of guessing it).
+5. **Which agents drive** -- the roster question, asked as one question.
+   PROBE first, do not guess: check which agent CLIs are installed
+   (`command -v codex`, `command -v cursor`, `command -v agy || command -v
+   antigravity`, `command -v gemini`, plus any the user names). Claude Code
+   counts as installed when this interview runs inside it. Options:
+   claude-code / codex / antigravity / cursor / other (multi-select; default
+   `claude-code` alone; at least one required; a selected-but-not-installed
+   agent is recorded with `"status": "planned"`). If `claude-code` is NOT
+   selected, warn that the Claude-specific enforcement stack (subagents,
+   hooks, settings, the `CLAUDE.md` symlink) will not be generated, but
+   `.claude/skills/` (`iteration`, `security-review`, `tech-debt`) still
+   ships as plain-markdown procedures for the driving agent to read and
+   follow manually.
+
+Everything else takes the documented default (Phase 4 table): devcontainer
+yes, explanations no, gotchas seed yes, mem0 no, codex reviewer only if
+codex is in the roster. Say which defaults were applied; each is one answer
+-file line to change later.
+
+Derive and confirm: project name/slug, goal, primary user, core problem,
+core journey, surfaces list (screens/pages; empty for API/CLI), in-scope
+list, non-goals, success metrics, differentiator, current alternative --
+these fill `docs/PRD.md`. Close Phase 2 by showing the owner the drafted
+one-page PRD content and the five-line summary
+("<language> <product-type>, frontend: <y/n>, security-sensitive: <y/n>,
+agents: <list>, defaults applied: <n>") and getting an explicit OK -- the
+PRD is owner-approved BEFORE the render.
+
+### Phase 3: Confirm the plan
+
+Phase 2 already showed the owner the drafted `docs/PRD.md` content and the
+five-line summary, and got an explicit OK before this point -- do not
+re-litigate it here. Apply any last corrections the owner raised at the end
+of Phase 2, state the file count this will create (roughly N files), and move
+to Phase 4. If the owner has not yet given an explicit OK, stay in Phase 2;
+Phase 4 never runs on an implied yes.
 
 ### Phase 4: Generate the scaffold (deterministic render)
 
@@ -394,7 +188,8 @@ yours carry the real interview content):
     "key_benefit": "...",
     "key_differentiator": "...",
     "positive_reference": {"ref": "simonw/datasette", "location": "https://github.com/simonw/datasette"},
-    "negative_reference": null
+    "negative_reference": null,
+    "surfaces": ["Fridge photo upload", "Ingredient review", "Recipe results"]
   },
   "stack": {
     "language": "python",
@@ -427,7 +222,8 @@ yours carry the real interview content):
       "acceptance": ["Uploading a clear fridge photo produces an editable ingredient list within 15 seconds."],
       "tests": [],
       "status": "todo",
-      "tier": "high-risk"
+      "tier": "feature",
+      "surface": "Ingredient review"
     },
     {
       "id": "F002",
@@ -437,7 +233,8 @@ yours carry the real interview content):
       "acceptance": ["Confirming an ingredient list returns exactly three recipes, each cookable with those ingredients plus pantry staples."],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "Recipe results"
     }
   ],
   "design": {
@@ -448,16 +245,27 @@ yours carry the real interview content):
 }
 ```
 
+Every field in this schema is still required, even though Phase 2 asks at
+most 5 questions for it -- inference is the interviewer's job, not a reason
+to relax the renderer's contract. Fields Phase 2 does not name explicitly
+(riskiest assumption, acceptance criteria, constraints, first milestone,
+deployment target, scale, integrations, other user segments, the
+codebase-shape reference) still need a value: derive one from the
+conversation, or record `TODO(interview-skipped)` per rule zero if the owner
+explicitly declined to go further.
+
 Field rules the renderer enforces (it fails closed with a precise message):
 
 - `slug`: lowercase ASCII words joined by hyphens (`my-project`) -- it becomes the package/module identifier.
 - `language`: one of `python` / `typescript` / `go` / `rust`. `has_frontend`: `yes-spa` / `yes-minimal` / `no`. `ai_features`: any subset of `["rag", "agents", "evals", "streaming"]`; `[]` means no AI features.
+- `surfaces`: a list of strings (`[]` for an API/CLI product with no screens); each named surface is available for a feature's `surface` field and for the `docs/PRD.md` Surfaces section.
 - Free-text answers land verbatim in prose files (and escaped in JSON/TOML), so any characters are fine EXCEPT HTML comment markers (`<!--`/`-->`) and `{{UPPER_SNAKE}}`-shaped text, which the renderer rejects.
+- Free-text fields that land in `AGENTS.md` (`goal`, `primary_user`, the style references) must be single-line -- the renderer hard-fails if the rendered `AGENTS.md` exceeds 100 lines (rule 22), and a wrapped multi-line answer is the easiest way to blow that cap.
 - Rule zero still holds: no bare `TODO` in any answer. The only allowed form is `TODO(interview-skipped)` when the user explicitly refused a question. `date` is today, ISO format.
 - `vector_db`, `llm_provider`, `embeddings_model`, `database`, `backend_framework`: write `none` (or `none (CLI/library)` for the framework) when not applicable.
 - `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.
-- `features` (top-level, required, non-empty): each entry needs `id` (`F000`-`F999`, unique), `title`, `intent`, `serves`, `acceptance` (non-empty list of strings), `tests` (list of strings -- `[]` at bootstrap, filled in as the test files are named), `status` (all `"todo"` at bootstrap; `in-progress` / `done` / `dropped` only apply later), and `tier` (`light` / `standard` / `high-risk`, per the `<risk-tiers>` table in `AGENTS.md`). Derive 3-7 features from A2's core journey, using A3's acceptance criteria as the source for each feature's `acceptance` array -- order them user-visible-journey-first (hardening and infra queue behind the first shippable surface) -- and give each a `serves:` line naming the differentiator or journey step it exists for from `docs/PRODUCT_VISION.md` (e.g. "differentiator: <the A2 key differentiator>" or "journey step 2: <the step>"). There is no requirements doc for `serves:` to cite a `REQ-ACn` label back to -- name the vision-level reason, not the criterion. An optional ninth key, `notes`, is unused at bootstrap (every feature starts `todo`) but becomes required later -- `scripts/features_check.py` fails a `dropped` feature that has no reason recorded in `notes`.
-- `design` (top-level): an object with `references`, `tone`, `anti_reference` (V1/V2) when `stack.has_frontend` is not `"no"`; `null` when it is `"no"`.
+- `features` (top-level, required, non-empty): each entry needs `id` (`F000`-`F999`, unique), `title`, `intent`, `serves` (names the `docs/PRD.md` section it serves -- e.g. "journey step 2" or "differentiator: <the key differentiator>"; if a feature cannot say which part of the PRD it serves, question the feature), `acceptance` (non-empty list of strings), `tests` (list of strings -- `[]` at bootstrap, filled in as the test files are named), `status` (all `"todo"` at bootstrap; `in-progress` / `done` / `dropped` only apply later), `tier` (`chore` or `feature` -- routes the `iteration` skill: a chore builds straight through the gate, a feature runs GRILL -> RED -> GREEN -> REVIEW -> MERGE), and `surface` (the entry from `project.surfaces` this feature touches, or `"none"` for API/CLI-only work). A feature whose `surface` is not `"none"` needs a `mockup` field (a `docs/design/mockups/...` path) before it can leave `todo` -- `scripts/features_check.py` enforces this; bootstrap-time features normally have none yet, so leave `mockup` unset. An optional key, `notes`, is unused at bootstrap (every feature starts `todo`) but becomes required later -- `scripts/features_check.py` fails a `dropped` feature that has no reason recorded in `notes`. Derive 3-7 features from the core journey, using the acceptance criteria drawn out in conversation as the source for each feature's `acceptance` array -- order them user-visible-journey-first (hardening and infra queue behind the first shippable surface).
+- `design` (top-level): an object with `references`, `tone`, `anti_reference` -- collected from the frontend visual-reference follow-up in Phase 2 -- when `stack.has_frontend` is not `"no"`; `null` when it is `"no"`.
 
 **Step 2 -- run the renderer** from the project root:
 
@@ -483,24 +291,25 @@ fixtures in the template repo CI:
 | 1 | Substitutes every placeholder in the tables below (core + the chosen profile only), re-indenting multi-line values to the placeholder's own column so YAML stays valid. |
 | 2 | Escapes free-text answers per target format: JSON-escaped in `.json`, TOML-escaped in `.toml`, verbatim in Markdown/text -- hostile quotes/newlines/braces land as text, never as structure. Free text in any other file type is a hard error. |
 | 3 | AI features selected -> renders `{{AI_DISCIPLINE_BLOCK}}` from `templates/conditional/ai-discipline.md`; none -> empty. |
-| 4 | AI fences: AI on -> strips only the marker lines and keeps the content; AI off -> deletes the whole fenced blocks in `docs/SECURITY.md` (AI-SECURITY, AI-REDTEAM), `.claude/agents/implementer.md` (AI-IMPL), `.claude/agents/code-reviewer.md` (AI-REVIEW). |
-| 5 | Style references (A10): renders the positive/negative reference lines, or the "no positive reference yet" comment / empty string. |
-| 6 | B9 `explanations: no` -> `docs/explanations/` is not generated. |
-| 7 | B10 `seed_gotchas: yes` -> inserts the three starter entries from `templates/conditional/gotchas-seed.md` into `docs/gotchas.md`. |
-| 8 | B11 `mem0: yes` -> keeps `docs/memory.md`, renders `{{MEMORY_DOC_LINE}}` in `AGENTS.md`'s `<project>` block, and inserts the `<memory>` block (from `templates/conditional/memory-block.md`, see rule 21 for the anchor); `no` -> none of those. The `mem0ai` dependency itself is added in Phase 4.5. |
-| 9 | B12 `codex_reviewer: yes` -> renders `{{CODEX_REVIEW_STEP}}` and `{{CODEX_ROSTER_NOTE}}` from `templates/conditional/codex-*.md`; `no` -> both empty. |
-| 10 | B8: seeds the security-profile line into `docs/SECURITY.md`; if all three answers are `yes` AND AI features are on, appends the lethal-trifecta-PRESENT note to that same insertion. |
-| 11 | B7 `uses_devcontainer: no` -> `.devcontainer/` is not generated. |
-| 12 | B2 + profile: renders `{{E2E_BROWSER_INSTALL_STEP}}` as the browser-install step (UI project with a profile `e2e_browser_install`) or the "no browser needed" comment. |
+| 4 | AI fences: AI on -> strips only the marker lines and keeps the content; AI off -> deletes the whole fenced blocks in `docs/SECURITY.md` (AI-SECURITY, AI-REDTEAM), `.claude/agents/reviewer.md` (AI-REVIEW). |
+| 5 | Style references: renders the positive/negative codebase-shape reference lines, or the "no positive reference yet" comment / empty string. |
+| 6 | `opt_ins.explanations: no` -> `docs/explanations/` is not generated. |
+| 7 | `opt_ins.seed_gotchas: yes` -> inserts the three starter entries from `templates/conditional/gotchas-seed.md` into `docs/gotchas.md`. |
+| 8 | `opt_ins.mem0: yes` -> keeps `docs/memory.md`, renders `{{MEMORY_DOC_LINE}}` in `AGENTS.md`'s `<project>` block, and inserts the `<memory>` block (from `templates/conditional/memory-block.md`, see rule 21 for the anchor); `no` -> none of those. The `mem0ai` dependency itself is added in Phase 4.5. |
+| 9 | `opt_ins.codex_reviewer: yes` -> renders `{{CODEX_REVIEW_STEP}}` and `{{CODEX_ROSTER_NOTE}}` from `templates/conditional/codex-*.md`; `no` -> both empty. |
+| 10 | Seeds the security-profile line into `docs/SECURITY.md` from the `security` answers; if all three are `yes` AND AI features are on, appends the lethal-trifecta-PRESENT note to that same insertion. |
+| 11 | `stack.uses_devcontainer: no` -> `.devcontainer/` is not generated. |
+| 12 | `stack.has_frontend` + profile: renders `{{E2E_BROWSER_INSTALL_STEP}}` as the browser-install step (UI project with a profile `e2e_browser_install`) or the "no browser needed" comment. |
 | 13 | Renames profile manifests shipped with an `.example` suffix (`pyproject.toml.example` -> `pyproject.toml`). Core files are never renamed (`.env.example` stays). |
 | 14 | Creates the `CLAUDE.md` -> `AGENTS.md` symlink (a one-line pointer file where symlinks are unavailable), `chmod +x` on `.claude/hooks/*.sh` and `scripts/*.sh`, and stamps `.claude/.template-version` (with this release's version) if the bootstrap `install.sh` did not already write it. |
 | 15 | Fails closed if any `{{...}}` placeholder survives anywhere in the output. |
-| 16 | B13: when `claude-code` is NOT in `agents`, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the `CLAUDE.md` symlink are not generated -- these are the Claude-specific enforcement mechanics (subagents, hooks, settings). `.claude/skills/` (`slice`, `security-review`, `tech-debt`, `select-agents`, and -- frontend only -- `design-loop`) ships regardless of roster: they are plain-markdown procedures any driving agent can read and follow, not Claude Code slash commands. `.claude/.template-version` is likewise always written by post-processing (rule 14) regardless of roster. A `claude-code` entry with `"status": "planned"` still counts as selected for this rule -- the agents/hooks/settings tree is still generated; `status` only affects `docs/agents.json` and the matrix status note (rule 17). |
-| 17 | B13: renders `{{AGENT_MATRIX}}` in `docs/agents.md` from `templates/conditional/agents/<name>.md` (planned agents get a status note) and writes the machine-readable roster `docs/agents.json` (name, status, offload roles). When `claude-code` is NOT in `agents`, an honest-omission note (`templates/conditional/agents/no-claude-note.md`) is appended as the final section of `docs/agents.md`, spelling out what was skipped and that `docs/SECURITY.md` / `docs/language-standards.md` mandates -- and keeping `docs/features.json` current -- fall to the driving agent manually. |
+| 16 | When `claude-code` is NOT in `agents`, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, and the `CLAUDE.md` symlink are not generated -- these are the Claude-specific enforcement mechanics (subagents, hooks, settings). `.claude/skills/` (`iteration`, `security-review`, `tech-debt`) ships regardless of roster: they are plain-markdown procedures any driving agent can read and follow, not Claude Code slash commands. `.claude/.template-version` is likewise always written by post-processing (rule 14) regardless of roster. A `claude-code` entry with `"status": "planned"` still counts as selected for this rule -- the agents/hooks/settings tree is still generated; `status` only affects `docs/agents.json` and the matrix status note (rule 17). |
+| 17 | Renders `{{AGENT_MATRIX}}` in `docs/agents.md` from `templates/conditional/agents/<name>.md` (planned agents get a status note) and writes the machine-readable roster `docs/agents.json` (name, status, offload roles). When `claude-code` is NOT in `agents`, an honest-omission note (`templates/conditional/agents/no-claude-note.md`) is appended as the final section of `docs/agents.md`, spelling out what was skipped and that `docs/SECURITY.md` / `docs/language-standards.md` mandates -- and keeping `docs/features.json` current -- fall to the driving agent manually. |
 | 18 | CC fences (same mechanic as AI fences, rule 4, keyed on "claude-code in `agents`" instead of `ai_features`): claude-code present -> strips only the marker lines; absent -> deletes the whole fenced block. Current instance: `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section (the hook is a Claude Code enforcement mechanic, so other rosters do not get the bullet). |
-| 19 | Writes `docs/features.json` from the answers' `features` list (schema 1). |
-| 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/), the profile tokens.css, `@design-reviewer`, and the `design-loop` skill; `has_frontend: no` skips all of them. |
+| 19 | Writes `docs/features.json` from the answers' `features` list (schema 1) and `docs/agents.json` from the roster; `docs/BACKLOG.md` and `docs/LEDGER.md` ship as static files (empty until the first feature ships and merges -- `scripts/backlog.py` and the `iteration` skill fill them in later, not the renderer). |
+| 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/) and the profile tokens.css; `has_frontend: no` skips both (skip_file rule). There is no separate design agent or skill in v4.0.0 -- design fidelity is one of `@reviewer`'s four lenses, checked at the REVIEW step of the `iteration` skill, not a dedicated pass. |
 | 21 | mem0 memory block inserts after `<!-- /FW-BLOCK: learning -->`. |
+| 22 | `AGENTS.md` is capped at 100 lines after every substitution and insertion; the renderer raises if the rendered file exceeds it (context economy is a hard requirement of this rule, not a style preference). |
 
 Keep `docs/_init-answers.json` until Phase 5's placeholder grep and
 `features_check.py` pass, then delete it (`rm docs/_init-answers.json`)
@@ -513,7 +322,8 @@ Dependency work is the one part of generation that stays with the agent: it
 runs environment-dependent package-manager commands, so it cannot be a
 deterministic file render. Two steps.
 
-**First, capability dependencies (B3-B6).** The rendered manifest ships a
+**First, capability dependencies** (from the backend framework, AI features,
+LLM/embeddings, and database answers). The rendered manifest ships a
 minimal core only; append ONLY the dependencies the answers call for, using the
 chosen profile's `add_dep_command` (prefix Python's `uv add` with
 `DEPS_VETTED=1` so the deps-guard hook lets a vetted install through). Map
@@ -524,7 +334,7 @@ intent to packages, per language:
 - **Go** -- HTTP: stdlib `net/http` (no dep) or `chi`/`gin`; Postgres: `github.com/jackc/pgx/v5`; LLM: the provider's official Go SDK or `net/http`. Add via `go get`.
 - **Rust** -- HTTP server: `axum` or `actix-web` (+ `tokio`); Postgres: `sqlx`; LLM: the provider's official Rust SDK or `reqwest`. Add via `cargo add`.
 
-Choose the smallest set that covers the answers; do not add a database/vector/LLM dep the project did not ask for. If B11 chose mem0, also add `mem0ai` (Python: `DEPS_VETTED=1 uv add mem0ai`; for other languages, add the equivalent client or leave a clearly-marked note in `docs/gotchas.md` if none is established).
+Choose the smallest set that covers the answers; do not add a database/vector/LLM dep the project did not ask for. If mem0 was opted in, also add `mem0ai` (Python: `DEPS_VETTED=1 uv add mem0ai`; for other languages, add the equivalent client or leave a clearly-marked note in `docs/gotchas.md` if none is established).
 
 **Then install.** If `{{USES_DEVCONTAINER}}` is `no`:
 
@@ -547,48 +357,50 @@ First, confirm the **core** files (every project, every language) exist:
 test -f AGENTS.md && test -f README.md && test -f .env.example && \
 test -f .mcp.json && test -f .claude/.template-version && \
 test -f .github/workflows/qa.yml && test -f .github/pull_request_template.md && \
-test -f docs/PRODUCT_VISION.md && test -f docs/features.json && \
+test -f docs/PRD.md && test -f docs/features.json && \
+test -f docs/LEDGER.md && test -f docs/BACKLOG.md && \
 test -f docs/SECURITY.md && test -f docs/language-standards.md && \
 test -f docs/deviations.md && test -f docs/plans/README.md && \
+test -f docs/plans/archive/.gitkeep && test -f docs/archive/.gitkeep && \
 test -f docs/agents.md && test -f docs/agents.json && \
 test -f scripts/features_check.py && python3 scripts/features_check.py && \
-test -f .claude/skills/slice/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
-test -f .claude/skills/tech-debt/SKILL.md && test -f .claude/skills/select-agents/SKILL.md
+test -f scripts/backlog.py && test -f scripts/tamper_check.py && \
+test -f scripts/factory_doctor.sh && \
+test -f .claude/skills/iteration/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
+test -f .claude/skills/tech-debt/SKILL.md
 ```
 
 (`.claude/skills/` ships for every roster -- plain-markdown procedures, not
 Claude Code slash commands -- so this check is unconditional.)
 
-Then, ONLY when `claude-code` is in the B13 roster, confirm the Claude-specific
+Then, ONLY when `claude-code` is in the agent roster, confirm the Claude-specific
 enforcement tree landed:
 
 ```bash
 test -L CLAUDE.md && test -d .claude/agents && \
-test -f .claude/agents/code-reviewer.md && test -f .claude/agents/security-reviewer.md && \
-test -f .claude/agents/utility.md && \
+test -f .claude/agents/reviewer.md && test -f .claude/agents/utility.md && \
 test -f .claude/settings.json && test -f .claude/hooks/deps-guard.sh
 ```
 
-And, ONLY when the project has a frontend (B2 not `no`), also confirm the
-design tree landed:
+And, ONLY when the project has a frontend (the frontend answer not `no`), also
+confirm the design tree landed:
 
 ```bash
-test -f docs/design/DESIGN.md && test -f .claude/skills/design-loop/SKILL.md
+test -f docs/design/DESIGN.md
 ```
 
-(this pair ships for any frontend project regardless of which agents drive
-it). ONLY when `claude-code` is also in the roster, additionally confirm
-`test -f .claude/agents/design-reviewer.md`.
+(this ships for any frontend project regardless of which agents drive it --
+there is no separate design skill or agent in v4.0.0; design fidelity is one
+of `@reviewer`'s four lenses.)
 
 When `claude-code` is NOT in the roster: skip the Claude-specific enforcement
 block above, and tell the user the bootstrap-installed skill helpers --
 `init-project` itself and the Phase 1 `mattpocock/skills` pack (`tdd`,
 `grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`) -- are inert for
-their agents and safe to delete. This does NOT include the five generated
-`.claude/skills/` procedures checked above (`slice`, `security-review`,
-`tech-debt`, `select-agents`, `design-loop`): those are the project's own
-canonical procedures and the driving agent should read and follow them even
-without Claude Code.
+their agents and safe to delete. This does NOT include the three generated
+`.claude/skills/` procedures checked above (`iteration`, `security-review`,
+`tech-debt`): those are the project's own canonical procedures and the
+driving agent should read and follow them even without Claude Code.
 
 Then confirm the chosen profile landed: its manifest (`{{MANIFEST_FILE}}`) exists, and the green-scaffold source + test exist (Python `src/example.py`+`tests/test_example.py`; TypeScript `src/example.ts`+`tests/example.test.ts`; Go `greet.go`+`greet_test.go`; Rust `src/lib.rs` (with its in-file unit test) + `tests/e2e.rs` + `rust-toolchain.toml`).
 
@@ -598,7 +410,7 @@ Then check no unresolved placeholders remain:
 ! grep -rn '{{[A-Z0-9_]*}}' . --include='*.md' --include='*.txt' --include='*.toml' --include='*.yml' --include='*.yaml' --include='*.json' --include='*.sh' --include='*.py' --include='*.ts' --include='*.go' --include='*.rs' --include='*.mod' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=skills 2>/dev/null
 ```
 
-(`--exclude-dir=skills` skips every dir literally named `skills`, which covers both the bootstrap-installed helper skills and this project's own generated `.claude/skills/` procedures -- those never carry unsubstituted placeholders (there are none in `templates/core/.claude/skills/` to begin with), so excluding them is safe. The generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
+(`--exclude-dir=skills` skips every dir literally named `skills`, which covers both the bootstrap-installed helper skills and this project's own generated `.claude/skills/` procedures. Some of those procedures (`iteration`, for one) DO carry placeholders in their template source (`{{QA_COMMAND}}`, `{{E2E_COMMAND}}`) -- excluding the dir here is safe anyway because `render.py` already substitutes them like any other file and its own `leftover_scan()` (rule 15, fails closed) is the actual backstop; this grep is a redundant human-readable double-check, not the only line of defense. The generated `.claude/hooks/` and `.claude/agents/` files ARE checked -- they carry substituted values.)
 
 Now delete the renderer input, BEFORE running the quality gate: `rm
 docs/_init-answers.json` (its content lives on in the rendered docs). It is
@@ -614,7 +426,7 @@ Report what was generated, then hand off:
 > 1. {{If dev container}}: Reopen in dev container, then run `{{INSTALL_COMMAND}}` inside. {{Else}}: Deps are already installed; `{{QA_COMMAND}}` is green on the fresh scaffold. Use `{{FIX_COMMAND}}` to auto-format locally.
 > 2. Initialize git: `git add . && git commit -m 'chore: bootstrap project'`. Push to enable CI.
 > 3. Restart Claude Code so `.mcp.json` (Context7) registers.
-> 4. Start your first task -- run the `slice` skill against the first entry in `docs/features.json`, replacing `src/example.py` and `tests/test_example.py` with your first slice."
+> 4. Start your first task -- run the `iteration` skill against the first entry in `docs/features.json`, replacing `src/example.py` and `tests/test_example.py` with your first feature."
 
 Then, if the repo has a GitHub remote and `gh` is available, offer (do not run unasked) to enable branch protection -- the generated CI is merge-blocking only once the repo requires its checks:
 
@@ -643,59 +455,60 @@ Any new placeholder must be added here, to the answers schema (or
 
 | Placeholder | Source |
 |---|---|
-| `{{PROJECT_NAME}}` | A1 |
-| `{{PROJECT_GOAL}}` | A1 |
-| `{{PROJECT_SLUG}}` | A1 -- derived: lowercase, hyphenated, valid package/module identifier |
-| `{{PRIMARY_USER}}` | A1 |
-| `{{CORE_PROBLEM}}` | A2 |
-| `{{CORE_JOURNEY}}` | A2 (the heart: the core user-visible flow, as steps) -- answers-file only (no template consumer in v3.0.0; feeds `docs/PRODUCT_VISION.md` narrative and the `features[].serves` "journey step" phrasing the agent writes by hand, not a direct substitution) |
-| `{{SUCCESS_MEASURE}}` | A2 (what success looks like, concretely) |
-| `{{RISKIEST_ASSUMPTION}}` | A2 (the assumption that sinks the project if wrong) -- answers-file only (no template consumer in v3.0.0) |
-| `{{REQ_AC_LIST}}` | A3 -- kept in the answers file as the raw `- [ ] **REQ-ACn:** <criterion>` lines the interview collected; answers-file only (no template consumer in v3.0.0 -- no `docs/requirements.md` exists to render it into). A3's criteria are the source for each feature's `acceptance` array in Phase 4, not for this placeholder. |
-| `{{NON_GOALS}}` | A4 (bullet list) |
-| `{{OTHER_USERS}}` | A9 (bullet list; `- none identified yet` if empty) -- answers-file only (no template consumer in v3.0.0) |
-| `{{CONSTRAINT_TIME}}` | A5 -- answers-file only (no template consumer in v3.0.0) |
-| `{{CONSTRAINT_COST}}` | A5 (includes LLM/API budget when AI is in scope) -- answers-file only (no template consumer in v3.0.0) |
-| `{{CONSTRAINT_DATA}}` | A5 -- answers-file only (no template consumer in v3.0.0) |
-| `{{FIRST_MILESTONE}}` | A5 -- derived date or `none set` |
-| `{{DEPLOYMENT_TARGET}}` | A6 |
-| `{{SCALE_EXPECTATIONS}}` | A7 -- answers-file only (no template consumer in v3.0.0) |
-| `{{INTEGRATIONS}}` | A8 (bullet list; `- none` if none) -- answers-file only (no template consumer in v3.0.0) |
-| `{{PAIN_POINT}}` | A2 (positioning) |
-| `{{PRODUCT_CATEGORY}}` | A2 (positioning) |
-| `{{CURRENT_ALTERNATIVE}}` | A2 (positioning) |
-| `{{KEY_BENEFIT}}` | A2 (positioning) |
-| `{{KEY_DIFFERENTIATOR}}` | A2 (positioning) |
-| `{{IN_SCOPE_LIST}}` | Derived from A2 core flow + A3 criteria (bullet list) |
-| `{{SUCCESS_METRICS}}` | A2 success measure rendered as 1-3 `- <metric> -- target` lines |
-| `{{READS_UNTRUSTED}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0; documents what the B8 answer means, and the security-profile line in `docs/SECURITY.md` is written directly by renderer rule 10, not through this placeholder) |
-| `{{HOLDS_PRIVATE_DATA}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0), same as above |
-| `{{ACTS_OUTWARD}}` | B8 (`yes`/`no`) -- answers-file only (no template consumer in v3.0.0), same as above |
-| `{{E2E_BROWSER_INSTALL_STEP}}` | Derived from B2 + profile `e2e_browser_install` (renderer rule 12) |
-| `{{LANGUAGE}}` | B1 |
-| `{{HAS_FRONTEND}}` | B2 |
-| `{{BACKEND_FRAMEWORK}}` | B3 -- answers-file only (no template consumer in v3.0.0) |
-| `{{AI_FEATURES}}` | B4 (comma-separated) |
-| `{{VECTOR_DB}}` | B4 -- answers-file only (no template consumer in v3.0.0) |
-| `{{LLM_PROVIDER}}` | B5 -- answers-file only (no template consumer in v3.0.0) |
-| `{{EMBEDDINGS_MODEL}}` | B5 -- answers-file only (no template consumer in v3.0.0) |
-| `{{DATABASE}}` | B6 -- answers-file only (no template consumer in v3.0.0) |
-| `{{USES_DEVCONTAINER}}` | B7 (`yes`/`no`) |
-| `{{POSITIVE_REFERENCE_TEXT}}` | A10 -- rendered line (Phase 4 renderer table, rule 5) |
-| `{{NEGATIVE_REFERENCE_TEXT}}` | A10 -- rendered line, may be empty |
-| `{{DESIGN_REFERENCES}}` | V1 -- bullet list; empty string when `design` is `null` |
-| `{{DESIGN_TONE}}` | V2 -- tone words; empty string when `design` is `null` |
-| `{{DESIGN_ANTI_REFERENCE}}` | V2 -- anti-reference; empty string when `design` is `null` |
-| `{{MEMORY_DOC_LINE}}` | Derived from B11 (`templates/conditional/memory-doc-line.md`, or empty) |
-| `{{AI_DISCIPLINE_BLOCK}}` | Derived from B4 (`templates/conditional/ai-discipline.md`, or empty) |
-| `{{CODEX_REVIEW_STEP}}` | Derived from B12 -- `templates/conditional/codex-review-step.md`, or empty |
-| `{{CODEX_ROSTER_NOTE}}` | Derived from B12 -- `templates/conditional/codex-roster-note.md`, or empty |
-| `{{AGENT_MATRIX}}` | Derived from B13 -- per-agent sections from `templates/conditional/agents/`, joined |
+| `{{PROJECT_NAME}}` | the conversation (name) |
+| `{{PROJECT_GOAL}}` | the conversation (one-sentence goal) |
+| `{{PROJECT_SLUG}}` | derived from the name: lowercase, hyphenated, valid package/module identifier |
+| `{{PRIMARY_USER}}` | the conversation (who it's for) |
+| `{{CORE_PROBLEM}}` | the conversation (the problem, why now) |
+| `{{CORE_JOURNEY}}` | the conversation (the heart: the core user-visible flow, as steps) -- renders into `docs/PRD.md`'s journey section, and is also the raw material for the `features[].serves` "journey step" phrasing the agent writes by hand |
+| `{{SUCCESS_MEASURE}}` | the conversation (what success looks like, concretely) |
+| `{{RISKIEST_ASSUMPTION}}` | the conversation (the assumption that sinks the project if wrong) -- answers-file only (no template consumer in v4.0.0) |
+| `{{REQ_AC_LIST}}` | the conversation (3-5 observable acceptance criteria) -- kept in the answers file as the raw `- [ ] **REQ-ACn:** <criterion>` lines; answers-file only (no template consumer in v4.0.0 -- no `docs/requirements.md` exists to render it into). These criteria are the source for each feature's `acceptance` array in Phase 4, not for this placeholder. |
+| `{{NON_GOALS}}` | the conversation (bullet list; at least two concrete non-goals) |
+| `{{OTHER_USERS}}` | the conversation (bullet list; `- none identified yet` if empty) -- answers-file only (no template consumer in v4.0.0) |
+| `{{CONSTRAINT_TIME}}` | the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{CONSTRAINT_COST}}` | the conversation (includes LLM/API budget when AI is in scope) -- answers-file only (no template consumer in v4.0.0) |
+| `{{CONSTRAINT_DATA}}` | the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{FIRST_MILESTONE}}` | the conversation -- derived date or `none set` |
+| `{{DEPLOYMENT_TARGET}}` | the conversation (where this runs and is hosted) |
+| `{{SCALE_EXPECTATIONS}}` | the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{INTEGRATIONS}}` | the conversation (bullet list; `- none` if none) -- answers-file only (no template consumer in v4.0.0) |
+| `{{PAIN_POINT}}` | the conversation (positioning) |
+| `{{PRODUCT_CATEGORY}}` | the conversation (positioning) |
+| `{{CURRENT_ALTERNATIVE}}` | the conversation (positioning) |
+| `{{KEY_BENEFIT}}` | the conversation (positioning) |
+| `{{KEY_DIFFERENTIATOR}}` | the conversation (positioning) |
+| `{{IN_SCOPE_LIST}}` | derived from the core journey + acceptance criteria (bullet list) |
+| `{{SUCCESS_METRICS}}` | the success measure, rendered as 1-3 `- <metric> -- target` lines |
+| `{{PRD_SURFACES}}` | derived: `project.surfaces` (bullet list; `- (no user-facing surfaces -- API/CLI product)` when empty) -- renders into `docs/PRD.md`'s Surfaces section |
+| `{{READS_UNTRUSTED}}` | the security-sensitive answer (`yes`/`no`) -- answers-file only (no template consumer in v4.0.0; the security-profile line in `docs/SECURITY.md` is written directly by renderer rule 10, not through this placeholder) |
+| `{{HOLDS_PRIVATE_DATA}}` | the security-sensitive answer (`yes`/`no`) -- answers-file only (no template consumer in v4.0.0), same as above |
+| `{{ACTS_OUTWARD}}` | the security-sensitive answer (`yes`/`no`) -- answers-file only (no template consumer in v4.0.0), same as above |
+| `{{E2E_BROWSER_INSTALL_STEP}}` | derived from the frontend answer + profile `e2e_browser_install` (renderer rule 12) |
+| `{{LANGUAGE}}` | the conversation (language) |
+| `{{HAS_FRONTEND}}` | the conversation (frontend?) |
+| `{{BACKEND_FRAMEWORK}}` | inferred from the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{AI_FEATURES}}` | inferred from the conversation (comma-separated) |
+| `{{VECTOR_DB}}` | inferred from the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{LLM_PROVIDER}}` | inferred from the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{EMBEDDINGS_MODEL}}` | inferred from the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{DATABASE}}` | inferred from the conversation -- answers-file only (no template consumer in v4.0.0) |
+| `{{USES_DEVCONTAINER}}` | the conversation, or the documented default (`yes`) |
+| `{{POSITIVE_REFERENCE_TEXT}}` | the conversation (codebase-shape reference, if offered) -- rendered line (Phase 4 renderer table, rule 5) |
+| `{{NEGATIVE_REFERENCE_TEXT}}` | the conversation (codebase-shape anti-reference, optional) -- rendered line, may be empty |
+| `{{DESIGN_REFERENCES}}` | the frontend visual-reference follow-up -- bullet list; empty string when `design` is `null` |
+| `{{DESIGN_TONE}}` | the frontend visual-reference follow-up -- tone words; empty string when `design` is `null` |
+| `{{DESIGN_ANTI_REFERENCE}}` | the frontend visual-reference follow-up -- anti-reference; empty string when `design` is `null` |
+| `{{MEMORY_DOC_LINE}}` | derived from the mem0 opt-in (`templates/conditional/memory-doc-line.md`, or empty) |
+| `{{AI_DISCIPLINE_BLOCK}}` | derived from the AI-features answer (`templates/conditional/ai-discipline.md`, or empty) |
+| `{{CODEX_REVIEW_STEP}}` | derived from the codex-reviewer opt-in -- `templates/conditional/codex-review-step.md`, or empty |
+| `{{CODEX_ROSTER_NOTE}}` | derived from the codex-reviewer opt-in -- `templates/conditional/codex-roster-note.md`, or empty |
+| `{{AGENT_MATRIX}}` | derived from the agent roster -- per-agent sections from `templates/conditional/agents/`, joined |
 | `{{DATE}}` | today, ISO format (`date` in the answers file) |
 
-B9 (`explanations`), B10 (`seed_gotchas`), and B11 (`mem0`) have no placeholder of their own: they are switches in the answers file's `opt_ins` section that turn renderer rules 6-8 on or off.
+`opt_ins.explanations`, `opt_ins.seed_gotchas`, and `opt_ins.mem0` have no placeholder of their own: they are switches in the answers file's `opt_ins` section that turn renderer rules 6-8 on or off.
 
-Rows marked **answers-file only (no template consumer in v3.0.0)** above are still asked, still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRODUCT_VISION.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all nine golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
+Rows marked **answers-file only (no template consumer in v4.0.0)** above are still asked (or inferred), still required by the answers schema, and still land in `render.py`'s mapping -- `render.py` fails on an unmapped placeholder, so keeping the mapping entry is required either way, not optional cleanup. They simply have no `{{...}}` occurrence left in any file under `templates/core/` or `templates/profiles/` to substitute into, most often because the v3 redesign retired the doc that used to render them (e.g. `docs/requirements.md`) in favor of `docs/features.json` and `docs/PRD.md`. Removing the schema requirement and mapping entry for any of them is a breaking answers-schema change (touches `render_schema.py` and all nine golden fixtures) and is deliberately out of scope here -- if a row's answer is never used anywhere (not even to inform a derived field or a hand-written doc section), that is a signal to prune it in a dedicated pass, not silently.
 
 ### Language-derived placeholders (from the profile)
 
@@ -722,6 +535,7 @@ golden-fixture CI cross-checks the load-bearing values).
 | `{{TYPE_TOOL}}` | profile.type_tool |
 | `{{TYPE_COMMAND}}` | profile.type_command |
 | `{{PRECOMMIT_INSTALL_COMMAND}}` | profile.precommit_install_command |
+| `{{TEST_PATH_REGEX}}` | profile.test_path_regex -- the pattern `scripts/tamper_check.py` uses to recognize a test-file path for the tamper guard |
 | `{{CI_SETUP_STEPS}}` | profile.ci_setup_steps (multi-line YAML block) |
 | `{{LANGUAGE_PRECOMMIT_HOOKS}}` | profile.precommit_hooks (multi-line YAML block) |
 | `{{LIBRARY_DOCS_URLS}}` | profile.library_docs_urls (markdown list) |
@@ -757,6 +571,7 @@ fix_command: "uv run fix"
 e2e_command: "bash scripts/e2e.sh"
 e2e_browser_install: "uv run playwright install --with-deps chromium"
 test_runner: "pytest"
+test_path_regex: '^tests/'
 test_command: "uv run pytest -m 'not e2e'"
 lint_tool: "ruff"
 lint_command: "uv run ruff check ."
@@ -854,6 +669,7 @@ fix_command: "npm run fix"
 e2e_command: "npm run e2e"
 e2e_browser_install: "npx playwright install --with-deps chromium"
 test_runner: "vitest"
+test_path_regex: '\.(test|spec)\.[jt]sx?$|^tests/'
 test_command: "npx vitest run"
 lint_tool: "eslint"
 lint_command: "npx eslint ."
@@ -917,6 +733,7 @@ fix_command: "bash scripts/fix.sh"
 e2e_command: "bash scripts/e2e.sh"
 e2e_browser_install: ""   # Go e2e is API/CLI-level by default (no browser)
 test_runner: "go test"
+test_path_regex: '_test\.go$'
 test_command: "go test -race ./..."
 lint_tool: "golangci-lint"
 lint_command: "golangci-lint run"
@@ -984,6 +801,7 @@ fix_command: "bash scripts/fix.sh"
 e2e_command: "bash scripts/e2e.sh"
 e2e_browser_install: ""   # Rust e2e is API/CLI-level by default (no browser)
 test_runner: "cargo test"
+test_path_regex: '^tests/'
 test_command: "cargo test"
 lint_tool: "clippy"
 lint_command: "cargo clippy --all-targets -- -D warnings"
@@ -1050,12 +868,11 @@ If they proceed: `render.py` cannot run without a `profile.json`, so this is the
 Python, TypeScript, Go, and Rust are all complete profiles; default to Python if there is no other signal. Don't let analysis paralysis block progress.
 
 **The user wants to skip the interview.**
-OK for Part B (stack): require only language + dev container and default the
-rest. Part A cannot be fully skipped -- minimum: name, one-sentence goal, the
-core flow, and at least one acceptance criterion. Explain why: every Part A
-answer that is missing ships as a TODO that later becomes a surprise, which is
-the exact failure this template exists to prevent. Mark whatever the user still
-refuses as explicit `TODO(interview-skipped)` so it is greppable.
+Minimum, cannot be skipped: name, one-sentence goal, the core flow, and at
+least one acceptance criterion. Everything else can take the documented
+default (Phase 4 table) or a `TODO(interview-skipped)` sentinel per rule
+zero. Explain why: every field left blank ships as a TODO that later becomes
+a surprise, which is the exact failure this template exists to prevent.
 
 **The user wants to bootstrap into a non-empty directory.**
 Refuse unless they explicitly confirm overwriting. Show what would be overwritten first.
@@ -1075,10 +892,10 @@ Check that `npx` is available. The Context7 server in `.mcp.json` uses `npx -y @
 
 Once bootstrap completes, the project enters normal mode. The agent should:
 
-1. Read `AGENTS.md` on every new conversation.
-2. Run the `slice` skill for each feature in `docs/features.json` (`design-loop` first for any new user-visible surface).
-3. Treat `docs/features.json` as the spec -- keep statuses honest; a feature is not `done` until its mapped tests exist and pass, and a dropped feature keeps its entry with a reason in `notes`, never a deletion.
-4. Run reviews at the ceremony the risk tier calls for (`AGENTS.md` `<risk-tiers>`): `@code-reviewer` on standard/high-risk work, `@design-reviewer` on user-visible surfaces, `@security-reviewer` when the `security-review` skill's trigger matches.
-5. Log deviations from a plan or mockup in `docs/deviations.md`, and collect lessons the project pays for in `docs/gotchas.md`.
+1. Read `AGENTS.md` on every new conversation -- it is the only always-loaded doc, capped at 100 lines.
+2. Run the `iteration` skill for every entry in `docs/features.json` -- it routes a chore straight to build, and a feature through GRILL -> RED -> GREEN -> REVIEW -> MERGE, building any needed mockup at GRILL when the feature's `surface` is not `"none"`.
+3. Treat `docs/features.json` as the spec -- keep statuses honest; a feature is not `done` until its mapped tests exist and pass, and a dropped feature keeps its entry with a reason in `notes`, never a deletion. `docs/BACKLOG.md` (`scripts/backlog.py`) is its generated human-readable view.
+4. Dispatch `@reviewer` at the REVIEW step of every feature -- fresh context by design, never the agent that built the change -- for plan conformance, correctness, design fidelity on visual surfaces, and security when the `security-review` skill's trigger matches.
+5. Log deviations from a plan or mockup in `docs/deviations.md`, collect lessons the project pays for in `docs/gotchas.md`, and run `bash scripts/factory_doctor.sh` after merge to prune worktrees and merged branches.
 
 This skill is no longer needed after bootstrap. It can be deleted from `.claude/skills/` if the user wants to keep the project minimal.

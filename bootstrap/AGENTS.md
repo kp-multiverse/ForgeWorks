@@ -14,7 +14,7 @@
 This project is uninitialized. The following files do not yet exist:
 
 - `docs/features.json`
-- `docs/PRODUCT_VISION.md`
+- `docs/PRD.md`
 - `.claude/agents/`
 
 When you detect this state, do the following:
@@ -34,8 +34,8 @@ The init-project skill will interview the user about scope and stack, then gener
 
 - `AGENTS.md` (project-specific, stack-agnostic core, replacing this file)
 - `CLAUDE.md` (symlinked to `AGENTS.md` for Claude Code compatibility)
-- `.claude/agents/` with subagent definitions: `implementer`, `code-reviewer`, `security-reviewer`, `utility`, and `design-reviewer` (frontend projects only)
-- `.claude/hooks/quality-gate.sh` (deterministic static+test gate triggered by code-reviewer) and `.claude/hooks/deps-guard.sh` + `.claude/settings.json` (supply-chain guard hook)
+- `.claude/agents/` with subagent definitions: `reviewer` (the single fresh-context REVIEW pass -- plan conformance, correctness, design fidelity, and security in one lens set) and `utility` (mechanical chores)
+- `.claude/hooks/quality-gate.sh` (deterministic static+test gate, triggered by `reviewer`'s Stop hook) and `.claude/hooks/deps-guard.sh` + `.claude/settings.json` (supply-chain guard hook)
 - `.mcp.json` with Context7 MCP server wired up for live library docs lookup
 - `.github/workflows/qa.yml` (CI: fast quality gate plus a separate end-to-end job on push and PR)
 - `.github/pull_request_template.md` (short PR checklist)

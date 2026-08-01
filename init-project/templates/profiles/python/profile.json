@@ -11,6 +11,7 @@
   "e2e_command": "bash scripts/e2e.sh",
   "e2e_browser_install": "uv run playwright install --with-deps chromium",
   "test_runner": "pytest",
+  "test_path_regex": "^tests/",
   "test_command": "uv run pytest -m 'not e2e'",
   "lint_tool": "ruff",
   "lint_command": "uv run ruff check .",

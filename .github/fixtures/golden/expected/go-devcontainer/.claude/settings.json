@@ -1,5 +1,5 @@
 {
-  "$comment": "Project hooks. The deps-guard PreToolUse hook enforces supply-chain checks deterministically (enforcement belongs in hooks, not prompts). The static+test quality gate is enforced by the code-reviewer subagent's Stop hook (see .claude/agents/code-reviewer.md) and by CI.",
+  "$comment": "Project hooks. The deps-guard PreToolUse hook enforces supply-chain checks deterministically (enforcement belongs in hooks, not prompts). The static+test quality gate is enforced by the reviewer subagent's Stop hook (see .claude/agents/reviewer.md) and by CI.",
   "hooks": {
     "PreToolUse": [
       {

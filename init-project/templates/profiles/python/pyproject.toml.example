@@ -72,6 +72,7 @@ extend-immutable-calls = []
 # no per-module overrides needed; add them here if you extend mypy to tests/.
 [tool.mypy]
 python_version = "3.12"
+mypy_path = "src"
 strict = true
 warn_return_any = true
 warn_unused_configs = true

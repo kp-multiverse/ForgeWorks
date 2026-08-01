@@ -1,15 +1,15 @@
 # Reality probes
 
-One file per observed external collaborator, at `docs/probes/<slice>-<name>.md`.
+One file per observed external collaborator, at `docs/probes/<id>-<name>.md`.
 Optional convention: record a probe for a flaky or under-documented
-collaborator -- one real call, real dispatch, or real run -- and record what
-actually came back; the `slice` skill says when. Stable, well-documented APIs
-may be coded against their docs instead.
+collaborator -- one real call, real dispatch, or real run -- during feature
+development. Stable, well-documented APIs may be coded against their docs
+instead.
 
 ## Format
 
 ```
-# <slice-id> probe: <collaborator>
+# <id> probe: <collaborator>
 Date: <date>
 How observed: <the exact command / call / script used>
 

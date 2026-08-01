@@ -34,7 +34,8 @@ TEMPLATES = os.path.join(ROOT, "init-project", "templates")
 
 SYNC_KEYS = ("language_version", "package_manager", "manifest_file",
              "install_command", "add_dep_command", "qa_command", "fix_command",
-             "e2e_command", "test_runner", "lint_tool", "format_tool", "type_tool")
+             "e2e_command", "test_runner", "test_path_regex", "lint_tool",
+             "format_tool", "type_tool")
 
 
 def tree_entries(root: str) -> dict[str, tuple[str, object]]:
@@ -111,9 +112,13 @@ def profile_sync_check() -> list[str]:
                   encoding="utf-8") as f:
             prof = json.load(f)
         for key in SYNC_KEYS:
-            needle = f'{key}: "{prof[key]}"'
-            if needle not in skill:
-                problems.append(f"{lang}/profile.json: `{needle}` not found in "
+            # test_path_regex often contains backslashes/regex metachars, so
+            # SKILL.md quotes it with single quotes (YAML-literal, no escapes)
+            # while the rest use double quotes -- accept either form here.
+            needle_dq = f'{key}: "{prof[key]}"'
+            needle_sq = f"{key}: '{prof[key]}'"
+            if needle_dq not in skill and needle_sq not in skill:
+                problems.append(f"{lang}/profile.json: `{needle_dq}` not found in "
                                 "SKILL.md <language-profiles> -- the two drifted")
     return problems
 

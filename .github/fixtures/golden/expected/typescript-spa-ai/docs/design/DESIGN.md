@@ -1,8 +1,8 @@
 # Design direction: Briefly
 
-The visual spec for this project. The `design-loop` skill reads this before any
-mockup; `@design-reviewer` grades shipped screens against it and the approved
-mockup in `mockups/`.
+The visual spec for this project. The `iteration` skill's GRILL step reads this
+before any mockup; design reviews grade shipped screens against it and the
+approved mockup in `mockups/`.
 
 ## Direction (from the setup interview)
 
@@ -23,10 +23,10 @@ right here in this file and treat it as canonical. Rules of thumb: one type
 scale (fixed ratio), at most two fonts, body >= 16px; one spacing unit used
 everywhere; one accent color spent on the primary action only. Change a
 token, not a one-off value. TODO markers in the tokens file (or, for Go/Rust,
-in this section) are choices still open -- settle them in the first
-design-loop pass.
+in this section) are choices still open -- settle them in the `iteration`
+skill's GRILL step.
 
-## Aesthetic rubric (what `@design-reviewer` grades)
+## Aesthetic rubric
 
 1. **Mockup fidelity.** The shipped screen matches the approved mockup in
    `mockups/` -- layout, hierarchy, states, and liveness (loading, empty,

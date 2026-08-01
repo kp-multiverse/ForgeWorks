@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Validate docs/features.json -- the machine-checked feature list.
 
-Checks: schema shape, unique F-ids, status/tier enums, and the two hard
-rules: a `done` feature must cite at least one test whose file exists, and a
-`dropped` feature must carry a reason in `notes`. Test EXECUTION is the
-quality gate's job, not this script's. Run locally or in CI:
+Checks: schema shape, unique F-ids, status/tier enums, and the hard rules:
+a `done` feature must cite at least one test whose file exists, a `dropped`
+feature must carry a reason in `notes`, and a feature with a surface (not "none")
+may not leave todo without citing an existing mockup file under
+docs/design/mockups/ -- except a `dropped` feature, which never needed one.
+Test EXECUTION is the quality gate's job, not this script's. Run locally or in CI:
 
     python3 scripts/features_check.py
 """
@@ -16,9 +18,9 @@ import os
 import re
 import sys
 
-REQUIRED = ("id", "title", "intent", "serves", "acceptance", "tests", "status", "tier")
+REQUIRED = ("id", "title", "intent", "serves", "acceptance", "tests", "status", "tier", "surface")
 STATUSES = {"todo", "in-progress", "done", "dropped"}
-TIERS = {"light", "standard", "high-risk"}
+TIERS = {"chore", "feature"}
 ID_RE = re.compile(r"^F\d{3}$")
 PATH = os.path.join("docs", "features.json")
 
@@ -55,6 +57,22 @@ def check() -> list[str]:
             errors.append(f"{where}: status must be one of {sorted(STATUSES)}")
         if ft["tier"] not in TIERS:
             errors.append(f"{where}: tier must be one of {sorted(TIERS)}")
+        surface = ft["surface"]
+        if not isinstance(surface, str) or not surface.strip():
+            errors.append(f"{where}: surface must be a non-empty string ('none' if not visual)")
+        elif surface != "none" and ft["status"] not in ("todo", "dropped"):
+            mockup = ft.get("mockup")
+            if not isinstance(mockup, str) or not mockup.strip():
+                errors.append(
+                    f"{where}: surface feature past todo needs a 'mockup' path "
+                    f"(docs/design/mockups/...) -- no mockup, no code"
+                )
+            elif os.path.isabs(mockup) or ".." in mockup.split(os.sep):
+                errors.append(
+                    f"{where}: mockup must be a repo-relative path with no '..' component: {mockup}"
+                )
+            elif not mockup.startswith("docs/design/mockups/") or not os.path.isfile(mockup):
+                errors.append(f"{where}: mockup file missing: {mockup}")
         acceptance = ft["acceptance"]
         if not isinstance(acceptance, list) or not acceptance:
             errors.append(f"{where}: acceptance must be a non-empty list")
