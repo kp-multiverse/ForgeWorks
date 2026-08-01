@@ -27,4 +27,5 @@ with side effects; persistence of untrusted content.
    in CI. Prove controls on the real enforcement path with the live path's
    flags, never via a debug/introspection endpoint.
 
-Matching work is high-risk tier (`AGENTS.md` `<risk-tiers>`), full stop.
+Matching work is a FEATURE whose GRILL includes a threat model (`AGENTS.md`
+`<tiers>`), full stop.
