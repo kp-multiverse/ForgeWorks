@@ -74,3 +74,43 @@ jobs:
 
       - name: Validate the feature list
         run: python3 scripts/features_check.py
+
+  # Doc budgets (AGENTS.md <context>): keeps always-loaded/near-always-loaded
+  # docs small enough for context economy -- overflow moves to docs/archive/.
+  docs-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Enforce doc budgets (context economy)
+        run: |
+          set -e
+          check() { f="$1"; cap="$2"; [ -f "$f" ] || return 0
+            size=$(wc -c < "$f")
+            if [ "$size" -gt "$cap" ]; then
+              echo "::error::$f is ${size} chars (cap ${cap}) -- archive overflow to docs/archive/ in this PR"
+              exit 1; fi }
+          check docs/SECURITY.md 20000
+          check docs/gotchas.md 15000
+          check docs/deviations.md 10000
+          check docs/LEDGER.md 10000
+          lines=$(grep -c '' AGENTS.md)
+          if [ "$lines" -gt 100 ]; then
+            echo "::error::AGENTS.md is ${lines} lines (cap 100)"; exit 1; fi
+          echo "docs-budget: OK"
+
+  # Test-tamper guard: flags weakened/deleted test assertions on this branch
+  # vs. origin/main (AGENTS.md <hard-rules>). Agent-neutral plain script.
+  test-tamper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Test-tamper guard
+        run: python3 scripts/tamper_check.py
