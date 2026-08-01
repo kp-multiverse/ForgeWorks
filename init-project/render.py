@@ -294,7 +294,7 @@ def apply_insertions(text: str, relpath: str, ans: dict, cond_dir: str) -> str:
         text = text[:idx] + "\n" + seed + "\n" + text[idx:]
     if relpath == "docs/SECURITY.md":
         profile_line = (
-            "Security profile (from the setup interview, B8): reads untrusted "
+            "Security profile (chosen during setup): reads untrusted "
             f"content: **{sec['reads_untrusted']}**; holds private data: "
             f"**{sec['holds_private_data']}**; acts on the outside world: "
             f"**{sec['acts_outward']}**."

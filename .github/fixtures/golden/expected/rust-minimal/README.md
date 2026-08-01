@@ -10,7 +10,7 @@ bash scripts/qa.sh           # run the quality gate (lint, format check, types, 
 ```
 
 The scaffold ships a placeholder module and a passing test so the quality gate
-is green from the first run. Replace them with your first slice.
+is green from the first run. Replace them with your first feature.
 
 ## Commands
 

@@ -1,7 +1,12 @@
 {
   "schema": 1,
   "date": "2026-07-12",
-  "agents": [{"name": "claude-code", "status": "installed"}],
+  "agents": [
+    {
+      "name": "claude-code",
+      "status": "installed"
+    }
+  ],
   "project": {
     "name": "Briefly",
     "slug": "briefly",
@@ -32,13 +37,20 @@
       "ref": "the clean SPA structure of excalidraw/excalidraw",
       "location": "https://github.com/excalidraw/excalidraw"
     },
-    "negative_reference": null
+    "negative_reference": null,
+    "surfaces": [
+      "Brief editor",
+      "Issue tracker connect"
+    ]
   },
   "stack": {
     "language": "typescript",
     "has_frontend": "yes-spa",
     "backend_framework": "Next.js",
-    "ai_features": ["agents", "evals"],
+    "ai_features": [
+      "agents",
+      "evals"
+    ],
     "vector_db": "none",
     "llm_provider": "Anthropic",
     "embeddings_model": "none",
@@ -67,30 +79,39 @@
       "title": "Import a week's export",
       "intent": "Importing a week's export yields a draft brief with every claim linked to a source item.",
       "serves": "differentiator: every claim carries a link to its evidence",
-      "acceptance": ["Importing a sample export produces a draft with each claim carrying at least one evidence link."],
+      "acceptance": [
+        "Importing a sample export produces a draft with each claim carrying at least one evidence link."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F002",
       "title": "Edit and approve a brief",
       "intent": "Editing a paragraph and approving produces a copyable final brief.",
       "serves": "journey step 3: the manager edits inline and copies the approved brief out",
-      "acceptance": ["After an inline edit and approve, the final brief is copyable and reflects the edit."],
+      "acceptance": [
+        "After an inline edit and approve, the final brief is copyable and reflects the edit."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F003",
       "title": "Flag unsupported claims",
       "intent": "A claim with no supporting source is visually flagged, never silently kept.",
       "serves": "REQ-AC3: unsupported claims must never be silently kept",
-      "acceptance": ["A drafted claim with no linked source item is visually flagged in the review UI."],
+      "acceptance": [
+        "A drafted claim with no linked source item is visually flagged in the review UI."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "high-risk"
+      "tier": "feature",
+      "surface": "none"
     }
   ]
 }

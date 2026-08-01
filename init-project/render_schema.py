@@ -18,8 +18,8 @@ PLACEHOLDER_RE = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 SLUG_RE = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 STRUCTURAL_TAG_RE = re.compile(
-    r"</?(project|commands|etiquette|hard-rules|risk-tiers|learning|roster"
-    r"|ai-discipline|memory)>",
+    r"</?(project|commands|etiquette|hard-rules|tiers|communication|context"
+    r"|learning|roster|ai-discipline|memory)>",
     re.IGNORECASE,
 )
 
@@ -49,9 +49,10 @@ STACK_KEYS = (
 SECURITY_KEYS = ("reads_untrusted", "holds_private_data", "acts_outward")
 OPT_IN_KEYS = ("explanations", "seed_gotchas", "mem0", "codex_reviewer")
 FEATURE_KEYS = ("id", "title", "intent", "serves", "acceptance", "tests",
-                "status", "tier")
+                "status", "tier", "surface")
+FEATURE_OPTIONAL_KEYS = ("mockup",)
 FEATURE_STATUSES = ("todo", "in-progress", "done", "dropped")
-FEATURE_TIERS = ("light", "standard", "high-risk")
+FEATURE_TIERS = ("chore", "feature")
 FEATURE_ID_RE = re.compile(r"^F\d{3}$")
 DESIGN_KEYS = ("references", "tone", "anti_reference")
 TOP_LEVEL_KEYS = ("schema", "date", "agents", "project", "stack", "security",
@@ -135,7 +136,7 @@ def _check_features(errors: list[str], value: object) -> None:
         if not isinstance(ft, dict):
             errors.append(f"{where}: must be an object")
             continue
-        extra = set(ft) - set(FEATURE_KEYS) - {"notes"}
+        extra = set(ft) - set(FEATURE_KEYS) - set(FEATURE_OPTIONAL_KEYS) - {"notes"}
         if extra:
             errors.append(f"{where}: unknown keys {sorted(extra)}")
         for key in FEATURE_KEYS:
@@ -156,6 +157,10 @@ def _check_features(errors: list[str], value: object) -> None:
             errors.append(f"{where}.status: must be one of {FEATURE_STATUSES}")
         if "tier" in ft and ft["tier"] not in FEATURE_TIERS:
             errors.append(f"{where}.tier: must be one of {FEATURE_TIERS}")
+        if "surface" in ft:
+            _check_text(errors, f"{where}.surface", ft["surface"])
+        if "mockup" in ft:
+            _check_text(errors, f"{where}.mockup", ft["mockup"])
         acc = ft.get("acceptance")
         if "acceptance" in ft and (not isinstance(acc, list) or not acc
                                    or any(not isinstance(a, str) or not a.strip()

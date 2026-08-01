@@ -17,10 +17,10 @@ with side effects; persistence of untrusted content.
 
 ## Procedure when the trigger matches
 
-1. Dispatch `@security-reviewer` (an independent red-team pass; a "security
-   focus" inside the code review does not substitute) -- or, when subagents
-   aren't available in your harness, run the equivalent independent pass in
-   a fresh context.
+1. Dispatch `@reviewer` with the security lens and a fresh context (an
+   independent red-team pass; a "security focus" inside code review does
+   not substitute) -- or, when subagents aren't available in your harness,
+   run the equivalent independent pass in a fresh context.
 2. Apply the `docs/SECURITY.md` delta for the new surface, or record in the
    review notes why none is needed. A stale threat model is worse than none.
 3. Findings become failing security tests before fixes -- the gap stays closed

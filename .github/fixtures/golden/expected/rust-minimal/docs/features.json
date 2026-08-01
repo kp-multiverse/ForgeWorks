@@ -11,7 +11,8 @@
       ],
       "tests": [],
       "status": "todo",
-      "tier": "high-risk"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F002",
@@ -23,7 +24,8 @@
       ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F003",
@@ -35,7 +37,8 @@
       ],
       "tests": [],
       "status": "todo",
-      "tier": "light"
+      "tier": "chore",
+      "surface": "none"
     }
   ]
 }

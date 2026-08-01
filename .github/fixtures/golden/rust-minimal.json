@@ -1,7 +1,12 @@
 {
   "schema": 1,
   "date": "2026-07-12",
-  "agents": [{"name": "claude-code", "status": "installed"}],
+  "agents": [
+    {
+      "name": "claude-code",
+      "status": "installed"
+    }
+  ],
   "project": {
     "name": "Chunkline",
     "slug": "chunkline",
@@ -29,7 +34,8 @@
     "key_benefit": "chunks that never move unless the text does",
     "key_differentiator": "determinism is the contract, verified by cross-platform tests",
     "positive_reference": null,
-    "negative_reference": null
+    "negative_reference": null,
+    "surfaces": []
   },
   "stack": {
     "language": "rust",
@@ -60,30 +66,39 @@
       "title": "Deterministic chunk ids across runs",
       "intent": "Chunking identical input twice yields identical chunk ids and boundaries.",
       "serves": "REQ-AC1: chunking is deterministic across runs",
-      "acceptance": ["Chunking the same input twice produces identical chunk ids and boundaries."],
+      "acceptance": [
+        "Chunking the same input twice produces identical chunk ids and boundaries."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "high-risk"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F002",
       "title": "Honor overlap configuration exactly",
       "intent": "Overlap configuration is honored exactly at every boundary.",
       "serves": "REQ-AC2: overlap must be exact, not approximate",
-      "acceptance": ["Configuring a fixed overlap produces chunks whose overlapping bytes match the configured amount at every boundary."],
+      "acceptance": [
+        "Configuring a fixed overlap produces chunks whose overlapping bytes match the configured amount at every boundary."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F003",
       "title": "Handle input smaller than one chunk",
       "intent": "A file smaller than one chunk yields exactly one chunk with a stable id.",
       "serves": "REQ-AC3: small inputs must not produce zero or malformed chunks",
-      "acceptance": ["A file smaller than the configured chunk size yields exactly one chunk with a stable id."],
+      "acceptance": [
+        "A file smaller than the configured chunk size yields exactly one chunk with a stable id."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "light"
+      "tier": "chore",
+      "surface": "none"
     }
   ]
 }

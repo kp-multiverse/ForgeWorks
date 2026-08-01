@@ -4,8 +4,7 @@ Which agentic coders drive this project, what each one actually gets, and
 where work should be offloaded. Two files carry this:
 
 - **`docs/agents.json`** -- the machine-readable roster (this doc's source of
-  truth). It is a RUNTIME config: edit it directly, or run `/select-agents`
-  (Claude Code) to re-probe what is installed and rewrite both files. Rules in
+  truth). It is a RUNTIME config: edit it directly. Rules in
   `AGENTS.md` read the roster from the JSON, so a change applies immediately --
   no re-render, no re-bootstrap.
 - **This file** -- the human-readable matrix below.
@@ -33,5 +32,5 @@ Reads `AGENTS.md` (via the `CLAUDE.md` symlink) and gets the FULL enforcement
 stack: the subagent roster under `.claude/agents/` (including the haiku-pinned
 `@utility` for cheap mechanical work), the `PreToolUse`/`Stop` hooks under
 `.claude/hooks/`, `.claude/settings.json`, MCP servers from `.mcp.json`, and
-the `/select-agents` skill. Default roles: orchestrator, utility,
+docs/agents.json for roster changes. Default roles: orchestrator, utility,
 second_opinion, heavy_batch.

@@ -1,7 +1,12 @@
 {
   "schema": 1,
   "date": "2026-07-12",
-  "agents": [{"name": "claude-code", "status": "installed"}],
+  "agents": [
+    {
+      "name": "claude-code",
+      "status": "installed"
+    }
+  ],
   "project": {
     "name": "Linkcheck",
     "slug": "linkcheck",
@@ -29,7 +34,8 @@
     "key_benefit": "catches dead links locally before they ship",
     "key_differentiator": "one fast local command, no service to configure",
     "positive_reference": null,
-    "negative_reference": null
+    "negative_reference": null,
+    "surfaces": []
   },
   "stack": {
     "language": "typescript",
@@ -60,20 +66,26 @@
       "title": "Report a dead link with file:line",
       "intent": "Running against a folder with one dead link exits non-zero and prints the link with file:line.",
       "serves": "REQ-AC1: dead links must be reported precisely and fail the run",
-      "acceptance": ["Running the CLI on a folder with one dead link exits non-zero and prints that link's file and line."],
+      "acceptance": [
+        "Running the CLI on a folder with one dead link exits non-zero and prints that link's file and line."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F002",
       "title": "Retry an unreachable host once before reporting",
       "intent": "Unreachable-host timeouts are retried once before being reported.",
       "serves": "REQ-AC3: transient timeouts must not become false positives",
-      "acceptance": ["A link whose host times out is retried exactly once before being reported as dead."],
+      "acceptance": [
+        "A link whose host times out is retried exactly once before being reported as dead."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "light"
+      "tier": "chore",
+      "surface": "none"
     }
   ]
 }

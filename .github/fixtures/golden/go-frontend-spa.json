@@ -1,7 +1,12 @@
 {
   "schema": 1,
   "date": "2026-07-26",
-  "agents": [{"name": "claude-code", "status": "installed"}],
+  "agents": [
+    {
+      "name": "claude-code",
+      "status": "installed"
+    }
+  ],
   "project": {
     "name": "Pillarwatch",
     "slug": "pillarwatch",
@@ -32,7 +37,11 @@
       "ref": "the single-binary, no-frills operational feel of Uptime Kuma",
       "location": "https://github.com/louislam/uptime-kuma"
     },
-    "negative_reference": null
+    "negative_reference": null,
+    "surfaces": [
+      "Status page",
+      "Service registration"
+    ]
   },
   "stack": {
     "language": "go",
@@ -67,20 +76,26 @@
       "title": "Register a service and start polling it",
       "intent": "A team can register a service with a health-check URL and poll interval, and the poller starts checking it.",
       "serves": "journey step 1: the team registers a service with a health-check URL",
-      "acceptance": ["A newly registered service is polled at its configured interval and its first result is recorded."],
+      "acceptance": [
+        "A newly registered service is polled at its configured interval and its first result is recorded."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F002",
       "title": "Public status page shows current status and history",
       "intent": "The public page renders each service's current status and a 90-day history bar from stored transitions.",
       "serves": "REQ-AC3: the public page renders a 90-day history bar per service from stored transitions",
-      "acceptance": ["The public page shows every registered service's current status and a 90-day history bar built from its recorded transitions."],
+      "acceptance": [
+        "The public page shows every registered service's current status and a 90-day history bar built from its recorded transitions."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     }
   ]
 }

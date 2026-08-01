@@ -1,8 +1,16 @@
 {
   "schema": 1,
   "date": "2026-07-12",
-  "agents": [{"name": "claude-code", "status": "installed"},
-             {"name": "codex", "status": "installed"}],
+  "agents": [
+    {
+      "name": "claude-code",
+      "status": "installed"
+    },
+    {
+      "name": "codex",
+      "status": "installed"
+    }
+  ],
   "project": {
     "name": "Recipe Radar",
     "slug": "recipe-radar",
@@ -36,13 +44,23 @@
     "negative_reference": {
       "ref": "sprawling enterprise-layered recipe platforms",
       "location": "https://github.com/example/overengineered-recipes"
-    }
+    },
+    "surfaces": [
+      "Ingredient review",
+      "Recipe suggestions",
+      "Cooking view"
+    ]
   },
   "stack": {
     "language": "python",
     "has_frontend": "yes-minimal",
     "backend_framework": "FastAPI",
-    "ai_features": ["rag", "agents", "evals", "streaming"],
+    "ai_features": [
+      "rag",
+      "agents",
+      "evals",
+      "streaming"
+    ],
     "vector_db": "Chroma",
     "llm_provider": "OpenAI",
     "embeddings_model": "text-embedding-3-small",
@@ -71,30 +89,39 @@
       "title": "Extract an editable ingredient list from a fridge photo",
       "intent": "Uploading a clear fridge photo yields an editable ingredient list within 15 seconds.",
       "serves": "journey step 2: the app extracts an ingredient list and shows it for one-tap correction",
-      "acceptance": ["Uploading a clear fridge photo produces an editable ingredient list within 15 seconds."],
+      "acceptance": [
+        "Uploading a clear fridge photo produces an editable ingredient list within 15 seconds."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "high-risk"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F002",
       "title": "Suggest three cookable recipes",
       "intent": "Confirming the list yields exactly three recipe suggestions, each cookable with the confirmed ingredients plus pantry staples.",
       "serves": "REQ-AC2: three suggestions cookable with confirmed inventory plus staples",
-      "acceptance": ["Confirming an ingredient list returns exactly three recipes, each cookable with those ingredients plus pantry staples."],
+      "acceptance": [
+        "Confirming an ingredient list returns exactly three recipes, each cookable with those ingredients plus pantry staples."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "standard"
+      "tier": "feature",
+      "surface": "none"
     },
     {
       "id": "F003",
       "title": "Handle a photo with no recognizable food",
       "intent": "A photo with no recognizable food produces a helpful empty state, not a crash or a hallucinated list.",
       "serves": "REQ-AC4: unusable photos must degrade gracefully",
-      "acceptance": ["Uploading a photo with no recognizable food shows a helpful empty state instead of crashing or hallucinating ingredients."],
+      "acceptance": [
+        "Uploading a photo with no recognizable food shows a helpful empty state instead of crashing or hallucinating ingredients."
+      ],
       "tests": [],
       "status": "todo",
-      "tier": "high-risk"
+      "tier": "feature",
+      "surface": "none"
     }
   ]
 }
