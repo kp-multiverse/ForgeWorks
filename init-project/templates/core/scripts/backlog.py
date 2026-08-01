@@ -34,10 +34,14 @@ def main() -> int:
     ]
     done = 0
     for ft in feats:
+        fid = ft.get("id")
+        if not fid:
+            print(f"backlog: entry missing id: {ft!r}")
+            return 1
         icon = ICONS.get(ft.get("status", "todo"), "[?]")
         if ft.get("status") == "done":
             done += 1
-        lines.append(f"- {icon} **{ft['id']}** {ft.get('title', '')}")
+        lines.append(f"- {icon} **{fid}** {ft.get('title', '')}")
     lines += ["", f"{done}/{len(feats)} done.", ""]
     with open(DST, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
