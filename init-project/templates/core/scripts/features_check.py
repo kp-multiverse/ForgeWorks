@@ -3,9 +3,9 @@
 
 Checks: schema shape, unique F-ids, status/tier enums, and the hard rules:
 a `done` feature must cite at least one test whose file exists, a `dropped`
-feature must carry a reason in `notes`, and a non-visual feature past todo
-must cite a mockup file in docs/design/mockups/. Test EXECUTION is the
-quality gate's job, not this script's. Run locally or in CI:
+feature must carry a reason in `notes`, and a feature with a surface (not "none")
+may not leave todo without citing an existing mockup file under docs/design/mockups/.
+Test EXECUTION is the quality gate's job, not this script's. Run locally or in CI:
 
     python3 scripts/features_check.py
 """
@@ -65,6 +65,11 @@ def check() -> list[str]:
                 errors.append(
                     f"{where}: surface feature past todo needs a 'mockup' path "
                     f"(docs/design/mockups/...) -- no mockup, no code"
+                )
+            elif os.path.isabs(mockup) or ".." in mockup.split(os.sep):
+                errors.append(
+                    f"{where}: mockup must be a repo-relative "
+                    f"path with no '..' component: {mockup}"
                 )
             elif not mockup.startswith("docs/design/mockups/") or not os.path.isfile(mockup):
                 errors.append(f"{where}: mockup file missing: {mockup}")
