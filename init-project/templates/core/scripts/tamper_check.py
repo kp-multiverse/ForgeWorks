@@ -42,12 +42,23 @@ def main() -> int:
         print("tamper-check: OK (no commits ahead of base)")
         return 0
     changed = _git("diff", "--name-status", f"{merge_base}..HEAD")
-    touched = [
-        (status, path)
-        for line in changed.splitlines()
-        for status, _, path in [line.partition("\t")]
-        if status[:1] in ("M", "D", "R") and TEST_PATH_RE.search(path)
-    ]
+    touched = []
+    for line in changed.splitlines():
+        if not line:
+            continue
+        fields = line.split("\t")
+        status = fields[0]
+        kind = status[:1]
+        if kind not in ("M", "D", "R", "C"):
+            continue
+        # R*/C* lines are "R100\told-path\tnew-path" (rename/copy carry BOTH
+        # paths); M/D lines are "M\tpath". Either path can hide a tampered
+        # test (e.g. `git mv tests/foo_test.py tests/foo.py` + edit), so a
+        # line is flagged if ANY of its paths matches.
+        paths = fields[1:3] if kind in ("R", "C") else fields[1:2]
+        matches = [p for p in paths if TEST_PATH_RE.search(p)]
+        if matches:
+            touched.append((status, matches))
     if not touched:
         print("tamper-check: OK (no existing tests modified or deleted)")
         return 0
@@ -56,8 +67,8 @@ def main() -> int:
         print(f"tamper-check: OK ({len(touched)} test change(s), reason stated)")
         return 0
     print("tamper-check: FAIL -- existing tests changed with no stated reason.")
-    for status, path in touched:
-        print(f"  - {status}\t{path}")
+    for status, paths in touched:
+        print(f"  - {status}\t{' -> '.join(paths)}")
     print('State the reason with a "test-change: <why>" line in a commit body.')
     return 1
 
