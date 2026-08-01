@@ -24,19 +24,23 @@ PROFILE = {
                    E2E_COMMAND="bash scripts/e2e.sh", MANIFEST_FILE="pyproject.toml",
                    INSTALL_COMMAND="uv sync", E2E_BROWSER_INSTALL="x",
                    PRECOMMIT_INSTALL_COMMAND="uv run pre-commit install",
-                   LANGUAGE_PRECOMMIT_HOOKS="- id: ruff"),
+                   LANGUAGE_PRECOMMIT_HOOKS="- id: ruff",
+                   TEST_PATH_REGEX=r"^tests/"),
     "typescript": dict(QA_COMMAND="npm run qa", FIX_COMMAND="npm run fix",
                        E2E_COMMAND="npm run e2e", MANIFEST_FILE="package.json",
                        INSTALL_COMMAND="npm install", E2E_BROWSER_INSTALL="x",
-                       PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS=""),
+                       PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS="",
+                       TEST_PATH_REGEX=r"\.(test|spec)\.[jt]sx?$|^tests/"),
     "go": dict(QA_COMMAND="bash scripts/qa.sh", FIX_COMMAND="bash scripts/fix.sh",
                E2E_COMMAND="bash scripts/e2e.sh", MANIFEST_FILE="go.mod",
                INSTALL_COMMAND="go mod download", E2E_BROWSER_INSTALL="",
-               PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS=""),
+               PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS="",
+               TEST_PATH_REGEX=r"_test\.go$"),
     "rust": dict(QA_COMMAND="bash scripts/qa.sh", FIX_COMMAND="bash scripts/fix.sh",
                  E2E_COMMAND="bash scripts/e2e.sh", MANIFEST_FILE="Cargo.toml",
                  INSTALL_COMMAND="cargo fetch", E2E_BROWSER_INSTALL="",
-                 PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS=""),
+                 PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS="",
+                 TEST_PATH_REGEX=r"^tests/"),
 }
 
 COMMON = dict(
@@ -59,6 +63,7 @@ COMMON = dict(
     SUCCESS_METRICS="- x", READS_UNTRUSTED="no", HOLDS_PRIVATE_DATA="no",
     ACTS_OUTWARD="no", E2E_BROWSER_INSTALL_STEP="# no browser",
     DESIGN_REFERENCES="- x", DESIGN_TONE="x", DESIGN_ANTI_REFERENCE="x",
+    PRD_SURFACES="- Smoke surface",
     **{k: "x" for k in ("TYPE_ANNOTATION_NOTES", "IMPORT_NOTES", "ASYNC_NOTES",
                         "ERROR_NOTES", "CONFIG_NOTES", "LOGGING_NOTES",
                         "TEST_LAYOUT_NOTES", "PRECOMMIT_HOOKS_NOTES")},
@@ -67,7 +72,7 @@ COMMON = dict(
 # The rendered tree simulates a NO-AI, no-Claude-Code project, so every AI and
 # CC fence is deleted wholesale (smoke only asserts placeholder completeness,
 # not the keep-vs-drop distinction render.py applies per real answers) -- in
-# EVERY file that carries one (SECURITY.md, implementer.md, code-reviewer.md,
+# EVERY file that carries one (SECURITY.md, reviewer.md,
 # and any future fenced file).
 FENCE = re.compile(r"<!-- (?:AI|CC)-[A-Z]+-START -->.*?<!-- (?:AI|CC)-[A-Z]+-END -->\n?", re.S)
 

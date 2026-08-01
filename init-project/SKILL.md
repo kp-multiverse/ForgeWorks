@@ -94,8 +94,9 @@ list, one question at a time, multiple-choice where possible:
    `docs/design/DESIGN.md` still renders with its tokens section, but there
    is no starter tokens file to edit until one is added to the profile.
 4. **Security-sensitive?** -- "Will this hold real user data, payments,
-   auth, or take input from strangers?" Shapes the SECURITY.md defaults
-   and the AI-security fences.
+   auth, take input from strangers, or send data out to external systems?"
+   Shapes the SECURITY.md defaults and the AI-security fences (the
+   outbound leg answers `acts_outward` directly, instead of guessing it).
 5. **Which agents drive** -- the roster question, asked as one question.
    PROBE first, do not guess: check which agent CLIs are installed
    (`command -v codex`, `command -v cursor`, `command -v agy || command -v
@@ -259,6 +260,7 @@ Field rules the renderer enforces (it fails closed with a precise message):
 - `language`: one of `python` / `typescript` / `go` / `rust`. `has_frontend`: `yes-spa` / `yes-minimal` / `no`. `ai_features`: any subset of `["rag", "agents", "evals", "streaming"]`; `[]` means no AI features.
 - `surfaces`: a list of strings (`[]` for an API/CLI product with no screens); each named surface is available for a feature's `surface` field and for the `docs/PRD.md` Surfaces section.
 - Free-text answers land verbatim in prose files (and escaped in JSON/TOML), so any characters are fine EXCEPT HTML comment markers (`<!--`/`-->`) and `{{UPPER_SNAKE}}`-shaped text, which the renderer rejects.
+- Free-text fields that land in `AGENTS.md` (`goal`, `primary_user`, the style references) must be single-line -- the renderer hard-fails if the rendered `AGENTS.md` exceeds 100 lines (rule 22), and a wrapped multi-line answer is the easiest way to blow that cap.
 - Rule zero still holds: no bare `TODO` in any answer. The only allowed form is `TODO(interview-skipped)` when the user explicitly refused a question. `date` is today, ISO format.
 - `vector_db`, `llm_provider`, `embeddings_model`, `database`, `backend_framework`: write `none` (or `none (CLI/library)` for the framework) when not applicable.
 - `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.

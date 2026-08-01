@@ -35,13 +35,12 @@ Draft the plan into `docs/plans/<id>.md` with these sections:
 - **Acceptance (EARS).** One line per criterion:
   `WHEN <condition> THE SYSTEM SHALL <behavior>`. Copy these into the
   feature's `acceptance` array -- each becomes a named test in RED.
-- **Security.** Does the work touch the `security-review` skill's trigger
-  (auth, payments, new input surfaces, secrets, new dependencies,
-  LLM-facing text)? If yes, add a threat model: the new attack surface, who
-  can send what through it, the validation point per input (allowlist at
-  the boundary, fail closed), behavior when the outside world misbehaves,
-  what an attacker tries first. Rule of Two: if the feature combines
-  untrusted input + sensitive data + external write, drop one leg or put
+- **Security.** Does the work touch the `security-review` skill's trigger?
+  If yes, add a threat model: the new attack surface, who can send what
+  through it, the validation point per input (allowlist at the boundary,
+  fail closed), behavior when the outside world misbehaves, what an
+  attacker tries first. Rule of Two: if the feature combines untrusted
+  input + sensitive data + external write/egress, drop one leg or put
   owner approval on the action. Name the security tests here.
 - **Mockup** (only if `surface` is not "none"). Build 3-4 genuinely
   different throwaway HTML mockups -- different layouts, not recolors; real
@@ -77,7 +76,8 @@ Implement in THIS context -- no implementer subagent. If the owner approved
 fan-out at GRILL: one git worktree per piece, one writer per branch, the
 caps below apply per agent. Write the least code that passes, then
 refactor: extract duplication only at two real callers, remove dead code,
-one concept per file, visual values from the tokens file.
+one concept per file. Visual surfaces are BUILT AGAINST the approved
+mockup, visual values from the tokens file.
 Exit: `npm run qa` fully green. A red gate cannot enter REVIEW.
 **Stall cap:** 2 consecutive failed test cycles on the same failure ->
 checkpoint commit, stop, ask the owner (recommended recovery: a fresh
@@ -90,8 +90,10 @@ branch name), grep-targeted doc sections, the mockup path if visual.
 Never "read the docs". (No subagents in this harness? Run the same pass as
 an independent fresh-context session.)
 **Caps:** max 2 fix passes after a REQUEST_CHANGES; max 1 re-review, and it
-CONTINUES the same reviewer conversation -- never a fresh spawn. Any cap
-hit -> stop and ask the owner in the `<communication>` cap-hit shape.
+CONTINUES the same reviewer conversation -- never a fresh spawn; max 1
+design rework when the design-fidelity lens fails -- then stop and ask the
+owner with the named deltas. Any cap hit -> stop and ask the owner in the
+`<communication>` cap-hit shape.
 
 ## 5. MERGE -- checklist, in order
 
@@ -105,7 +107,8 @@ hit -> stop and ask the owner in the `<communication>` cap-hit shape.
 5. Doc budgets (`<context>` block): any budgeted doc over its cap -> move
    the overflow to `docs/archive/` in this same merge.
 6. Run `python3 scripts/backlog.py` -- regenerates `docs/BACKLOG.md`.
-7. Ledger: `<id> | MERGED | <time> | worktrees: 0 remaining | e2e: N passed`.
+7. Ledger: `<id> | MERGED | - | <time> | agent: main | worktrees: 0
+   remaining, e2e: N passed`.
 8. Merge report to the owner: 3 lines (shipped -- in the plan's words,
    evidence, next up in the backlog).
 
@@ -116,7 +119,7 @@ One line per state change, appended to `docs/LEDGER.md`:
     F012 | GRILL  | approved      | 2026-08-01 13:40 | agent: main | plan: docs/plans/F012.md
     F012 | GREEN  | round 1/2     | 2026-08-01 14:02 | agent: main | gate: 42 passed
     F012 | REVIEW | round 1/1     | 2026-08-01 14:31 | agent: reviewer | APPROVE, 1 optional
-    F012 | MERGED |               | 2026-08-01 14:58 | worktrees: 0 remaining | e2e: 7 passed
+    F012 | MERGED | -             | 2026-08-01 14:58 | agent: main | worktrees: 0 remaining, e2e: 7 passed
 
 When the live file passes ~10K chars, move done features' lines to
 `docs/archive/LEDGER-<year>.md`.

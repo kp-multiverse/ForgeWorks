@@ -4,7 +4,8 @@
 Checks: schema shape, unique F-ids, status/tier enums, and the hard rules:
 a `done` feature must cite at least one test whose file exists, a `dropped`
 feature must carry a reason in `notes`, and a feature with a surface (not "none")
-may not leave todo without citing an existing mockup file under docs/design/mockups/.
+may not leave todo without citing an existing mockup file under
+docs/design/mockups/ -- except a `dropped` feature, which never needed one.
 Test EXECUTION is the quality gate's job, not this script's. Run locally or in CI:
 
     python3 scripts/features_check.py
@@ -59,7 +60,7 @@ def check() -> list[str]:
         surface = ft["surface"]
         if not isinstance(surface, str) or not surface.strip():
             errors.append(f"{where}: surface must be a non-empty string ('none' if not visual)")
-        elif surface != "none" and ft["status"] != "todo":
+        elif surface != "none" and ft["status"] not in ("todo", "dropped"):
             mockup = ft.get("mockup")
             if not isinstance(mockup, str) or not mockup.strip():
                 errors.append(
