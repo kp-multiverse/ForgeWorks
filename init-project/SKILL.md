@@ -349,14 +349,6 @@ If `{{USES_DEVCONTAINER}}` is `yes`: append the capability deps to the manifest,
 
 ### Phase 5: Verify and report
 
-Known gap as of v4.0.0: the `python3 scripts/features_check.py` step in the
-core check below is expected to fail on a fresh bootstrap until
-`render_schema.py`'s `_check_features()` is reconciled with the v4 `tier`/
-`surface`/`mockup` contract this file documents (see the features field-rule
-in Phase 4 and the tracked follow-up). If it fails with a schema mismatch
-rather than a real defect in your answers, do not treat that as this skill's
-bug -- report it and move on; do not hand-patch `docs/features.json` around it.
-
 First, confirm the **core** files (every project, every language) exist:
 
 ```bash

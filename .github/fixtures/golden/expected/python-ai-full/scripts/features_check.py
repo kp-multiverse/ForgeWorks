@@ -68,8 +68,7 @@ def check() -> list[str]:
                 )
             elif os.path.isabs(mockup) or ".." in mockup.split(os.sep):
                 errors.append(
-                    f"{where}: mockup must be a repo-relative "
-                    f"path with no '..' component: {mockup}"
+                    f"{where}: mockup must be a repo-relative path with no '..' component: {mockup}"
                 )
             elif not mockup.startswith("docs/design/mockups/") or not os.path.isfile(mockup):
                 errors.append(f"{where}: mockup file missing: {mockup}")

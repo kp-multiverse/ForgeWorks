@@ -22,9 +22,7 @@ REASON_RE = re.compile(r"^\s*test-change:\s*\S", re.MULTILINE)
 
 
 def _git(*args: str) -> str:
-    return subprocess.run(
-        ["git", *args], capture_output=True, text=True, check=True
-    ).stdout
+    return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout
 
 
 def main() -> int:
