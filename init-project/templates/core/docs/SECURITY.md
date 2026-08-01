@@ -115,5 +115,5 @@ used, the OWASP Top 10 for LLM apps, time-boxing each category.
 - **Tests:** the red-team checklist above lives in the test suite and runs in CI.
 - **Reviews:** an independent security red-team pass is MANDATORY for work
   matching the trigger in `.claude/skills/security-review/SKILL.md` (via
-  `@security-reviewer` when Claude Code drives; as a manual fresh-context
-  pass otherwise), per `AGENTS.md` `<hard-rules>`.
+  the reviewer's security lens when Claude Code drives; as a manual
+  fresh-context pass otherwise), per `AGENTS.md` `<hard-rules>`.
