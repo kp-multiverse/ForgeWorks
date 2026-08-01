@@ -158,8 +158,8 @@ INSTEAD of this A-B-C-E block, not after it, and only for a project the
 routing note at the top of this phase already sent here for being below
 v4.0.0. (Phase 3-D's own step 5 fresh-render diff covers what A and C would
 have caught -- tooling deltas and leftover files alike -- against the v4
-template in the same pass; B stays superseded, folded into steps 2-3 [file
-and block replacement], and E stays superseded, folded into steps 4-5
+template in the same pass; B stays superseded, folded into steps 1-2 [file
+and block replacement], and E stays superseded, folded into steps 3 and 5
 [the surfaces/tier questions asked directly].)
 
 ### Phase 3-D -- v3 -> v4 migration (replace, not accumulate)
@@ -172,22 +172,25 @@ Phase 3-A do: `.claude/agents/reviewer.md` is only written when `claude-code`
 is in the recovered roster (a non-Claude-roster project gets the skills and
 docs below but no `.claude/agents/` tree -- that is expected, not a gap);
 `docs/design/` and the profile tokens file are only touched when the project
-has a frontend. In order:
+has a frontend. Like every other phase, this migration is idempotent: each
+step below checks what has already landed and skips it -- copy only what is
+absent, graft only markers not yet at the current version, remove only what
+is still present -- so an interruption between any two steps, followed by a
+re-run, converges on the same end state without ever stranding the project
+between two harnesses. That is also why the removal step runs LAST: the v4
+files land first, so a project always has a working harness on disk. In
+order:
 
-1. **Remove superseded files** (after confirming with the owner, listing
-   them): `.claude/skills/slice/`, `.claude/skills/design-loop/`,
-   `.claude/skills/select-agents/`, `.claude/agents/implementer.md`,
-   `.claude/agents/code-reviewer.md`, `.claude/agents/design-reviewer.md`,
-   `.claude/agents/security-reviewer.md`, `docs/PRODUCT_VISION.md`.
-2. **Copy in the v4 files**: the `iteration` skill, `.claude/agents/reviewer.md`
+1. **Copy in the v4 files** (copy-if-absent -- skip any that already landed
+   from a prior partial run): the `iteration` skill, `.claude/agents/reviewer.md`
    (claude-code roster only), `docs/LEDGER.md`, `docs/BACKLOG.md`,
-   `docs/PRD.md` (skeleton -- step 4 below distills the project's retired
+   `docs/PRD.md` (skeleton -- step 3 below distills the project's retired
    `PRODUCT_VISION.md` into it), `docs/plans/archive/`, `docs/archive/`,
    `scripts/backlog.py`, `scripts/factory_doctor.sh`,
    `scripts/features_check.py` (REPLACE the v3 copy, not skip it -- the v3
    script still enforces the retired `light`/`standard`/`high-risk` tiers and
    has no `surface` key; Phase 4 runs this script, so the v4 version must land
-   in the same pass as step 4's tier remap below), `scripts/tamper_check.py`
+   in the same pass as step 3's tier remap below), `scripts/tamper_check.py`
    (substitute `{{TEST_PATH_REGEX}}` from the project's language -- the Phase 2
    language detection already ran), and the two new CI jobs (`docs-budget`,
    `test-tamper` in `qa.yml`) -- append their job blocks if absent, never
@@ -196,16 +199,28 @@ has a frontend. In order:
    skills survive from v3 by name but still reference the retired
    `<risk-tiers>` block -- overwrite them with the v4 text now, per Phase 3-B's
    "present in both" rule; they are procedures, not project content.
-3. **Graft the v4 AGENTS.md blocks** (generic block rule applies; all
+2. **Graft the v4 AGENTS.md blocks** (generic block rule applies -- rule 4's
+   "present at current version -> skip" already makes this idempotent; all
    blocks are v4.0.0). The old `risk-tiers` block is REPLACED by `tiers`;
-   `communication` and `context` are new inserts after `hard-rules`.
-4. **Carry, never regenerate, project content**: `features.json` entries
+   `communication` and `context` are new inserts between `tiers` and
+   `learning`, the position they hold in the template's block order (rule 2).
+3. **Carry, never regenerate, project content**: `features.json` entries
    (add `"surface": "none"` and remap `tier`: `light` -> `chore`,
-   `standard`/`high-risk` -> `feature`, on every entry -- report each), existing
-   plans (move finished ones to `docs/plans/archive/`), gotchas,
-   deviations, mockups, SECURITY.md project-specific sections. Distill
-   `PRODUCT_VISION.md` content into the new `docs/PRD.md` skeleton and
-   mark the surfaces list TODO-for-owner.
+   `standard`/`high-risk` -> `feature`, on every entry that doesn't already
+   carry a `surface` key from a prior partial run -- report each), existing
+   plans (move finished ones to `docs/plans/archive/`, skipping any already
+   moved), gotchas, deviations, mockups, SECURITY.md project-specific
+   sections. Distill `PRODUCT_VISION.md` content into the new `docs/PRD.md`
+   skeleton and mark the surfaces list TODO-for-owner (skip this sub-step if
+   `PRODUCT_VISION.md` is already gone -- see step 4).
+4. **Remove superseded files** (remove-if-present -- after confirming with
+   the owner, listing them; skip any already removed by a prior partial run.
+   This step runs last, once steps 1-3 have landed the v4 replacements, so a
+   project is never left without a working harness): `.claude/skills/slice/`,
+   `.claude/skills/design-loop/`, `.claude/skills/select-agents/`,
+   `.claude/agents/implementer.md`, `.claude/agents/code-reviewer.md`,
+   `.claude/agents/design-reviewer.md`, `.claude/agents/security-reviewer.md`,
+   `docs/PRODUCT_VISION.md`.
 5. **Fresh-render diff.** Render a fresh v4 tree from a reconstructed
    answers file (recoverable context; ask the owner for `surfaces`, or write
    `TODO(interview-skipped)` if they decline), then diff the harness files
