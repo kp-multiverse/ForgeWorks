@@ -23,6 +23,7 @@ STATUSES = {"todo", "in-progress", "done", "dropped"}
 TIERS = {"chore", "feature"}
 ID_RE = re.compile(r"^F\d{3}$")
 PATH = os.path.join("docs", "features.json")
+PLANS = os.path.join("docs", "plans")
 
 
 def check() -> list[str]:
@@ -108,7 +109,34 @@ def check() -> list[str]:
             errors.append(f"{where}: notes must be a string")
         if ft["status"] == "dropped" and not str(notes or "").strip():
             errors.append(f"{where}: dropped without a reason in notes")
+    errors += orphan_plans(feats)
     return errors
+
+
+def orphan_plans(feats: list) -> list[str]:
+    """A plan outlives its feature only if someone forgot to delete it.
+
+    "Plans are deleted at merge" was workflow prose until this check existed: a
+    stale plan for a `done` feature that happened to fit under the size cap
+    survived forever, and a fresh session could load a decision record for work
+    that shipped months ago. The rule now has teeth.
+    """
+    closed = {ft["id"] for ft in feats if ft["status"] in ("done", "dropped")}
+    out = []
+    if not os.path.isdir(PLANS):
+        return out
+    for name in sorted(os.listdir(PLANS)):
+        if not name.endswith(".md") or name == "README.md":
+            continue
+        stem = name[:-3]
+        fid = next((i for i in closed if stem == i or stem.lower().startswith(i.lower() + "-")), None)
+        if fid:
+            out.append(
+                f"{PLANS}/{name}: {fid} is closed, so this plan should have been "
+                f"deleted at merge. Anything in it that still changes a decision "
+                f"belongs in features.json, a gotcha, or SECURITY.md first."
+            )
+    return out
 
 
 def main() -> int:

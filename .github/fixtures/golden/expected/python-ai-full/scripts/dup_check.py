@@ -15,6 +15,13 @@ differ only in their strings still count as duplicates, which is the point.
     python3 scripts/dup_check.py --list      # print every finding, exit 0
     python3 scripts/dup_check.py --baseline  # accept today's findings, once
 
+`--baseline` REFUSES to add hashes once a baseline exists -- it may only drop
+ones you have fixed. Without that, the gate has a one-command bypass: hit a red
+dup-check, re-run --baseline, CI goes green, and the duplication you just
+introduced is now "accepted". Growing it needs `--baseline --force` plus a
+`dup-change: <why>` line in the commit body, which is a decision someone can
+see in review rather than a silent capitulation.
+
 Two escape hatches, and the difference matters:
 
 `.dup-ignore` (path globs, `#` for comments) exempts a file wholesale -- use it
@@ -103,6 +110,7 @@ def normalize(path: str) -> list[tuple[str, int]]:
 def main(argv: list[str]) -> int:
     listing = argv[:1] == ["--list"]
     writing = argv[:1] == ["--baseline"]
+    forcing = writing and "--force" in argv[1:]
     known = set() if (listing or writing) else baseline()
     patterns = ignores()
     windows: dict[str, list[tuple[str, int]]] = {}
@@ -115,6 +123,20 @@ def main(argv: list[str]) -> int:
             )
     shared = {d: h for d, h in windows.items() if len({p for p, _ in h}) > 1}
     if writing:
+        # A ratchet only ratchets if it cannot be wound backwards.
+        previous = baseline()
+        added = set(shared) - previous
+        if previous and added and not forcing:
+            print(f"::error::--baseline would ACCEPT {len(added)} newly duplicated "
+                  f"block(s). A baseline records what predated the gate; it is not "
+                  f"a way to make today's duplication pass. Extract them, or -- if "
+                  f"they are genuinely unavoidable -- re-run with --force AND put a "
+                  f"'dup-change: <why>' line in the commit body so the decision is "
+                  f"visible in review.")
+            for digest in sorted(added)[:5]:
+                where = ", ".join(f"{p}:{n}" for p, n in sorted(windows[digest])[:2])
+                print(f"  would accept: {where}")
+            return 1
         with open(BASELINE, "w", encoding="utf-8") as f:
             f.write("# Blocks already duplicated when the gate was adopted, by hash.\n"
                     "# Anything NOT listed here fails. Editing a listed block changes its\n"

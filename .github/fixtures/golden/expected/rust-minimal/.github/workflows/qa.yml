@@ -121,6 +121,23 @@ jobs:
               echo "::error::docs/archive/ is ${arc} chars (cap 60000) -- delete oldest files, do not move more in"
               exit 1; fi
           fi
+          # "Compact, don't shave" (AGENTS.md <context>) was prose until now: a
+          # PR could land gotchas.md at 7,999/8,000 and pass, which is the
+          # original 97-99% pinning failure moved a few points down. A budgeted
+          # doc CHANGED in this PR must land clear of its cap; untouched files
+          # are not punished for history.
+          near() { f="$1"; cap="$2"; [ -f "$f" ] || return 0
+            git diff --quiet "$BASE" -- "$f" 2>/dev/null && return 0
+            size=$(wc -c < "$f"); limit=$((cap * 95 / 100))
+            if [ "$size" -gt "$limit" ]; then
+              echo "::error::$f changed in this PR and lands at ${size}/${cap} chars -- within 5% of the cap is shaving, not compacting. Delete what is stale until nothing left is deletable."
+              exit 1; fi }
+          BASE="$(git merge-base HEAD origin/main 2>/dev/null || echo HEAD~1)"
+          near docs/SECURITY.md 14000
+          near docs/gotchas.md 8000
+          near docs/deviations.md 4000
+          near docs/LEDGER.md 6000
+
           lines=$(grep -c '' AGENTS.md)
           if [ "$lines" -gt 100 ]; then
             echo "::error::AGENTS.md is ${lines} lines (cap 100)"; exit 1; fi
@@ -155,10 +172,16 @@ jobs:
             s=$(wc -c < "$plan"); [ "$s" -gt "$largest" ] && largest=$s
           done
           chars=$((chars + largest))
-          # one feature entry, not the whole list
-          entry=$(python3 scripts/backlog.py --feature \
-                  "$(python3 -c "import json;print(json.load(open('docs/features.json'))['features'][0]['id'])")" \
-                  | wc -c)
+          # ONE feature entry -- the LARGEST, because that is the worst case a
+          # restart actually faces. Sizing features[0] (the oldest, usually
+          # smallest) lets a later bloated entry make `go` expensive while this
+          # job stays green.
+          ids=$(python3 -c "import json,sys; sys.stdout.write(' '.join(f['id'] for f in json.load(open('docs/features.json'))['features']))")
+          entry=0
+          for id in $ids; do
+            s=$(python3 scripts/backlog.py --feature "$id" | wc -c)
+            [ "$s" -gt "$entry" ] && entry=$s
+          done
           chars=$((chars + entry))
           tokens=$((chars / 4))
           echo "checkpoint: ${chars} chars ~= ${tokens} tokens"
@@ -166,6 +189,20 @@ jobs:
             echo "::error::a fresh session costs ~${tokens} tokens to re-prime (cap 8000). The usual causes: a plan that narrates instead of deciding, or a doc being read whole that should be read by section."
             exit 1; fi
           echo "checkpoint-budget: OK"
+
+  # Resume check: would `go` work right now? Asserts the pointers a fresh
+  # session reads (features.json, LEDGER, the plan, the branch) agree. Catches
+  # the states that make a restart resume the WRONG work: two in-progress
+  # features, an in-progress feature with no plan, a ledger with no line for it.
+  resume-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: A fresh session has exactly one place to start
+        run: python3 scripts/resume.py --check
 
   # Duplication gate (the iteration skill's GREEN step): the same 6-line
   # block in two files is copied logic, copied markup, or the same paragraph of

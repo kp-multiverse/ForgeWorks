@@ -51,6 +51,9 @@ PROSE = (
     "docs/plans/README.md",
     "docs/probes/README.md",
 )
+# The generator's own prose restates caps too -- the brownfield path is where a
+# transcribed number rots quietest, because nobody re-reads an upgrade skill.
+REPO_PROSE = ("init-project/SKILL.md", "upgrade-project/SKILL.md", "AGENTS.md")
 # A number this large in prose, near a budget word, is a restated cap.
 BUDGET_WORD = re.compile(
     r"(cap|budget|limit|chars|characters|tokens|lines)", re.I
@@ -64,6 +67,8 @@ PATH_REF = re.compile(r"`((?:scripts|docs|\.claude|\.github)/[A-Za-z0-9_./<>*-]+
 def gate_numbers(tree: str) -> set[int]:
     """Every cap the CI gates actually enforce."""
     qa = os.path.join(tree, ".github", "workflows", "qa.yml")
+    if not os.path.exists(qa):  # called with a template dir, not a rendered tree
+        qa = os.path.join(tree, ".github", "workflows", "qa.yml")
     nums: set[int] = set()
     if os.path.exists(qa):
         text = open(qa, encoding="utf-8").read()
@@ -86,6 +91,14 @@ def check_tree(tree: str, label: str) -> list[str]:
     for rel in PROSE:
         path = os.path.join(tree, rel)
         if not os.path.exists(path):
+            # Silently skipping a renamed file exempts all its prose -- failing
+            # in the direction of passing, which is what this file exists to
+            # stop. Frontend-only files are the one legitimate absence.
+            if rel.startswith("docs/design"):
+                continue
+            problems.append(f"{label}: {rel} is in PROSE but the rendered tree "
+                            f"does not have it. Renamed? Update PROSE -- do not "
+                            f"let its rules go unchecked.")
             continue
         for lineno, line in enumerate(open(path, encoding="utf-8"), 1):
             if not BUDGET_WORD.search(line):
@@ -159,6 +172,25 @@ def check_repo() -> list[str]:
             f"docs-budget job uses {g.group(1)}. A project would render fine and "
             f"then fail its own CI, or the reverse."
         )
+
+    # The generator's own prose is checked against the caps it ships.
+    gates = gate_numbers(os.path.join(REPO, "init-project", "templates", "core"))
+    for rel in REPO_PROSE:
+        path = os.path.join(REPO, rel)
+        if not os.path.exists(path):
+            continue
+        for lineno, line in enumerate(open(path, encoding="utf-8"), 1):
+            if not BUDGET_WORD.search(line):
+                continue
+            found = {int(m.group(1)) for m in BIG_NUMBER.finditer(line)}
+            found |= {int(m.group(1)) * 1000 for m in K_NUMBER.finditer(line)}
+            clash = found & gates
+            if clash:
+                problems.append(
+                    f"{rel}:{lineno} transcribes {sorted(clash)} from the shipped "
+                    f"CI gates. Point at the job instead -- a number copied into "
+                    f"a skill nobody re-reads is the quietest kind of drift."
+                )
 
     # Every profile must carry every scalar the renderer substitutes. This is
     # what would have caught {{SOURCE_SUFFIXES}} landing in four profile.json
