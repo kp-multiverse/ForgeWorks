@@ -28,8 +28,9 @@ is green from the first run. Replace them with your first feature.
   machine-checked feature list, rendered into `docs/BACKLOG.md`.
   `docs/LEDGER.md` records every state change live.
 - Each feature runs through the one iteration loop -- GRILL, RED, GREEN,
-  REVIEW (one `@reviewer` pass), MERGE -- see the `iteration` skill. Plans
-  live in `docs/plans/` while active and move to `docs/plans/archive/` at
-  merge.
+  REVIEW (one `@reviewer` pass), MERGE -- see the `iteration` skill. A plan
+  lives in `docs/plans/` only while its feature is being built, and is
+  deleted at merge; its decisions land in `features.json`, the commit, and
+  the ledger line.
 
 *Bootstrapped from [ForgeWorks](https://github.com/kp-multiverse/ForgeWorks).*

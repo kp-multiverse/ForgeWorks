@@ -1,10 +1,9 @@
+"""`uv run qa` -- verify only (lint, format check, types, tests). See _run.py."""
+
 from __future__ import annotations
 
-import os
-import subprocess
-import sys
+from scripts._run import run
 
 
 def main() -> None:
-    script = os.path.join(os.path.dirname(__file__), "qa.sh")
-    sys.exit(subprocess.call(["bash", script]))
+    run("qa.sh")

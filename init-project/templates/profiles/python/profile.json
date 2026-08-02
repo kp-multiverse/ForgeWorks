@@ -98,5 +98,6 @@
     "precommit_hooks": [
       "This profile ships `.pre-commit-config.yaml` with `ruff` (`--fix`) and `ruff-format`, plus the generic hooks (trailing-whitespace, yaml/toml/json validation, large-file guard). Install once with `uv run pre-commit install`. (TypeScript, Go, and Rust profiles ship no pre-commit; their `qa` gate + CI are the enforcement.)"
     ]
-  }
+  },
+  "source_suffixes": "{\".py\"}"
 }

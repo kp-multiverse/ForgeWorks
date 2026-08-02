@@ -1,11 +1,11 @@
-<!-- FW-BLOCK: project v4.0.0 -->
+<!-- FW-BLOCK: project v4.1.0 -->
 <project>
 {{PROJECT_NAME}} -- {{PROJECT_GOAL}}
 Primary user: {{PRIMARY_USER}}. Stack: {{LANGUAGE}}; frontend: {{HAS_FRONTEND}}; AI features: {{AI_FEATURES}}. Dev container: {{USES_DEVCONTAINER}} (if yes, commands run inside it).
 Where things live:
 - `docs/PRD.md` -- what the finished product looks like (journey, surfaces, v1 in/out). Every feature's `serves:` points here.
 - `docs/features.json` -- the ordered, machine-checked feature list; this is the spec, prose is commentary. `docs/BACKLOG.md` is its human-readable view, regenerated at merge.
-- `docs/plans/<id>.md` -- the approved decision record per feature (archived to `docs/plans/archive/` on merge). `docs/LEDGER.md` -- live factory state, with evidence.
+- `docs/plans/<id>.md` -- the working decision record for the feature being built, DELETED at merge (its decisions land in `features.json`, the commit, and the ledger line). `docs/LEDGER.md` -- live factory state, with evidence.
 - `docs/design/` (frontend projects) -- tokens, rubric, approved mockups. `docs/SECURITY.md` -- threat model + red-team checklist.
 - `docs/gotchas.md` (paid-for pitfalls), `docs/deviations.md`, `docs/language-standards.md`, `docs/documentation.md` (Context7 is wired -- verify unfamiliar APIs there, not from memory).
 {{MEMORY_DOC_LINE}}
@@ -16,8 +16,8 @@ Code style anchor: {{POSITIVE_REFERENCE_TEXT}} {{NEGATIVE_REFERENCE_TEXT}}
 <!-- FW-BLOCK: commands v4.0.0 -->
 <commands>
 - Quality gate (verify-only: lint, format check, types, unit + functional): `{{QA_COMMAND}}` | auto-fix: `{{FIX_COMMAND}}` | e2e suite: `{{E2E_COMMAND}}`
-- Feature check (schema, done-cites-tests, mockup gate): `python3 scripts/features_check.py`
-- Backlog view: `python3 scripts/backlog.py` | factory doctor (prune stale worktrees + merged branches): `bash scripts/factory_doctor.sh`
+- Feature check (schema, done-cites-tests, mockup gate): `python3 scripts/features_check.py` | duplication gate: `python3 scripts/dup_check.py` (`--list` to survey, `--baseline` to accept existing findings once)
+- Resume brief (`go`): `python3 scripts/resume.py` | backlog view: `python3 scripts/backlog.py` | ONE feature entry: `python3 scripts/backlog.py --feature <id>` | factory doctor (prune stale worktrees + merged branches): `bash scripts/factory_doctor.sh`
 Package manager and installs: `docs/language-standards.md`. New dependencies go through the manifest and the deps-guard hook (re-run with `DEPS_VETTED=1` once vetted).
 </commands>
 <!-- /FW-BLOCK: commands -->
@@ -54,15 +54,15 @@ Owner-facing messages: lead with the point; plain words (gloss any jargon in the
 </communication>
 <!-- /FW-BLOCK: communication -->
 
-<!-- FW-BLOCK: context v4.0.0 -->
+<!-- FW-BLOCK: context v4.1.0 -->
 <context>
-This file is the only always-loaded doc (hard cap: 100 lines). Everything else is read on demand, by targeted section. Subagent dispatches carry a minimal brief -- plan file, diff, named doc sections, mockup path -- never "read the docs"; no whole-file reads of any doc over 30K chars; subagents return ~1-2K-token results, not transcripts. One feature per session; the plan file + `features.json` + LEDGER are the memory between sessions, never the conversation. Doc budgets: SECURITY.md 20K chars, gotchas.md 15K, deviations.md 10K, LEDGER.md 10K -- overflow moves to `docs/archive/` in the same PR that grew it.
+This file is the only always-loaded doc, and its line cap is enforced twice -- by the renderer and by the `docs-budget` job, which owns the number. Everything else is read on demand, by targeted section. Subagent dispatches carry a minimal brief -- plan file, diff, named doc sections, mockup path -- never "read the docs"; subagents return ~1-2K-token results, not transcripts. **The checkpoint.** One feature per session. `go` in a fresh session means: run `python3 scripts/resume.py`, then read the two things it names -- ONE feature entry (`scripts/backlog.py --feature <id>`, never the whole `features.json`; only scripts read that whole) and that feature's plan. Plus this file and the `iteration` skill. Nothing else. `resume.py` derives every pointer from the file that owns it and REFUSES to print a brief when they disagree, so a wrong resume stops instead of proceeding confidently. That is the memory between sessions, never the conversation. The `checkpoint-budget` CI job asserts the total and owns the number. **Offering a clear is earned, never scheduled:** say "clean stop -- `/clear`, then `go`" as ONE line inside a report you were already writing, and only when the next action needs nothing from this conversation. Never as a question, never between the parts of one orchestration the owner is watching, never on a phase timer. If the conversation still holds a live decision, the answer is not to suggest clearing -- it is to CHECKPOINT it (see the `iteration` skill) so it stops being live: if a restart costs more than a few percent of the window before any work happens, the plan is too long or something is being read whole that should be read by section. Doc budgets: the `docs-budget` job in `.github/workflows/qa.yml` IS the source of truth for every cap -- read the numbers there, never restate them here, or the two drift and the prose wins in the reader's head while the gate wins in CI. At cap, COMPACT in the same PR that grew it: delete every part that is no longer true or no longer changes a decision, and stop only when nothing left is deletable. Finish within 5% of the cap and you shaved, not compacted -- redo it, because a cap treated as a target is how these files got big. A cap may be raised in that job with a stated reason ONLY once the doc holds no history and nothing in it is still deletable. Deleting is the default; archive only what you would genuinely re-read, and `docs/archive/` is capped too, oldest out first.
 </context>
 <!-- /FW-BLOCK: context -->
 
-<!-- FW-BLOCK: learning v4.0.0 -->
+<!-- FW-BLOCK: learning v4.1.0 -->
 <learning>
-Reality surprised you (API differs from docs, gate green but feature dead)? Add the lesson to `docs/gotchas.md`. Implementation must deviate from plan or mockup? Conservative option + `docs/deviations.md` line, keep going.
+Reality surprised you (API differs from docs, gate green but feature dead)? Add the lesson to `docs/gotchas.md` -- one entry, four short lines, and delete any entry the code has since made impossible. Implementation must deviate from plan or mockup? Conservative option + `docs/deviations.md` line, keep going. Working notes (losing mockups, scratch analyses, uncited probe files) are scaffolding, not records: each dies once its finding lands in a gotcha, a fixture, or a test. A doc earns its place by changing a future decision -- nothing is kept "for the record". Exception: a probe a test or source comment cites by path is that fixture's provenance -- it lives as long as the fixture does.
 </learning>
 <!-- /FW-BLOCK: learning -->
 

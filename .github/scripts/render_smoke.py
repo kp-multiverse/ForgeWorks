@@ -19,29 +19,30 @@ import tempfile
 
 T = "init-project/templates"
 
-PROFILE = {
-    "python": dict(QA_COMMAND="uv run qa", FIX_COMMAND="uv run fix",
-                   E2E_COMMAND="bash scripts/e2e.sh", MANIFEST_FILE="pyproject.toml",
-                   INSTALL_COMMAND="uv sync", E2E_BROWSER_INSTALL="x",
-                   PRECOMMIT_INSTALL_COMMAND="uv run pre-commit install",
-                   LANGUAGE_PRECOMMIT_HOOKS="- id: ruff",
-                   TEST_PATH_REGEX=r"^tests/"),
-    "typescript": dict(QA_COMMAND="npm run qa", FIX_COMMAND="npm run fix",
-                       E2E_COMMAND="npm run e2e", MANIFEST_FILE="package.json",
-                       INSTALL_COMMAND="npm install", E2E_BROWSER_INSTALL="x",
-                       PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS="",
-                       TEST_PATH_REGEX=r"\.(test|spec)\.[jt]sx?$|^tests/"),
-    "go": dict(QA_COMMAND="bash scripts/qa.sh", FIX_COMMAND="bash scripts/fix.sh",
-               E2E_COMMAND="bash scripts/e2e.sh", MANIFEST_FILE="go.mod",
-               INSTALL_COMMAND="go mod download", E2E_BROWSER_INSTALL="",
-               PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS="",
-               TEST_PATH_REGEX=r"_test\.go$"),
-    "rust": dict(QA_COMMAND="bash scripts/qa.sh", FIX_COMMAND="bash scripts/fix.sh",
-                 E2E_COMMAND="bash scripts/e2e.sh", MANIFEST_FILE="Cargo.toml",
-                 INSTALL_COMMAND="cargo fetch", E2E_BROWSER_INSTALL="",
-                 PRECOMMIT_INSTALL_COMMAND="", LANGUAGE_PRECOMMIT_HOOKS="",
-                 TEST_PATH_REGEX=r"^tests/"),
-}
+# Profile values come from each profile.json -- the SAME file render.py reads.
+# They used to be duplicated here, which is how {{SOURCE_SUFFIXES}} shipped in
+# four profiles while this smoke test still failed on two of them: one fact,
+# two homes, drifting. A gate reads the source; it does not keep a copy.
+def profile_values(lang: str) -> dict:
+    import json as _json
+    with open(f"{T}/profiles/{lang}/profile.json", encoding="utf-8") as f:
+        prof = _json.load(f)
+    vals = {k.upper(): v for k, v in prof.items()
+            if isinstance(v, str) and not k.startswith("_")}
+    vals.pop("DISPLAY_NAME", None)
+    vals["LANGUAGE_PRECOMMIT_HOOKS"] = "\n".join(prof.get("precommit_hooks") or [])
+    vals["CI_SETUP_STEPS"] = "\n".join(prof.get("ci_setup_steps") or [])
+    vals["LIBRARY_DOCS_URLS"] = "\n".join(prof.get("library_docs_urls") or [])
+    for key, ph in {"type_annotations": "TYPE_ANNOTATION_NOTES", "imports": "IMPORT_NOTES",
+                    "async": "ASYNC_NOTES", "errors": "ERROR_NOTES", "config": "CONFIG_NOTES",
+                    "logging": "LOGGING_NOTES", "test_layout": "TEST_LAYOUT_NOTES",
+                    "precommit_hooks": "PRECOMMIT_HOOKS_NOTES"}.items():
+        notes = (prof.get("notes") or {}).get(key)
+        if not notes:
+            raise SystemExit(f"{lang}/profile.json: notes.{key} is missing or empty. "
+                             f"Defaulting it is how a missing key passed unnoticed before.")
+        vals[ph] = "\n".join(notes)
+    return vals
 
 COMMON = dict(
     PROJECT_NAME="Smoke", PROJECT_SLUG="smoke", PROJECT_GOAL="a goal",
@@ -100,7 +101,7 @@ def render(lang: str, out: str) -> list[str]:
             shutil.copy2(os.path.join(root, fn), os.path.join(d, fn))
     if lang == "python" and os.path.exists(f"{out}/pyproject.toml.example"):
         os.rename(f"{out}/pyproject.toml.example", f"{out}/pyproject.toml")
-    mapping = {**COMMON, **PROFILE[lang]}
+    mapping = {**COMMON, **profile_values(lang)}
     for f in all_files(out):
         try:
             c = open(f, encoding="utf-8").read()

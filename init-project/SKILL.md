@@ -17,18 +17,20 @@ This skill bootstraps a new project with a structured, agent-driven workflow. Th
 
 A fully structured project with:
 
-- `AGENTS.md` and `CLAUDE.md` (symlinked): the constitution, stack-agnostic core, hard-capped at 100 lines
+- `AGENTS.md` and `CLAUDE.md` (symlinked): the constitution, stack-agnostic core, hard-capped in lines by the renderer and the `docs-budget` job
 - `.claude/agents/`: `reviewer` (the single REVIEW pass: plan conformance, correctness, design fidelity, security) and `utility` (mechanical chores)
 - `.claude/skills/`: the generated skills `iteration` (the one per-feature workflow: chore or GRILL -> RED -> GREEN -> REVIEW -> MERGE), `security-review`, and `tech-debt`
 - `.claude/hooks/quality-gate.sh`: deterministic static+test gate triggered by the reviewer's Stop hook
 - `.claude/hooks/deps-guard.sh` + `.claude/settings.json`: best-effort supply-chain guard (PreToolUse hook)
 - `.mcp.json`: Context7 MCP server for live library docs
-- `.github/workflows/qa.yml`: CI running the quality gate (fast), a separate end-to-end job, and a `features-check` job that validates `docs/features.json`, on pull requests and pushes to main
+- `.github/workflows/qa.yml`: CI running the quality gate (fast), a separate end-to-end job, and the mechanical gates: `features-check` (validates `docs/features.json`), `docs-budget` (owns every doc cap -- the prose points here rather than repeating the numbers), `checkpoint-budget` (what a fresh session costs to re-prime), `resume-check` (`go` has exactly one place to start), `dup-check`, and `test-tamper`
 - `.github/pull_request_template.md`: short PR checklist
 - `.pre-commit-config.yaml`: local pre-commit hooks (language-specific portion populated from your profile)
-- `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (live factory state, evidence per line), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/` (+ `plans/archive/` for merged features), `archive/` (overflow when a budgeted doc grows past its cap), `probes/`, `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
+- `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (live factory state, evidence per line), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/` (working state only -- a plan is deleted at merge), `archive/` (the small, capped keep-pile after a budgeted doc is compacted), `probes/` (deleted once their finding lands in a fixture), `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
 - `scripts/features_check.py`: validates `docs/features.json` against its schema; also runs as the CI `features-check` job
-- `scripts/backlog.py`: regenerates `docs/BACKLOG.md` from `docs/features.json`
+- `scripts/backlog.py`: regenerates `docs/BACKLOG.md` from `docs/features.json`; `--feature <id>` prints ONE entry, which is how a session reads the spec without loading a 70K file (`AGENTS.md` `<context>`)
+- `scripts/resume.py`: prints the resume brief -- this is what `go` runs. Derives every pointer (live feature, phase, branch, plan) from the file that owns it, cross-checks them, and refuses to print rather than resume from a contradiction; `--check` is the CI `resume-check` job
+- `scripts/dup_check.py`: the duplication gate -- fails when the same normalized 6-line block appears in two files (copied logic, copied markup, or one convention re-justified in five docstrings); exceptions in a committed `.dup-ignore` (path globs, permanent) or `.dup-baseline` (`--baseline`, by block hash, decays as blocks are edited -- prefer this); also runs as the CI `dup-check` job
 - `scripts/tamper_check.py`: flags an unexplained change to a test, fixture, or gate config (the hard-rules tamper guard)
 - `scripts/factory_doctor.sh`: prunes stale git worktrees and merged feature branches
 - `.devcontainer/`: portable development environment (if chosen)
@@ -260,7 +262,7 @@ Field rules the renderer enforces (it fails closed with a precise message):
 - `language`: one of `python` / `typescript` / `go` / `rust`. `has_frontend`: `yes-spa` / `yes-minimal` / `no`. `ai_features`: any subset of `["rag", "agents", "evals", "streaming"]`; `[]` means no AI features.
 - `surfaces`: a list of strings (`[]` for an API/CLI product with no screens); each named surface is available for a feature's `surface` field and for the `docs/PRD.md` Surfaces section.
 - Free-text answers land verbatim in prose files (and escaped in JSON/TOML), so any characters are fine EXCEPT HTML comment markers (`<!--`/`-->`) and `{{UPPER_SNAKE}}`-shaped text, which the renderer rejects.
-- Free-text fields that land in `AGENTS.md` (`goal`, `primary_user`, the style references) must be single-line -- the renderer hard-fails if the rendered `AGENTS.md` exceeds 100 lines (rule 22), and a wrapped multi-line answer is the easiest way to blow that cap.
+- Free-text fields that land in `AGENTS.md` (`goal`, `primary_user`, the style references) must be single-line -- the renderer hard-fails if the rendered `AGENTS.md` exceeds its line cap (rule 22), and a wrapped multi-line answer is the easiest way to blow that cap.
 - Rule zero still holds: no bare `TODO` in any answer. The only allowed form is `TODO(interview-skipped)` when the user explicitly refused a question. `date` is today, ISO format.
 - `vector_db`, `llm_provider`, `embeddings_model`, `database`, `backend_framework`: write `none` (or `none (CLI/library)` for the framework) when not applicable.
 - `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.
@@ -309,7 +311,7 @@ fixtures in the template repo CI:
 | 19 | Writes `docs/features.json` from the answers' `features` list (schema 1) and `docs/agents.json` from the roster; `docs/BACKLOG.md` and `docs/LEDGER.md` ship as static files (empty until the first feature ships and merges -- `scripts/backlog.py` and the `iteration` skill fill them in later, not the renderer). |
 | 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/) and the profile tokens.css; `has_frontend: no` skips both (skip_file rule). There is no separate design agent or skill in v4.0.0 -- design fidelity is one of `@reviewer`'s four lenses, checked at the REVIEW step of the `iteration` skill, not a dedicated pass. |
 | 21 | mem0 memory block inserts after `<!-- /FW-BLOCK: learning -->`. |
-| 22 | `AGENTS.md` is capped at 100 lines after every substitution and insertion; the renderer raises if the rendered file exceeds it (context economy is a hard requirement of this rule, not a style preference). |
+| 22 | `AGENTS.md` is line-capped after every substitution and insertion; the renderer raises if the rendered file exceeds the cap (the same number the generated `docs-budget` job enforces) (context economy is a hard requirement of this rule, not a style preference). |
 
 Keep `docs/_init-answers.json` until Phase 5's placeholder grep and
 `features_check.py` pass, then delete it (`rm docs/_init-answers.json`)
@@ -361,10 +363,12 @@ test -f docs/PRD.md && test -f docs/features.json && \
 test -f docs/LEDGER.md && test -f docs/BACKLOG.md && \
 test -f docs/SECURITY.md && test -f docs/language-standards.md && \
 test -f docs/deviations.md && test -f docs/plans/README.md && \
-test -f docs/plans/archive/.gitkeep && test -f docs/archive/.gitkeep && \
+test -f docs/archive/.gitkeep && \
 test -f docs/agents.md && test -f docs/agents.json && \
 test -f scripts/features_check.py && python3 scripts/features_check.py && \
 test -f scripts/backlog.py && test -f scripts/tamper_check.py && \
+test -f scripts/dup_check.py && python3 scripts/dup_check.py && \
+test -f scripts/resume.py && python3 scripts/resume.py --check && \
 test -f scripts/factory_doctor.sh && \
 test -f .claude/skills/iteration/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
 test -f .claude/skills/tech-debt/SKILL.md
@@ -395,7 +399,7 @@ of `@reviewer`'s four lenses.)
 
 When `claude-code` is NOT in the roster: skip the Claude-specific enforcement
 block above, and tell the user the bootstrap-installed skill helpers --
-`init-project` itself and the Phase 1 `mattpocock/skills` pack (`tdd`,
+the Phase 1 `mattpocock/skills` pack (`tdd`,
 `grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`) -- are inert for
 their agents and safe to delete. This does NOT include the three generated
 `.claude/skills/` procedures checked above (`iteration`, `security-review`,
@@ -418,7 +422,24 @@ transient working state, not project content -- a project language's gate
 (e.g. TypeScript's prettier check) has no reason to see it, and leaving it
 on disk into the gate run is a bug, not a convenience.
 
-Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+Then **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+
+Finally, **delete this skill from the project** -- `rm -rf .claude/skills/init-project`:
+
+```bash
+rm -rf .claude/skills/init-project
+! test -d .claude/skills/init-project && echo "bootstrapper removed"
+```
+
+Do this LAST, after the gate is green: until then a re-render may be needed,
+and `render.py` lives in that directory. The bootstrapper is build equipment,
+not project content. It is ~600K and 100+ files, it carries a full copy of the
+template's own `templates/core/` tree, and it goes stale the moment ForgeWorks
+moves -- a generated project that keeps it ships a fossilized copy of the
+generator forever. Nothing in the project reads it: the project's own
+procedures are `.claude/skills/iteration`, `security-review`, and `tech-debt`,
+which stay. A later `/upgrade-project` installs its own skill when it runs.
+(This deletion is the reason Phase 4.5 and the gate run before it, not after.)
 
 Report what was generated, then hand off:
 
@@ -536,6 +557,7 @@ golden-fixture CI cross-checks the load-bearing values).
 | `{{TYPE_COMMAND}}` | profile.type_command |
 | `{{PRECOMMIT_INSTALL_COMMAND}}` | profile.precommit_install_command |
 | `{{TEST_PATH_REGEX}}` | profile.test_path_regex -- the pattern `scripts/tamper_check.py` uses to recognize a test-file path for the tamper guard |
+| `{{SOURCE_SUFFIXES}}` | profile.source_suffixes -- the set literal of source extensions `scripts/dup_check.py` scans for the duplication gate |
 | `{{CI_SETUP_STEPS}}` | profile.ci_setup_steps (multi-line YAML block) |
 | `{{LANGUAGE_PRECOMMIT_HOOKS}}` | profile.precommit_hooks (multi-line YAML block) |
 | `{{LIBRARY_DOCS_URLS}}` | profile.library_docs_urls (markdown list) |
@@ -892,7 +914,7 @@ Check that `npx` is available. The Context7 server in `.mcp.json` uses `npx -y @
 
 Once bootstrap completes, the project enters normal mode. The agent should:
 
-1. Read `AGENTS.md` on every new conversation -- it is the only always-loaded doc, capped at 100 lines.
+1. Read `AGENTS.md` on every new conversation -- it is the only always-loaded doc, and line-capped.
 2. Run the `iteration` skill for every entry in `docs/features.json` -- it routes a chore straight to build, and a feature through GRILL -> RED -> GREEN -> REVIEW -> MERGE, building any needed mockup at GRILL when the feature's `surface` is not `"none"`.
 3. Treat `docs/features.json` as the spec -- keep statuses honest; a feature is not `done` until its mapped tests exist and pass, and a dropped feature keeps its entry with a reason in `notes`, never a deletion. `docs/BACKLOG.md` (`scripts/backlog.py`) is its generated human-readable view.
 4. Dispatch `@reviewer` at the REVIEW step of every feature -- fresh context by design, never the agent that built the change -- for plan conformance, correctness, design fidelity on visual surfaces, and security when the `security-review` skill's trigger matches.

@@ -11,6 +11,15 @@ project.
 Fill in the `TODO` and `*<...>*` slots as the project takes shape. An empty
 threat model is a red flag in review.
 
+**The sections below are the whole file.** A security-triggered feature edits
+them in place -- a new row in the attack-surface table, a tightened checklist
+line, one accepted-risk line -- and never appends a section of its own. Its
+full threat model lives in that feature's plan file and dies with it. A
+`SECURITY.md` with a subsection per feature is a changelog, not a threat model:
+nobody reads it, and the current posture becomes impossible to see. Its budget
+is enforced by the `docs-budget` CI job; at the cap, delete what is no longer
+true rather than moving it aside.
+
 ## Attack surface
 
 List every place untrusted data enters the system, and every consequential action

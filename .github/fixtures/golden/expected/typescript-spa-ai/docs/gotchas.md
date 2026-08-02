@@ -1,35 +1,47 @@
-# Gotchas
+# Gotchas -- what reality charged us for
 
-Living document. Lessons learned, anti-patterns, traps that bit us, non-obvious facts about the codebase or stack.
+Traps that bit us, and non-obvious facts about this codebase or stack. Agents
+add an entry after a task that surprised them, and read this before working in
+the same area again.
 
-This is the **self-improvement memory** of the project. Agents update this after tasks that surface something worth keeping. Future tasks read this before working in the same area.
+**An entry earns its place by changing a future decision.** Not by being true,
+and not by being interesting. Its budget is enforced by the `docs-budget` CI
+job, which owns the number.
 
-## Format
+## Format -- four short lines, newest first
 
 ```
 ### [Area] Short title
 **Symptom:** what looked broken / surprising
 **Cause:** why it happened
 **Fix:** what works
-**Date / Task:** when this was learned
+**Date:** YYYY-MM-DD
 ```
+
+Four lines is the format, not a floor to expand from. If an entry needs a code
+sample to be useful, it belongs in a code comment at the place it bites.
+
+## Pruning
+
+Delete an entry when any of these is true -- do not wait for the budget:
+
+- The code now makes the mistake impossible (a guard, a type, a test).
+- The dependency, API, or file it describes is gone.
+- It restates something the codebase now says more clearly.
+
+At the budget, prune until nothing left is deletable -- not until the file
+squeaks under the cap. A gotchas file parked at 99% of its cap release after release
+means nothing was ever pruned, only shaved.
 
 ## Entries
 
-<!-- Add entries here. Newest first. Use this format:
-
-### [Area] Short title
-**Symptom:** what looked broken / surprising
-**Cause:** why it happened
-**Fix:** what works
-**Date / Task:** YYYY-MM-DD / task name
-
--->
+<!-- Newest first. -->
 
 ---
 
-## Generic lessons (candidates for backporting to template)
+## Generic lessons (candidates for backporting to the template)
 
-When a gotcha is **truly generic** (would apply to any AI engineering project, not just this one), flag it here. During periodic reviews, decide whether to backport to the ForgeWorks template.
+A gotcha that would apply to any project on any stack, not just this one. Flag
+it here in one line; the template's `<self-improvement>` review picks it up.
 
-<!-- Add generic lessons here. -->
+<!-- Add generic lessons here, one line each. -->

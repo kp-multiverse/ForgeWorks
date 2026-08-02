@@ -80,7 +80,17 @@ jobs:
         run: python3 scripts/features_check.py
 
   # Doc budgets (AGENTS.md <context>): keeps always-loaded/near-always-loaded
-  # docs small enough for context economy -- overflow moves to docs/archive/.
+  # docs small enough for context economy. Over cap -> COMPACT (delete what is
+  # stale or no longer changes a decision). Do not shave to just under the
+  # line, and do not just move the bytes into docs/archive/ -- that is why
+  # docs/archive/ is capped too.
+  #
+  # Raising a cap: allowed, once the doc holds NO history -- a big system can
+  # have a genuinely big current threat model, and deleting live security
+  # content to fit a number makes the project less safe, not tidier. Raise the
+  # one number here with a `# raised: <reason>` comment on the same line, and
+  # say so in the PR. Never raise it to avoid compacting; the test is whether
+  # anything in the file is still deletable.
   docs-budget:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -94,16 +104,122 @@ jobs:
           check() { f="$1"; cap="$2"; [ -f "$f" ] || return 0
             size=$(wc -c < "$f")
             if [ "$size" -gt "$cap" ]; then
-              echo "::error::$f is ${size} chars (cap ${cap}) -- archive overflow to docs/archive/ in this PR"
+              echo "::error::$f is ${size} chars (cap ${cap}) -- compact it in this PR by DELETING what is stale, not by shaving to just under ${cap}"
               exit 1; fi }
-          check docs/SECURITY.md 20000
-          check docs/gotchas.md 15000
-          check docs/deviations.md 10000
-          check docs/LEDGER.md 10000
+          check docs/SECURITY.md 14000
+          check docs/gotchas.md 8000
+          check docs/deviations.md 4000
+          check docs/LEDGER.md 6000
+          # A plan is what a fresh session reads to execute one feature. It is
+          # the single biggest thing that session loads, so it is capped in the
+          # same units. Over it? The plan is describing, not deciding.
+          for plan in docs/plans/*.md; do
+            [ "$(basename "$plan")" = "README.md" ] && continue
+            check "$plan" 8000
+          done
+          # docs/archive/ is capped too -- otherwise compaction is just
+          # relocation and the bytes never leave the repo.
+          if [ -d docs/archive ]; then
+            arc=$(find docs/archive -type f -exec cat {} + 2>/dev/null | wc -c)
+            if [ "$arc" -gt 60000 ]; then
+              echo "::error::docs/archive/ is ${arc} chars (cap 60000) -- delete oldest files, do not move more in"
+              exit 1; fi
+          fi
+          # "Compact, don't shave" (AGENTS.md <context>) was prose until now: a
+          # PR could land gotchas.md at 7,999/8,000 and pass, which is the
+          # original 97-99% pinning failure moved a few points down. A budgeted
+          # doc CHANGED in this PR must land clear of its cap; untouched files
+          # are not punished for history.
+          near() { f="$1"; cap="$2"; [ -f "$f" ] || return 0
+            git diff --quiet "$BASE" -- "$f" 2>/dev/null && return 0
+            size=$(wc -c < "$f"); limit=$((cap * 95 / 100))
+            if [ "$size" -gt "$limit" ]; then
+              echo "::error::$f changed in this PR and lands at ${size}/${cap} chars -- within 5% of the cap is shaving, not compacting. Delete what is stale until nothing left is deletable."
+              exit 1; fi }
+          BASE="$(git merge-base HEAD origin/main 2>/dev/null || echo HEAD~1)"
+          near docs/SECURITY.md 14000
+          near docs/gotchas.md 8000
+          near docs/deviations.md 4000
+          near docs/LEDGER.md 6000
+
           lines=$(grep -c '' AGENTS.md)
           if [ "$lines" -gt 100 ]; then
             echo "::error::AGENTS.md is ${lines} lines (cap 100)"; exit 1; fi
           echo "docs-budget: OK"
+
+  # Checkpoint budget (AGENTS.md <context>): what a fresh session must read to
+  # resume ONE feature. THIS JOB OWNS THE NUMBER -- the prose points here rather
+  # than repeating it, so the two cannot drift.
+  #
+  # Measured on a field project before this gate existed: ~32K tokens, 16% of a
+  # 200K window, spent before any work happened. 56% of that was reading the
+  # whole features.json for one entry.
+  checkpoint-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: A fresh session must be able to afford to start
+        run: |
+          set -e
+          chars=0
+          add() { [ -f "$1" ] || return 0; chars=$((chars + $(wc -c < "$1"))); }
+          add AGENTS.md
+          add .claude/skills/iteration/SKILL.md
+          # the largest plan: the worst case a restart actually faces
+          largest=0
+          for plan in docs/plans/*.md; do
+            [ -f "$plan" ] || continue
+            [ "$(basename "$plan")" = "README.md" ] && continue
+            s=$(wc -c < "$plan"); [ "$s" -gt "$largest" ] && largest=$s
+          done
+          chars=$((chars + largest))
+          # ONE feature entry -- the LARGEST, because that is the worst case a
+          # restart actually faces. Sizing features[0] (the oldest, usually
+          # smallest) lets a later bloated entry make `go` expensive while this
+          # job stays green.
+          ids=$(python3 -c "import json,sys; sys.stdout.write(' '.join(f['id'] for f in json.load(open('docs/features.json'))['features']))")
+          entry=0
+          for id in $ids; do
+            s=$(python3 scripts/backlog.py --feature "$id" | wc -c)
+            [ "$s" -gt "$entry" ] && entry=$s
+          done
+          chars=$((chars + entry))
+          tokens=$((chars / 4))
+          echo "checkpoint: ${chars} chars ~= ${tokens} tokens"
+          if [ "$tokens" -gt 8000 ]; then
+            echo "::error::a fresh session costs ~${tokens} tokens to re-prime (cap 8000). The usual causes: a plan that narrates instead of deciding, or a doc being read whole that should be read by section."
+            exit 1; fi
+          echo "checkpoint-budget: OK"
+
+  # Resume check: would `go` work right now? Asserts the pointers a fresh
+  # session reads (features.json, LEDGER, the plan, the branch) agree. Catches
+  # the states that make a restart resume the WRONG work: two in-progress
+  # features, an in-progress feature with no plan, a ledger with no line for it.
+  resume-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: A fresh session has exactly one place to start
+        run: python3 scripts/resume.py --check
+
+  # Duplication gate (the iteration skill's GREEN step): the same 6-line
+  # block in two files is copied logic, copied markup, or the same paragraph of
+  # justification restated in five docstrings. Exceptions go in .dup-ignore.
+  dup-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Duplication gate
+        run: python3 scripts/dup_check.py
 
   # Test-tamper guard: flags weakened/deleted test assertions on this branch
   # vs. origin/main (AGENTS.md <hard-rules>). Agent-neutral plain script.

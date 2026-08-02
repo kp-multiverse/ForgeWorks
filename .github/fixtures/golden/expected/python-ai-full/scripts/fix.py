@@ -1,10 +1,9 @@
+"""`uv run fix` -- local auto-repair (ruff --fix + format write). See _run.py."""
+
 from __future__ import annotations
 
-import os
-import subprocess
-import sys
+from scripts._run import run
 
 
 def main() -> None:
-    script = os.path.join(os.path.dirname(__file__), "fix.sh")
-    sys.exit(subprocess.call(["bash", script]))
+    run("fix.sh")

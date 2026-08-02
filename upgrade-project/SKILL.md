@@ -57,14 +57,14 @@ Ask the user only for what you could not detect. Keep it to 2-3 questions.
 The template is `core/` (language-free) plus one `profiles/<lang>/`. Pull both the core and the project's own language profile (from Phase 1) into temp dirs to reconcile against:
 
 ```bash
-npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/core#v4.0.0 /tmp/upgrade-core --force
-npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/profiles/<lang>#v4.0.0 /tmp/upgrade-profile --force
-npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project#v4.0.0 /tmp/upgrade-skill --force
+npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/core#v4.2.0 /tmp/upgrade-core --force
+npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/profiles/<lang>#v4.2.0 /tmp/upgrade-profile --force
+npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project#v4.2.0 /tmp/upgrade-skill --force
 ```
 
 Use the detected language for `<lang>` (`python`, `typescript`, `go`, or `rust`). Reconcile core into the project's universal files and the profile into its language files -- **never** pull a different language's profile (that is the cross-language leak the structure exists to prevent). If the project's language has no profile folder at this version (e.g. an experimental language), reconcile `core/` only and report that the toolchain is the user's to maintain. The conditional block texts (<ai-discipline>, <memory>, the Codex sections, the gotchas seed) live in `init-project/templates/conditional/` (since v2.3.0; older releases embedded them in SKILL.md Phase 4) -- reconcile AI/memory-conditional content against `/tmp/upgrade-skill/templates/conditional/`.
 
-Reconcile against this skill's own released version (`v4.0.0`), not `main`: installing the `vX.Y.Z` upgrade skill brings a project *up to* `vX.Y.Z` -- a versioned, reviewable target. (Each release bumps this ref; see the repo `AGENTS.md` release process.)
+Reconcile against this skill's own released version (`v4.2.0`), not `main`: installing the `vX.Y.Z` upgrade skill brings a project *up to* `vX.Y.Z` -- a versioned, reviewable target. (Each release bumps this ref; see the repo `AGENTS.md` release process.)
 
 ### Phase 3: Reconcile
 
@@ -129,6 +129,12 @@ step of the `iteration` skill). Everything else absent proceeds as below:
 
 *Language-independent CI delta (since v3.0.0):* the generated `.github/workflows/qa.yml` carries a `features-check` job (validates `docs/features.json` via `scripts/features_check.py`; replaced the v2 `ship-audit` job -- history only, see the `v3.0.0`-tagged upgrade skill for a project still on v2). It has no placeholders: if the project's `qa.yml` lacks the job, graft it verbatim from the fetched template (show the diff first, as always).
 
+*Language-independent CI delta (since v4.1.0) -- duplication gate + checkpoint economy:* copy `scripts/dup_check.py` from the fetched template, substituting `{{SOURCE_SUFFIXES}}` from the project's `profile.json` (`chmod +x`), and append the `dup-check` job to `qa.yml` if absent. **Run it before finishing** and put the result in the Phase 4 report: an existing project will almost certainly have findings (two field projects measured 84 and 131 duplicated blocks in production code). Do NOT fix them in the upgrade -- that is feature work with its own tests. Run `python3 scripts/dup_check.py --baseline` so existing findings stop failing while any NEW duplication does -- prefer that to `.dup-ignore`, which exempts a path permanently and would let new duplication into an old file. Note the baseline count in the report, and add a `features.json` entry for the burn-down, so the gate is live and the debt is tracked rather than silently ignored. Copy `scripts/resume.py` (placeholder-free) and append the `resume-check` job; run `python3 scripts/resume.py --check` before finishing and report what it says -- an existing project commonly has two features marked in-progress, which is exactly the state that makes a restart resume the wrong work. Also replace `scripts/backlog.py` with the fetched version: it gains a `--feature <id>` mode, which is what the new `<context>` block tells sessions to use instead of reading the whole `features.json`.
+
+*Language-independent CI delta (since v4.1.0) -- checkpoint budget:* append the `checkpoint-budget` job from the fetched template if absent. It asserts what a fresh session costs to re-prime (`AGENTS.md` + the `iteration` skill + one feature entry + the largest plan) and OWNS that number, so the prose no longer repeats it. When grafting the v4.1 `<context>` block, note that it deliberately stops listing cap numbers: if the project's `AGENTS.md` still lists them, that is drift waiting to happen -- delete the numbers, keep the pointer to the job.
+
+*Language-independent CI delta (since v4.1.0):* the `docs-budget` job's caps were LOWERED, it gained a `docs/archive/` total check, and it now caps each `docs/plans/*.md` (the `iteration` skill's old "fit in half a context window" was the licence behind 30K-char plans). Report any existing plan over the cap; it belongs to an unfinished feature, so compact it rather than deleting it. A project on v4.0.0 has the old caps hard-coded in its `qa.yml`; replace that job's cap lines and error message with the fetched template's (this is the one case where the job is updated rather than only added, because the old numbers are the thing being fixed -- show the diff, as always). Replace that job's cap lines and error message with the fetched template's -- do not transcribe the numbers into this skill or into the project's prose. The job owns them; copying them here would be the same 'one fact written twice' defect this release exists to fix. Do not land this without Phase 3-F below, or the project's next push fails CI on docs it has not been told to compact.
+
 *Language-independent CI delta (since v4.0.0):* `qa.yml` also carries a `docs-budget` job (checks the doc size budgets from `<context>` -- chars for SECURITY.md/gotchas.md/deviations.md/LEDGER.md, lines for AGENTS.md) and a `test-tamper` job (`scripts/tamper_check.py` -- fails a PR that weakens an existing test with no stated `test-change:` reason). Both are placeholder-free: if either is missing, append it verbatim from the fetched template's job list -- never overwrite the project's existing jobs, only add what is absent (show the diff first, as always).
 
 *Language-independent CI delta (since v2.2.0) -- pinned actions:* every `uses:` in the fetched template's `qa.yml` and in the profile's `ci_setup_steps` is pinned to a full commit SHA (`owner/repo@<40-hex> # vX`), and the Go golangci-lint install step downloads a pinned `install.sh` and verifies its sha256 instead of piping curl to sh. If the project's `qa.yml` still has tag-only `uses:` pins or a pipe-to-shell install step, propose the fetched template's pinned versions of those lines (show the diff first, as always).
@@ -152,9 +158,46 @@ This replaces "add manually": the upgrade ends with zero `{{...}}` on disk and
 zero punted files. If the user declines a question, write
 `TODO(interview-skipped)` -- never a raw placeholder.
 
-A project already on v4.0.0+ ends its Phase 3 work here (A-B-C-E) -- go
+**F. Doc compaction (since v4.1.0).** The v4.1 change is a rule change, so
+grafting the blocks is not enough -- the accumulated docs have to be brought
+under the new caps in the same pass, or the project lands red. This is the one
+step that edits project content, so every deletion goes in the Phase 4 report
+as a named list and applies only on the owner's yes.
+
+1. **Delete the plan archive.** `docs/plans/archive/` is retired: plans are now
+   deleted at merge. For each file in it, confirm its feature is `done` in
+   `features.json` and carries a non-empty `tests` array -- if so, delete the
+   file (git history keeps the text). Report any plan whose feature is NOT done
+   as a keeper, moved back to `docs/plans/`. Remove the empty directory.
+2. **Compact each budgeted doc that is over its NEW cap** by deleting -- not
+   by moving bytes to `docs/archive/`. Delete until nothing left is
+   deletable, not until the file squeaks under the cap:
+   - `docs/SECURITY.md`: fold any per-feature subsections back into the fixed
+     sections (attack-surface rows, red-team checklist lines, one line per
+     accepted residual risk). Delete anything describing a surface the project
+     no longer has. The template's section list is the target shape.
+   - `docs/gotchas.md`: delete entries the code now makes impossible, entries
+     about removed dependencies or files, and entries that restate what the
+     codebase already says.
+   - `docs/LEDGER.md`: drop lines for merged features.
+   - `docs/deviations.md`: drop deviations whose feature has since been
+     rewritten or removed.
+3. **Delete stale scaffolding**: every mockup in `docs/design/mockups/` that no
+   feature's `mockup` field names, and every `docs/probes/` file that nothing
+   cites -- `grep -rn "docs/probes/" --include='*' .` first, because tests and
+   source comments name their probe as the fixture's provenance and a deleted
+   probe leaves that citation dangling. Same grep before deleting anything from
+   `docs/archive/`: retired design memos are often cited by `architecture.md`
+   or a live plan. List each deletion with its reason; anything you are unsure
+   about stays.
+4. **Prune `docs/archive/`** to the total cap the `docs-budget` job sets, least-recently-cited first.
+
+Report the before/after char count per file. A doc that lands within 5% of its
+cap has been shaved, not compacted -- redo it.
+
+A project already on v4.0.0+ ends its Phase 3 work here (A-B-C-E-F) -- go
 straight to **Phase 4** and never touch the section below; Phase 3-D runs
-INSTEAD of this A-B-C-E block, not after it, and only for a project the
+INSTEAD of this A-B-C-E-F block, not after it, and only for a project the
 routing note at the top of this phase already sent here for being below
 v4.0.0. (Phase 3-D's own step 5 fresh-render diff covers what A and C would
 have caught -- tooling deltas and leftover files alike -- against the v4
@@ -185,7 +228,7 @@ order:
    from a prior partial run): the `iteration` skill, `.claude/agents/reviewer.md`
    (claude-code roster only), `docs/LEDGER.md`, `docs/BACKLOG.md`,
    `docs/PRD.md` (skeleton -- step 3 below distills the project's retired
-   `PRODUCT_VISION.md` into it), `docs/plans/archive/`, `docs/archive/`,
+   `PRODUCT_VISION.md` into it), `docs/archive/`,
    `scripts/backlog.py`, `scripts/factory_doctor.sh`,
    `scripts/features_check.py` (REPLACE the v3 copy, not skip it -- the v3
    script still enforces the retired `light`/`standard`/`high-risk` tiers and
@@ -208,11 +251,15 @@ order:
    (add `"surface": "none"` and remap `tier`: `light` -> `chore`,
    `standard`/`high-risk` -> `feature`, on every entry that doesn't already
    carry a `surface` key from a prior partial run -- report each), existing
-   plans (move finished ones to `docs/plans/archive/`, skipping any already
-   moved), gotchas, deviations, mockups, SECURITY.md project-specific
-   sections. Distill `PRODUCT_VISION.md` content into the new `docs/PRD.md`
-   skeleton and mark the surfaces list TODO-for-owner (skip this sub-step if
-   `PRODUCT_VISION.md` is already gone -- see step 4).
+   plans (keep only those whose feature is not yet `done`; delete the rest --
+   since v4.1.0 a merged feature's plan is deleted, not archived, and git
+   history keeps the text), gotchas, deviations, mockups, SECURITY.md
+   project-specific sections. Then run **Phase 3-F's compaction** over the
+   carried content -- a v3 project is exactly the case that accumulated it, so
+   the migration must not carry oversized docs into v4.1 unchanged. Distill
+   `PRODUCT_VISION.md` content into the new `docs/PRD.md` skeleton and mark the
+   surfaces list TODO-for-owner (skip this sub-step if `PRODUCT_VISION.md` is
+   already gone -- see step 4).
 4. **Remove superseded files** (remove-if-present -- after confirming with
    the owner, listing them; skip any already removed by a prior partial run.
    This step runs last, once steps 1-3 have landed the v4 replacements, so a
@@ -220,7 +267,11 @@ order:
    `.claude/skills/design-loop/`, `.claude/skills/select-agents/`,
    `.claude/agents/implementer.md`, `.claude/agents/code-reviewer.md`,
    `.claude/agents/design-reviewer.md`, `.claude/agents/security-reviewer.md`,
-   `docs/PRODUCT_VISION.md`.
+   `docs/PRODUCT_VISION.md`, `docs/plans/archive/` (retired in v4.1.0 --
+   empty it per step 3 first), and `.claude/skills/init-project/` if the
+   project still carries the bootstrapper (v4.1.0 makes `/init-project`
+   delete itself; older projects kept a stale ~600K copy of the generator,
+   including its own `templates/` tree -- nothing reads it).
 5. **Fresh-render diff.** Render a fresh v4 tree from a reconstructed
    answers file (recoverable context; ask the owner for `surfaces`, or write
    `TODO(interview-skipped)` if they decline), then diff the harness files
@@ -248,7 +299,9 @@ normal.
 2. Apply everything. `chmod +x` new scripts/hooks.
 3. Ensure `docs/plans/`, `docs/probes/`, and -- for frontend projects --
    `docs/design/mockups/` exist (copy their READMEs from the template if
-   absent) -- they are the gate's working directories.
+   absent) -- they are the gate's working directories. Since v4.1.0 those
+   READMEs carry the delete-at-merge rules, so an outdated copy must be
+   updated, not just checked for presence.
 4. Run BOTH the project's language quality gate AND `python3
    scripts/features_check.py`; fix any breakage the upgrade introduced (a
    3-D migration commonly needs this -- double-check every remapped
@@ -257,7 +310,12 @@ normal.
    post-migration run) before finishing.
 5. **Only after BOTH the gate and `features_check.py` pass,** write the new
    version to `.claude/.template-version`.
-6. Close with: "Upgraded <from> -> <to> in one run. Review the diff and commit
+6. Delete this skill from the project: `rm -rf .claude/skills/upgrade-project`.
+   It is build equipment, not project content, and a stale copy on disk is
+   exactly what the next upgrade should NOT reconcile against -- the bootstrap
+   installer re-fetches the current one whenever the owner runs an upgrade
+   again. Do this last, after step 5's stamp is written.
+7. Close with: "Upgraded <from> -> <to> in one run. Review the diff and commit
    on your branch. Nothing was overwritten without being shown first."
 
 ---

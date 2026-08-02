@@ -69,5 +69,6 @@
     "precommit_hooks": [
       "- Not used. The Go profile ships no `.pre-commit-config.yaml`; `bash scripts/qa.sh` (local + CI) is the gate."
     ]
-  }
+  },
+  "source_suffixes": "{\".go\"}"
 }
