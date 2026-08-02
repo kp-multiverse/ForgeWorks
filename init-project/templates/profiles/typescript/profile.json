@@ -65,5 +65,6 @@
     "precommit_hooks": [
       "- Not used. The TypeScript profile ships no `.pre-commit-config.yaml`; `npm run qa` (local + CI) is the gate."
     ]
-  }
+  },
+  "source_suffixes": "{\".ts\", \".tsx\", \".astro\", \".vue\", \".svelte\"}"
 }

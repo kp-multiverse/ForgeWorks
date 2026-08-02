@@ -28,7 +28,8 @@ A fully structured project with:
 - `.pre-commit-config.yaml`: local pre-commit hooks (language-specific portion populated from your profile)
 - `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (live factory state, evidence per line), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/` (working state only -- a plan is deleted at merge), `archive/` (the small, capped keep-pile after a budgeted doc is compacted), `probes/` (deleted once their finding lands in a fixture), `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
 - `scripts/features_check.py`: validates `docs/features.json` against its schema; also runs as the CI `features-check` job
-- `scripts/backlog.py`: regenerates `docs/BACKLOG.md` from `docs/features.json`
+- `scripts/backlog.py`: regenerates `docs/BACKLOG.md` from `docs/features.json`; `--feature <id>` prints ONE entry, which is how a session reads the spec without loading a 70K file (`AGENTS.md` `<context>`)
+- `scripts/dup_check.py`: the duplication gate -- fails when the same normalized 6-line block appears in two files (copied logic, copied markup, or one convention re-justified in five docstrings); exceptions in a committed `.dup-ignore`; also runs as the CI `dup-check` job
 - `scripts/tamper_check.py`: flags an unexplained change to a test, fixture, or gate config (the hard-rules tamper guard)
 - `scripts/factory_doctor.sh`: prunes stale git worktrees and merged feature branches
 - `.devcontainer/`: portable development environment (if chosen)
@@ -365,6 +366,7 @@ test -f docs/archive/.gitkeep && \
 test -f docs/agents.md && test -f docs/agents.json && \
 test -f scripts/features_check.py && python3 scripts/features_check.py && \
 test -f scripts/backlog.py && test -f scripts/tamper_check.py && \
+test -f scripts/dup_check.py && python3 scripts/dup_check.py && \
 test -f scripts/factory_doctor.sh && \
 test -f .claude/skills/iteration/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
 test -f .claude/skills/tech-debt/SKILL.md
@@ -553,6 +555,7 @@ golden-fixture CI cross-checks the load-bearing values).
 | `{{TYPE_COMMAND}}` | profile.type_command |
 | `{{PRECOMMIT_INSTALL_COMMAND}}` | profile.precommit_install_command |
 | `{{TEST_PATH_REGEX}}` | profile.test_path_regex -- the pattern `scripts/tamper_check.py` uses to recognize a test-file path for the tamper guard |
+| `{{SOURCE_SUFFIXES}}` | profile.source_suffixes -- the set literal of source extensions `scripts/dup_check.py` scans for the duplication gate |
 | `{{CI_SETUP_STEPS}}` | profile.ci_setup_steps (multi-line YAML block) |
 | `{{LANGUAGE_PRECOMMIT_HOOKS}}` | profile.precommit_hooks (multi-line YAML block) |
 | `{{LIBRARY_DOCS_URLS}}` | profile.library_docs_urls (markdown list) |

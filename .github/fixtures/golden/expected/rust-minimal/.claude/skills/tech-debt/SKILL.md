@@ -8,8 +8,14 @@ description: >-
 
 # tech-debt
 
-Sweep for: files that outgrew one concept; real duplication (two+ callers of
-the same hand-copied logic -- extract to one home); dead code and unused deps;
+Start with `python3 scripts/dup_check.py --list` -- it prints every duplicated
+block without failing, which is the fastest map of where the debt is.
+
+Sweep for: files that outgrew one concept; duplication in all three of its
+forms -- logic (two+ callers of the same hand-copied code), markup and config
+(a page repeating another page's shell, or inlining values the tokens file
+owns), and prose (one convention re-justified in five docstrings; state it
+once, link to it from the rest); dead code and unused deps;
 docs that drifted from the code (`docs/features.json` statuses,
 `docs/design/mockups/` vs shipped screens, `docs/SECURITY.md` vs actual
 surfaces); tests that no longer test anything real.
@@ -22,6 +28,12 @@ has reopened. A budgeted doc (`AGENTS.md` `<context>`) sitting near its cap
 is a finding, not a pass: prune it. Count the live `.md` files in
 `docs/` -- if that number is growing faster than the feature count, docs are
 the debt.
+
+**Check the checkpoint cost.** Add up what a fresh session must read to resume
+one feature: `AGENTS.md` + the `iteration` skill + one `features.json` entry +
+that feature's plan. Over ~7K tokens (`AGENTS.md` `<context>`) is a finding --
+the usual cause is a plan that narrates, or a doc being read whole that should
+be read by section.
 
 Output: a ranked paydown list (impact vs effort). Fix the cheap high-value
 items in the same pass; file the rest as `features.json` entries or

@@ -99,6 +99,13 @@ jobs:
           check docs/gotchas.md 8000
           check docs/deviations.md 4000
           check docs/LEDGER.md 6000
+          # A plan is what a fresh session reads to execute one feature. It is
+          # the single biggest thing that session loads, so it is capped in the
+          # same units. Over it? The plan is describing, not deciding.
+          for plan in docs/plans/*.md; do
+            [ "$(basename "$plan")" = "README.md" ] && continue
+            check "$plan" 8000
+          done
           # docs/archive/ is capped too -- otherwise compaction is just
           # relocation and the bytes never leave the repo.
           if [ -d docs/archive ]; then
@@ -111,6 +118,19 @@ jobs:
           if [ "$lines" -gt 100 ]; then
             echo "::error::AGENTS.md is ${lines} lines (cap 100)"; exit 1; fi
           echo "docs-budget: OK"
+
+  # Duplication gate (the iteration skill's GREEN step): the same 6-line
+  # block in two files is copied logic, copied markup, or the same paragraph of
+  # justification restated in five docstrings. Exceptions go in .dup-ignore.
+  dup-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Duplication gate
+        run: python3 scripts/dup_check.py
 
   # Test-tamper guard: flags weakened/deleted test assertions on this branch
   # vs. origin/main (AGENTS.md <hard-rules>). Agent-neutral plain script.

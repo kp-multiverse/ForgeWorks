@@ -65,8 +65,15 @@ alternative, and the attacker's view. Present to the owner in the
 `<communication>` GRILL shape. The owner approves once, here. Write every
 decision from the conversation back into the plan file and sync the
 feature's `acceptance` -- a decision that lives only in chat does not
-exist. The finished plan must let a FRESH session execute the feature
-alone, and fit in half a context window.
+exist.
+
+**Size is the test of whether it decided anything.** The finished plan must
+let a FRESH session execute the feature alone, in **under 8000 characters** --
+the `docs-budget` job fails the branch above that. That is roughly 2K tokens,
+and it is the largest single thing a restarted session loads (see `AGENTS.md`
+`<context>`). A plan that does not fit is describing rather than deciding:
+cut the restated background, the options you rejected, and anything the code
+or `features.json` already says. Decisions, not narrative.
 
 ## 2. RED
 
@@ -79,11 +86,28 @@ failing run output. Set `status: in-progress`.
 
 Implement in THIS context -- no implementer subagent. If the owner approved
 fan-out at GRILL: one git worktree per piece, one writer per branch, the
-caps below apply per agent. Write the least code that passes, then
-refactor: extract duplication only at two real callers, remove dead code,
-one concept per file. Visual surfaces are BUILT AGAINST the approved
-mockup, visual values from the tokens file.
-Exit: `{{QA_COMMAND}}` fully green. A red gate cannot enter REVIEW.
+caps below apply per agent. Write the least code that passes, then refactor:
+remove dead code, one concept per file. Visual surfaces are BUILT AGAINST the
+approved mockup, visual values from the tokens file.
+
+**Say it once.** Duplication is not only logic. Three kinds, all real:
+
+- **Logic** -- extract at two real callers, not before.
+- **Markup and config** -- a page that hand-repeats another page's shell, or
+  inlines values that live in the tokens file, is a component waiting to be
+  extracted. This is the most common one on a frontend.
+- **Prose** -- the same convention re-justified in five docstrings. Explain it
+  ONCE where it lives; every other site links there in a clause. A comment
+  says WHY, and only where the why is not already written down.
+
+`python3 scripts/dup_check.py` measures all three: the same 6-line block
+(comments, strings and numbers normalized away) in two files fails. Run it
+before REVIEW, not after. If a finding is genuinely unextractable framework
+boilerplate, add the path to `.dup-ignore` with a reason -- that is a decision
+someone can review; silently living with it is not.
+
+Exit: `{{QA_COMMAND}}` green AND `python3 scripts/dup_check.py` green. A red
+gate cannot enter REVIEW.
 **Stall cap:** 2 consecutive failed test cycles on the same failure ->
 checkpoint commit, stop, ask the owner (recommended recovery: a fresh
 context re-primed from the plan file with the failure lesson added).
