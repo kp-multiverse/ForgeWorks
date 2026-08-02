@@ -5,8 +5,8 @@ add an entry after a task that surprised them, and read this before working in
 the same area again.
 
 **An entry earns its place by changing a future decision.** Not by being true,
-and not by being interesting. Budget: 8K chars for the whole file (see
-`AGENTS.md` `<context>`).
+and not by being interesting. Its budget is enforced by the `docs-budget` CI
+job, which owns the number.
 
 ## Format -- four short lines, newest first
 
@@ -30,7 +30,7 @@ Delete an entry when any of these is true -- do not wait for the budget:
 - It restates something the codebase now says more clearly.
 
 At the budget, prune until nothing left is deletable -- not until the file
-squeaks under 8K. A gotchas file parked at 99% of its cap release after release
+squeaks under the cap. A gotchas file parked at 99% of its cap release after release
 means nothing was ever pruned, only shaved.
 
 ## Entries

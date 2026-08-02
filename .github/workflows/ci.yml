@@ -61,6 +61,18 @@ jobs:
       - name: Render core+profile, assert no leftover placeholders
         run: python3 .github/scripts/render_smoke.py
 
+  # Rule/gate drift: every bug in the v4.1 field review was one fact written
+  # twice and drifting. A gate owns its number; prose points at the gate.
+  rule-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: No rule restates a number its gate owns
+        run: python3 .github/scripts/rule_check.py
+
   golden-fixtures:
     # Deterministic-generation proof: render.py output for each committed
     # answers fixture must match the committed expected tree byte-for-byte

@@ -16,9 +16,9 @@ them in place -- a new row in the attack-surface table, a tightened checklist
 line, one accepted-risk line -- and never appends a section of its own. Its
 full threat model lives in that feature's plan file and dies with it. A
 `SECURITY.md` with a subsection per feature is a changelog, not a threat model:
-nobody reads it, and the current posture becomes impossible to see. Budget: 14K
-chars (see `AGENTS.md` `<context>`); at the cap, delete what is no longer true
-rather than moving it aside.
+nobody reads it, and the current posture becomes impossible to see. Its budget
+is enforced by the `docs-budget` CI job; at the cap, delete what is no longer
+true rather than moving it aside.
 
 ## Attack surface
 

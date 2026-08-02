@@ -17,9 +17,9 @@ forms -- logic (two+ callers of the same hand-copied code), markup and config
 (a page repeating another page's shell, or inlining values the tokens file
 owns), and prose (one convention re-justified in five docstrings; state it
 once, link to it from the rest); dead code and unused deps;
-docs that drifted from the code (`docs/features.json` statuses,
-`docs/design/mockups/` vs shipped screens, `docs/SECURITY.md` vs actual
-surfaces); tests that no longer test anything real.
+docs that drifted from the code (`docs/features.json` statuses, `docs/SECURITY.md`
+vs the actual surfaces, and on a frontend project `docs/design/mockups/` vs the
+shipped screens); tests that no longer test anything real.
 
 **Docs are swept like code.** Same question as for a function: what breaks if
 this is deleted? Delete on sight -- plan files for merged features, probe
@@ -32,7 +32,7 @@ the debt.
 
 **Check the checkpoint cost.** Add up what a fresh session must read to resume
 one feature: `AGENTS.md` + the `iteration` skill + one `features.json` entry +
-that feature's plan. Over ~7K tokens (`AGENTS.md` `<context>`) is a finding --
+that feature's plan. Over what the `checkpoint-budget` CI job allows is a finding --
 the usual cause is a plan that narrates, or a doc being read whole that should
 be read by section.
 

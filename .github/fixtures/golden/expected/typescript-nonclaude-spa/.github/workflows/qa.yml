@@ -119,6 +119,47 @@ jobs:
             echo "::error::AGENTS.md is ${lines} lines (cap 100)"; exit 1; fi
           echo "docs-budget: OK"
 
+  # Checkpoint budget (AGENTS.md <context>): what a fresh session must read to
+  # resume ONE feature. THIS JOB OWNS THE NUMBER -- the prose points here rather
+  # than repeating it, so the two cannot drift.
+  #
+  # Measured on a field project before this gate existed: ~32K tokens, 16% of a
+  # 200K window, spent before any work happened. 56% of that was reading the
+  # whole features.json for one entry.
+  checkpoint-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: A fresh session must be able to afford to start
+        run: |
+          set -e
+          chars=0
+          add() { [ -f "$1" ] || return 0; chars=$((chars + $(wc -c < "$1"))); }
+          add AGENTS.md
+          add .claude/skills/iteration/SKILL.md
+          # the largest plan: the worst case a restart actually faces
+          largest=0
+          for plan in docs/plans/*.md; do
+            [ -f "$plan" ] || continue
+            [ "$(basename "$plan")" = "README.md" ] && continue
+            s=$(wc -c < "$plan"); [ "$s" -gt "$largest" ] && largest=$s
+          done
+          chars=$((chars + largest))
+          # one feature entry, not the whole list
+          entry=$(python3 scripts/backlog.py --feature \
+                  "$(python3 -c "import json;print(json.load(open('docs/features.json'))['features'][0]['id'])")" \
+                  | wc -c)
+          chars=$((chars + entry))
+          tokens=$((chars / 4))
+          echo "checkpoint: ${chars} chars ~= ${tokens} tokens"
+          if [ "$tokens" -gt 8000 ]; then
+            echo "::error::a fresh session costs ~${tokens} tokens to re-prime (cap 8000). The usual causes: a plan that narrates instead of deciding, or a doc being read whole that should be read by section."
+            exit 1; fi
+          echo "checkpoint-budget: OK"
+
   # Duplication gate (the iteration skill's GREEN step): the same 6-line
   # block in two files is copied logic, copied markup, or the same paragraph of
   # justification restated in five docstrings. Exceptions go in .dup-ignore.

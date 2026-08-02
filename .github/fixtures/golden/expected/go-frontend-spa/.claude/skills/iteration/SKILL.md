@@ -68,10 +68,10 @@ feature's `acceptance` -- a decision that lives only in chat does not
 exist.
 
 **Size is the test of whether it decided anything.** The finished plan must
-let a FRESH session execute the feature alone, in **under 8000 characters** --
-the `docs-budget` job fails the branch above that. That is roughly 2K tokens,
-and it is the largest single thing a restarted session loads (see `AGENTS.md`
-`<context>`). A plan that does not fit is describing rather than deciding:
+let a FRESH session execute the feature alone, and fit the plan cap that the
+`docs-budget` job enforces (that job owns the number -- read it there). It is
+the largest single thing a restarted session loads, so it is the first place
+to look when a restart gets expensive. A plan that does not fit is describing rather than deciding:
 cut the restated background, the options you rejected, and anything the code
 or `features.json` already says. Decisions, not narrative.
 
@@ -100,8 +100,9 @@ approved mockup, visual values from the tokens file.
   ONCE where it lives; every other site links there in a clause. A comment
   says WHY, and only where the why is not already written down.
 
-`python3 scripts/dup_check.py` measures all three: the same 6-line block
-(comments, strings and numbers normalized away) in two files fails. Run it
+`python3 scripts/dup_check.py` measures all three: the same block of source
+(comments, strings and numbers normalized away) appearing in two files fails.
+The window size lives in that script. Run it
 before REVIEW, not after. A finding you are not fixing needs one of two
 records, and they are not interchangeable: `.dup-ignore` exempts a path forever
 (only for a tree whose repetition is inherent, like tests), while
@@ -164,7 +165,8 @@ One line per state change, appended to `docs/LEDGER.md`:
     F012 | REVIEW | round 1/1     | 2026-08-01 14:31 | agent: reviewer | APPROVE, 1 optional
     F012 | MERGED | -             | 2026-08-01 14:58 | agent: main | worktrees: 0 remaining, e2e: 7 passed
 
-When the live file passes its 6K cap, drop merged features' lines entirely --
+When the live file passes the cap `docs-budget` sets for it, drop merged
+features' lines entirely --
 the commit history is the durable record. Archive a year's lines to
 `docs/archive/LEDGER-<year>.md` only if you actually re-read them.
 
