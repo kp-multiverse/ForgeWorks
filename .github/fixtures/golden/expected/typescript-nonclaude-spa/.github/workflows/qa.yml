@@ -73,6 +73,13 @@ jobs:
   # stale or no longer changes a decision). Do not shave to just under the
   # line, and do not just move the bytes into docs/archive/ -- that is why
   # docs/archive/ is capped too.
+  #
+  # Raising a cap: allowed, once the doc holds NO history -- a big system can
+  # have a genuinely big current threat model, and deleting live security
+  # content to fit a number makes the project less safe, not tidier. Raise the
+  # one number here with a `# raised: <reason>` comment on the same line, and
+  # say so in the PR. Never raise it to avoid compacting; the test is whether
+  # anything in the file is still deletable.
   docs-budget:
     runs-on: ubuntu-latest
     timeout-minutes: 5
