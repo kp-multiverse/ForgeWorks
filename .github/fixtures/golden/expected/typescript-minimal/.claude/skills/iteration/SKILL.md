@@ -149,9 +149,10 @@ never scope creep.
 
 Then delete this feature's scaffolding, in the merge commit:
 
-- Its `docs/probes/` files, once the observed behavior lives in a fixture, a
-  test, or a gotcha. A probe is how you learned something, not the record of
-  it; keep one only while a fixture is still being authored from it.
+- Any `docs/probes/` file nothing cites. `grep -r "docs/probes/<name>" .`
+  first: a probe named by a test or a source comment is that fixture's
+  provenance and stays as long as the fixture does. An uncited one is
+  scaffolding.
 - Every mockup except the approved winner for a surface that still exists.
 - Any scratch analysis, comparison, or research note written to reach the
   decision. The decision is in the code and the feature entry.

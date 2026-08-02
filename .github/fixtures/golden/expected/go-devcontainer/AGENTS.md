@@ -62,7 +62,7 @@ This file is the only always-loaded doc (hard cap: 100 lines). Everything else i
 
 <!-- FW-BLOCK: learning v4.1.0 -->
 <learning>
-Reality surprised you (API differs from docs, gate green but feature dead)? Add the lesson to `docs/gotchas.md` -- one entry, four short lines, and delete any entry the code has since made impossible. Implementation must deviate from plan or mockup? Conservative option + `docs/deviations.md` line, keep going. Working notes (probe files, losing mockups, scratch analyses) are scaffolding, not records: each dies when its finding lands in a gotcha, a fixture, or a test. A doc earns its place by changing a future decision -- nothing is kept "for the record".
+Reality surprised you (API differs from docs, gate green but feature dead)? Add the lesson to `docs/gotchas.md` -- one entry, four short lines, and delete any entry the code has since made impossible. Implementation must deviate from plan or mockup? Conservative option + `docs/deviations.md` line, keep going. Working notes (losing mockups, scratch analyses, uncited probe files) are scaffolding, not records: each dies once its finding lands in a gotcha, a fixture, or a test. A doc earns its place by changing a future decision -- nothing is kept "for the record". Exception: a probe a test or source comment cites by path is that fixture's provenance -- it lives as long as the fixture does.
 </learning>
 <!-- /FW-BLOCK: learning -->
 

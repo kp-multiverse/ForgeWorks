@@ -178,10 +178,14 @@ as a named list and applies only on the owner's yes.
    - `docs/LEDGER.md`: drop lines for merged features.
    - `docs/deviations.md`: drop deviations whose feature has since been
      rewritten or removed.
-3. **Delete stale scaffolding**: `docs/probes/` files whose finding is already
-   in a fixture or a gotcha, and every mockup in `docs/design/mockups/` with no
-   corresponding live surface in `docs/PRD.md`. List each with its reason;
-   anything you are unsure about stays.
+3. **Delete stale scaffolding**: every mockup in `docs/design/mockups/` that no
+   feature's `mockup` field names, and every `docs/probes/` file that nothing
+   cites -- `grep -rn "docs/probes/" --include='*' .` first, because tests and
+   source comments name their probe as the fixture's provenance and a deleted
+   probe leaves that citation dangling. Same grep before deleting anything from
+   `docs/archive/`: retired design memos are often cited by `architecture.md`
+   or a live plan. List each deletion with its reason; anything you are unsure
+   about stays.
 4. **Prune `docs/archive/`** to the 60K total cap, oldest first.
 
 Report the before/after char count per file. A doc that lands within 5% of its
