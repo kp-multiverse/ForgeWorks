@@ -9,7 +9,8 @@ description: >-
 # tech-debt
 
 Start with `python3 scripts/dup_check.py --list` -- it prints every duplicated
-block without failing, which is the fastest map of where the debt is.
+block without failing, which is the fastest map of where the debt is. Entries
+in `.dup-baseline` are debt too -- the file should shrink every sweep.
 
 Sweep for: files that outgrew one concept; duplication in all three of its
 forms -- logic (two+ callers of the same hand-copied code), markup and config

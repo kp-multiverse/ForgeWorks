@@ -102,9 +102,13 @@ approved mockup, visual values from the tokens file.
 
 `python3 scripts/dup_check.py` measures all three: the same 6-line block
 (comments, strings and numbers normalized away) in two files fails. Run it
-before REVIEW, not after. If a finding is genuinely unextractable framework
-boilerplate, add the path to `.dup-ignore` with a reason -- that is a decision
-someone can review; silently living with it is not.
+before REVIEW, not after. A finding you are not fixing needs one of two
+records, and they are not interchangeable: `.dup-ignore` exempts a path forever
+(only for a tree whose repetition is inherent, like tests), while
+`--baseline` records today's duplicate blocks by hash so new ones still fail --
+including new duplication inside a file already baselined. Prefer the baseline:
+a path exemption is permanent, a baseline entry decays the moment anyone edits
+the block. Either way it is a reviewable decision, not a silence.
 
 Exit: `uv run qa` green AND `python3 scripts/dup_check.py` green. A red
 gate cannot enter REVIEW.

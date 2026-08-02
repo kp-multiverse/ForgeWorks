@@ -11,12 +11,22 @@ Normalization strips what varies without changing the shape: comments, blank
 lines, string literals, numbers, and runs of whitespace. So two functions that
 differ only in their strings still count as duplicates, which is the point.
 
-    python3 scripts/dup_check.py            # check, exit 1 on a finding
-    python3 scripts/dup_check.py --list     # print every finding, exit 0
+    python3 scripts/dup_check.py             # check, exit 1 on a finding
+    python3 scripts/dup_check.py --list      # print every finding, exit 0
+    python3 scripts/dup_check.py --baseline  # accept today's findings, once
 
-Real exceptions -- framework boilerplate you cannot factor out -- go in a
-committed `.dup-ignore`, one glob per line, `#` for comments. Adding a line
-there is a decision someone can review; silently living with duplication is not.
+Two escape hatches, and the difference matters:
+
+`.dup-ignore` (path globs, `#` for comments) exempts a file wholesale -- use it
+only for a directory whose repetition is inherent, like a test tree where a
+repeated arrange block reads better than a shared helper.
+
+`.dup-baseline` (written by `--baseline`) records the HASHES of the blocks that
+were already duplicated when you adopted the gate. Those stop failing; anything
+new fails, INCLUDING new duplication inside a file the baseline already covers.
+Edit a baselined block and its hash changes, so touching old duplication asks
+you to fix it. That is the ratchet: a path exemption is permanent, a baseline
+entry decays. Prefer the baseline; the file should only ever shrink.
 """
 
 from __future__ import annotations
@@ -28,6 +38,7 @@ import re
 import sys
 
 WINDOW = 6
+BASELINE = ".dup-baseline"
 SUFFIXES = {{SOURCE_SUFFIXES}}
 SKIP_DIRS = {
     ".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build",
@@ -40,6 +51,13 @@ NUMBER = re.compile(r"\b\d[\d_.]*\b")
 WHITESPACE = re.compile(r"\s+")
 
 
+def baseline() -> set[str]:
+    if not os.path.exists(BASELINE):
+        return set()
+    with open(BASELINE, encoding="utf-8") as f:
+        return {ln.strip() for ln in f if ln.strip() and not ln.startswith("#")}
+
+
 def ignores() -> list[str]:
     if not os.path.exists(".dup-ignore"):
         return []
@@ -50,7 +68,11 @@ def ignores() -> list[str]:
 def sources(patterns: list[str]) -> list[str]:
     out = []
     for root, dirs, files in os.walk("."):
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
+        # SKIP_DIRS is the whole rule -- do NOT also skip every dotted dir.
+        # Production source lives in one often enough (.hermes/plugins/ in a
+        # field project) and a gate that cannot see a directory is worse than
+        # no gate: it reports OK.
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for name in files:
             if not name.endswith(tuple(SUFFIXES)):
                 continue
@@ -80,6 +102,8 @@ def normalize(path: str) -> list[tuple[str, int]]:
 
 def main(argv: list[str]) -> int:
     listing = argv[:1] == ["--list"]
+    writing = argv[:1] == ["--baseline"]
+    known = set() if (listing or writing) else baseline()
     patterns = ignores()
     windows: dict[str, list[tuple[str, int]]] = {}
     for path in sources(patterns):
@@ -89,13 +113,23 @@ def main(argv: list[str]) -> int:
             windows.setdefault(hashlib.sha256(body.encode()).hexdigest(), []).append(
                 (path, lines[i][1])
             )
+    shared = {d: h for d, h in windows.items() if len({p for p, _ in h}) > 1}
+    if writing:
+        with open(BASELINE, "w", encoding="utf-8") as f:
+            f.write("# Blocks already duplicated when the gate was adopted, by hash.\n"
+                    "# Anything NOT listed here fails. Editing a listed block changes its\n"
+                    "# hash, so touching old duplication asks you to fix it. Only shrinks.\n")
+            f.write("".join(f"{d}\n" for d in sorted(shared)))
+        print(f"dup-check: baselined {len(shared)} existing duplicate block(s) -> {BASELINE}")
+        return 0
     findings = {}
-    for digest, hits in windows.items():
-        files = {p for p, _ in hits}
-        if len(files) > 1:
-            findings.setdefault(tuple(sorted(files)), []).append(hits[0])
+    for digest, hits in shared.items():
+        if digest in known:
+            continue
+        findings.setdefault(tuple(sorted({p for p, _ in hits})), []).append(hits[0])
     if not findings:
-        print(f"dup-check: OK ({len(windows)} windows, no block shared between files)")
+        extra = f", {len(known)} baselined" if known else ""
+        print(f"dup-check: OK ({len(windows)} windows, no new block shared between files{extra})")
         return 0
     for files, hits in sorted(findings.items(), key=lambda kv: -len(kv[1])):
         where = ", ".join(f"{p}:{n}" for p, n in sorted(hits)[:3])

@@ -16,7 +16,7 @@ Code style anchor: <!-- No positive reference yet. Add one to this block when yo
 <!-- FW-BLOCK: commands v4.0.0 -->
 <commands>
 - Quality gate (verify-only: lint, format check, types, unit + functional): `bash scripts/qa.sh` | auto-fix: `bash scripts/fix.sh` | e2e suite: `bash scripts/e2e.sh`
-- Feature check (schema, done-cites-tests, mockup gate): `python3 scripts/features_check.py` | duplication gate: `python3 scripts/dup_check.py` (`--list` to see findings without failing)
+- Feature check (schema, done-cites-tests, mockup gate): `python3 scripts/features_check.py` | duplication gate: `python3 scripts/dup_check.py` (`--list` to survey, `--baseline` to accept existing findings once)
 - Backlog view: `python3 scripts/backlog.py` | ONE feature entry: `python3 scripts/backlog.py --feature <id>` | factory doctor (prune stale worktrees + merged branches): `bash scripts/factory_doctor.sh`
 Package manager and installs: `docs/language-standards.md`. New dependencies go through the manifest and the deps-guard hook (re-run with `DEPS_VETTED=1` once vetted).
 </commands>
