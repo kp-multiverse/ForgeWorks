@@ -1,11 +1,11 @@
-<!-- FW-BLOCK: project v4.0.0 -->
+<!-- FW-BLOCK: project v4.1.0 -->
 <project>
 Feedgate -- An internal HTTP service that validates and normalizes partner RSS feeds before ingestion.
 Primary user: A data engineer who babysits broken partner feeds every Monday.. Stack: Go; frontend: no; AI features: none. Dev container: yes (if yes, commands run inside it).
 Where things live:
 - `docs/PRD.md` -- what the finished product looks like (journey, surfaces, v1 in/out). Every feature's `serves:` points here.
 - `docs/features.json` -- the ordered, machine-checked feature list; this is the spec, prose is commentary. `docs/BACKLOG.md` is its human-readable view, regenerated at merge.
-- `docs/plans/<id>.md` -- the approved decision record per feature (archived to `docs/plans/archive/` on merge). `docs/LEDGER.md` -- live factory state, with evidence.
+- `docs/plans/<id>.md` -- the working decision record for the feature being built, DELETED at merge (its decisions land in `features.json`, the commit, and the ledger line). `docs/LEDGER.md` -- live factory state, with evidence.
 - `docs/design/` (frontend projects) -- tokens, rubric, approved mockups. `docs/SECURITY.md` -- threat model + red-team checklist.
 - `docs/gotchas.md` (paid-for pitfalls), `docs/deviations.md`, `docs/language-standards.md`, `docs/documentation.md` (Context7 is wired -- verify unfamiliar APIs there, not from memory).
 
@@ -54,15 +54,15 @@ Owner-facing messages: lead with the point; plain words (gloss any jargon in the
 </communication>
 <!-- /FW-BLOCK: communication -->
 
-<!-- FW-BLOCK: context v4.0.0 -->
+<!-- FW-BLOCK: context v4.1.0 -->
 <context>
-This file is the only always-loaded doc (hard cap: 100 lines). Everything else is read on demand, by targeted section. Subagent dispatches carry a minimal brief -- plan file, diff, named doc sections, mockup path -- never "read the docs"; no whole-file reads of any doc over 30K chars; subagents return ~1-2K-token results, not transcripts. One feature per session; the plan file + `features.json` + LEDGER are the memory between sessions, never the conversation. Doc budgets: SECURITY.md 20K chars, gotchas.md 15K, deviations.md 10K, LEDGER.md 10K -- overflow moves to `docs/archive/` in the same PR that grew it.
+This file is the only always-loaded doc (hard cap: 100 lines). Everything else is read on demand, by targeted section. Subagent dispatches carry a minimal brief -- plan file, diff, named doc sections, mockup path -- never "read the docs"; no whole-file reads of any doc over 30K chars; subagents return ~1-2K-token results, not transcripts. One feature per session; the plan file + `features.json` + LEDGER are the memory between sessions, never the conversation. Doc budgets (chars): SECURITY.md 14K, gotchas.md 8K, deviations.md 4K, LEDGER.md 6K, `docs/archive/` 60K total. At cap, COMPACT in the same PR that grew it: delete every part that is no longer true or no longer changes a decision, and stop only when nothing left is deletable. Finish within 5% of the cap and you shaved, not compacted -- redo it, because a cap treated as a target is how these files got big. Deleting is the default; archive only what you would genuinely re-read, and `docs/archive/` is itself capped, oldest out first.
 </context>
 <!-- /FW-BLOCK: context -->
 
-<!-- FW-BLOCK: learning v4.0.0 -->
+<!-- FW-BLOCK: learning v4.1.0 -->
 <learning>
-Reality surprised you (API differs from docs, gate green but feature dead)? Add the lesson to `docs/gotchas.md`. Implementation must deviate from plan or mockup? Conservative option + `docs/deviations.md` line, keep going.
+Reality surprised you (API differs from docs, gate green but feature dead)? Add the lesson to `docs/gotchas.md` -- one entry, four short lines, and delete any entry the code has since made impossible. Implementation must deviate from plan or mockup? Conservative option + `docs/deviations.md` line, keep going. Working notes (probe files, losing mockups, scratch analyses) are scaffolding, not records: each dies when its finding lands in a gotcha, a fixture, or a test. A doc earns its place by changing a future decision -- nothing is kept "for the record".
 </learning>
 <!-- /FW-BLOCK: learning -->
 

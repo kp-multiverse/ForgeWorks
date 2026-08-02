@@ -26,7 +26,7 @@ A fully structured project with:
 - `.github/workflows/qa.yml`: CI running the quality gate (fast), a separate end-to-end job, and a `features-check` job that validates `docs/features.json`, on pull requests and pushes to main
 - `.github/pull_request_template.md`: short PR checklist
 - `.pre-commit-config.yaml`: local pre-commit hooks (language-specific portion populated from your profile)
-- `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (live factory state, evidence per line), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/` (+ `plans/archive/` for merged features), `archive/` (overflow when a budgeted doc grows past its cap), `probes/`, `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
+- `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (live factory state, evidence per line), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/` (working state only -- a plan is deleted at merge), `archive/` (the small, capped keep-pile after a budgeted doc is compacted), `probes/` (deleted once their finding lands in a fixture), `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
 - `scripts/features_check.py`: validates `docs/features.json` against its schema; also runs as the CI `features-check` job
 - `scripts/backlog.py`: regenerates `docs/BACKLOG.md` from `docs/features.json`
 - `scripts/tamper_check.py`: flags an unexplained change to a test, fixture, or gate config (the hard-rules tamper guard)
@@ -361,7 +361,7 @@ test -f docs/PRD.md && test -f docs/features.json && \
 test -f docs/LEDGER.md && test -f docs/BACKLOG.md && \
 test -f docs/SECURITY.md && test -f docs/language-standards.md && \
 test -f docs/deviations.md && test -f docs/plans/README.md && \
-test -f docs/plans/archive/.gitkeep && test -f docs/archive/.gitkeep && \
+test -f docs/archive/.gitkeep && \
 test -f docs/agents.md && test -f docs/agents.json && \
 test -f scripts/features_check.py && python3 scripts/features_check.py && \
 test -f scripts/backlog.py && test -f scripts/tamper_check.py && \
@@ -418,7 +418,24 @@ transient working state, not project content -- a project language's gate
 (e.g. TypeScript's prettier check) has no reason to see it, and leaving it
 on disk into the gate run is a bug, not a convenience.
 
-Finally, **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+Then **run the quality gate** (inside the dev container if one is used): `{{QA_COMMAND}}`. Every complete profile ships a green-on-first-run scaffold, so the gate must pass on the first run. If it is not green, fix the scaffold before handing off -- a project that starts red is a bug.
+
+Finally, **delete this skill from the project** -- `rm -rf .claude/skills/init-project`:
+
+```bash
+rm -rf .claude/skills/init-project
+! test -d .claude/skills/init-project && echo "bootstrapper removed"
+```
+
+Do this LAST, after the gate is green: until then a re-render may be needed,
+and `render.py` lives in that directory. The bootstrapper is build equipment,
+not project content. It is ~600K and 100+ files, it carries a full copy of the
+template's own `templates/core/` tree, and it goes stale the moment ForgeWorks
+moves -- a generated project that keeps it ships a fossilized copy of the
+generator forever. Nothing in the project reads it: the project's own
+procedures are `.claude/skills/iteration`, `security-review`, and `tech-debt`,
+which stay. A later `/upgrade-project` installs its own skill when it runs.
+(This deletion is the reason Phase 4.5 and the gate run before it, not after.)
 
 Report what was generated, then hand off:
 

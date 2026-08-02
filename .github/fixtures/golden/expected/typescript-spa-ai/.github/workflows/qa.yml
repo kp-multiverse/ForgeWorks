@@ -69,7 +69,10 @@ jobs:
         run: python3 scripts/features_check.py
 
   # Doc budgets (AGENTS.md <context>): keeps always-loaded/near-always-loaded
-  # docs small enough for context economy -- overflow moves to docs/archive/.
+  # docs small enough for context economy. Over cap -> COMPACT (delete what is
+  # stale or no longer changes a decision). Do not shave to just under the
+  # line, and do not just move the bytes into docs/archive/ -- that is why
+  # docs/archive/ is capped too.
   docs-budget:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -83,12 +86,20 @@ jobs:
           check() { f="$1"; cap="$2"; [ -f "$f" ] || return 0
             size=$(wc -c < "$f")
             if [ "$size" -gt "$cap" ]; then
-              echo "::error::$f is ${size} chars (cap ${cap}) -- archive overflow to docs/archive/ in this PR"
+              echo "::error::$f is ${size} chars (cap ${cap}) -- compact it in this PR by DELETING what is stale, not by shaving to just under ${cap}"
               exit 1; fi }
-          check docs/SECURITY.md 20000
-          check docs/gotchas.md 15000
-          check docs/deviations.md 10000
-          check docs/LEDGER.md 10000
+          check docs/SECURITY.md 14000
+          check docs/gotchas.md 8000
+          check docs/deviations.md 4000
+          check docs/LEDGER.md 6000
+          # docs/archive/ is capped too -- otherwise compaction is just
+          # relocation and the bytes never leave the repo.
+          if [ -d docs/archive ]; then
+            arc=$(find docs/archive -type f -exec cat {} + 2>/dev/null | wc -c)
+            if [ "$arc" -gt 60000 ]; then
+              echo "::error::docs/archive/ is ${arc} chars (cap 60000) -- delete oldest files, do not move more in"
+              exit 1; fi
+          fi
           lines=$(grep -c '' AGENTS.md)
           if [ "$lines" -gt 100 ]; then
             echo "::error::AGENTS.md is ${lines} lines (cap 100)"; exit 1; fi

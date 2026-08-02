@@ -42,6 +42,11 @@ Draft the plan into `docs/plans/<id>.md` with these sections:
   attacker tries first. Rule of Two: if the feature combines untrusted
   input + sensitive data + external write/egress, drop one leg or put
   owner approval on the action. Name the security tests here.
+  The threat model lives in THIS plan file and dies with it. What lands in
+  `docs/SECURITY.md` is only the delta: new rows in the attack-surface
+  table, and edits to the EXISTING red-team checklist categories. Never
+  append a per-feature section there -- that is how a threat model turns
+  into a changelog.
 - **Mockup** (only if `surface` is not "none"). Build 3-4 genuinely
   different throwaway HTML mockups -- different layouts, not recolors; real
   content; respect the tokens file. The owner picks; commit the winner to
@@ -103,9 +108,19 @@ owner with the named deltas. Any cap hit -> stop and ask the owner in the
    feature created; run `bash scripts/factory_doctor.sh` and confirm it
    reports none left.
 3. Set `status: done` (its mapped tests exist and pass -- hard rule).
-4. Move `docs/plans/<id>.md` to `docs/plans/archive/`.
-5. Doc budgets (`<context>` block): any budgeted doc over its cap -> move
-   the overflow to `docs/archive/` in this same merge.
+4. Delete `docs/plans/<id>.md`. Its decisions already live in the feature's
+   `acceptance` array, the commit history, and the ledger line. Anything in
+   the plan that is NOT captured in one of those and still changes a future
+   decision goes there FIRST (a gotcha, a `SECURITY.md` row, a test name) --
+   then delete the file. Never keep the plan just to hold it.
+5. Doc budgets (`<context>` block): any budgeted doc over its cap -> compact
+   it in this same merge. Compacting means deleting every entry that is no
+   longer true or no longer changes a decision, until nothing left is
+   deletable. Landing within 5% of the cap means you shaved to just under the
+   line instead -- redo it. A doc parked at 99% of its budget release after
+   release is the exact failure this rule exists to prevent. Move to
+   `docs/archive/` only what you would genuinely re-read; if `docs/archive/`
+   is over ITS cap, delete oldest files until it is under.
 6. Run `python3 scripts/backlog.py` -- regenerates `docs/BACKLOG.md`.
 7. Ledger: `<id> | MERGED | - | <time> | agent: main | worktrees: 0
    remaining, e2e: N passed`.
@@ -121,11 +136,24 @@ One line per state change, appended to `docs/LEDGER.md`:
     F012 | REVIEW | round 1/1     | 2026-08-01 14:31 | agent: reviewer | APPROVE, 1 optional
     F012 | MERGED | -             | 2026-08-01 14:58 | agent: main | worktrees: 0 remaining, e2e: 7 passed
 
-When the live file passes ~10K chars, move done features' lines to
-`docs/archive/LEDGER-<year>.md`.
+When the live file passes its 6K cap, drop merged features' lines entirely --
+the commit history is the durable record. Archive a year's lines to
+`docs/archive/LEDGER-<year>.md` only if you actually re-read them.
 
 ## Close (every feature)
 
 Deviations from plan or mockup: conservative choice + one
-`docs/deviations.md` line. Surprises -> `docs/gotchas.md`. Off-scope ideas
--> new `features.json` entries (status todo), never scope creep.
+`docs/deviations.md` line. Surprises -> `docs/gotchas.md`, one entry of four
+short lines. Off-scope ideas -> new `features.json` entries (status todo),
+never scope creep.
+
+Then delete this feature's scaffolding, in the merge commit:
+
+- Its `docs/probes/` files, once the observed behavior lives in a fixture, a
+  test, or a gotcha. A probe is how you learned something, not the record of
+  it; keep one only while a fixture is still being authored from it.
+- Every mockup except the approved winner for a surface that still exists.
+- Any scratch analysis, comparison, or research note written to reach the
+  decision. The decision is in the code and the feature entry.
+
+Nothing here is "kept for the record" -- git already has the record.
