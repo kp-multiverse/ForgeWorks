@@ -48,9 +48,22 @@ WINDOW = 6
 BASELINE = ".dup-baseline"
 SUFFIXES = {{SOURCE_SUFFIXES}}
 SKIP_DIRS = {
-    ".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build",
-    ".next", ".astro", "target", "vendor", ".mypy_cache", ".ruff_cache",
-    ".pytest_cache", "coverage", ".claude",
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".next",
+    ".astro",
+    "target",
+    "vendor",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    "coverage",
+    ".claude",
 }
 LINE_COMMENT = re.compile(r"^\s*(#|//|\*|/\*|--|<!--)")
 LITERAL = re.compile(r'"[^"]*"|\'[^\']*\'|`[^`]*`')
@@ -117,7 +130,7 @@ def main(argv: list[str]) -> int:
     for path in sources(patterns):
         lines = normalize(path)
         for i in range(len(lines) - WINDOW + 1):
-            body = "\n".join(t for t, _ in lines[i:i + WINDOW])
+            body = "\n".join(t for t, _ in lines[i : i + WINDOW])
             windows.setdefault(hashlib.sha256(body.encode()).hexdigest(), []).append(
                 (path, lines[i][1])
             )
@@ -127,20 +140,24 @@ def main(argv: list[str]) -> int:
         previous = baseline()
         added = set(shared) - previous
         if previous and added and not forcing:
-            print(f"::error::--baseline would ACCEPT {len(added)} newly duplicated "
-                  f"block(s). A baseline records what predated the gate; it is not "
-                  f"a way to make today's duplication pass. Extract them, or -- if "
-                  f"they are genuinely unavoidable -- re-run with --force AND put a "
-                  f"'dup-change: <why>' line in the commit body so the decision is "
-                  f"visible in review.")
+            print(
+                f"::error::--baseline would ACCEPT {len(added)} newly duplicated "
+                f"block(s). A baseline records what predated the gate; it is not "
+                f"a way to make today's duplication pass. Extract them, or -- if "
+                f"they are genuinely unavoidable -- re-run with --force AND put a "
+                f"'dup-change: <why>' line in the commit body so the decision is "
+                f"visible in review."
+            )
             for digest in sorted(added)[:5]:
                 where = ", ".join(f"{p}:{n}" for p, n in sorted(windows[digest])[:2])
                 print(f"  would accept: {where}")
             return 1
         with open(BASELINE, "w", encoding="utf-8") as f:
-            f.write("# Blocks already duplicated when the gate was adopted, by hash.\n"
-                    "# Anything NOT listed here fails. Editing a listed block changes its\n"
-                    "# hash, so touching old duplication asks you to fix it. Only shrinks.\n")
+            f.write(
+                "# Blocks already duplicated when the gate was adopted, by hash.\n"
+                "# Anything NOT listed here fails. Editing a listed block changes its\n"
+                "# hash, so touching old duplication asks you to fix it. Only shrinks.\n"
+            )
             f.write("".join(f"{d}\n" for d in sorted(shared)))
         print(f"dup-check: baselined {len(shared)} existing duplicate block(s) -> {BASELINE}")
         return 0

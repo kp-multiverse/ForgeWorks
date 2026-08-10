@@ -129,8 +129,9 @@ def orphan_plans(feats: list) -> list[str]:
         if not name.endswith(".md") or name == "README.md":
             continue
         stem = name[:-3]
-        fid = next((i for i in closed
-                    if stem == i or stem.lower().startswith(i.lower() + "-")), None)
+        fid = next(
+            (i for i in closed if stem == i or stem.lower().startswith(i.lower() + "-")), None
+        )
         if fid:
             out.append(
                 f"{PLANS}/{name}: {fid} is closed, so this plan should have been "
