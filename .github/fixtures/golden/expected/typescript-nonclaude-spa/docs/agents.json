@@ -9,5 +9,11 @@
       "status": "installed"
     }
   ],
-  "schema": 1
+  "model_tiers": {
+    "judgment": "TODO(cheapest model of your harness that fits this tier)",
+    "mechanical": "TODO(cheapest model of your harness that fits this tier)",
+    "standard": "TODO(cheapest model of your harness that fits this tier)"
+  },
+  "schema": 1,
+  "weight": "full"
 }

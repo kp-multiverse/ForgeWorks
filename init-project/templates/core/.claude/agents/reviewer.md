@@ -8,7 +8,7 @@ description: >-
   the mockup path if the surface is visual. A re-review CONTINUES this
   conversation -- never dispatch a second fresh reviewer for the same
   feature.
-model: sonnet
+model: inherit
 hooks:
   Stop:
     - hooks:

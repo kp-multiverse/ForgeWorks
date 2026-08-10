@@ -24,6 +24,7 @@ STRUCTURAL_TAG_RE = re.compile(
 )
 
 LANGUAGES = ("python", "typescript", "go", "rust")
+WEIGHTS = ("lite", "full")
 FRONTEND_CHOICES = ("yes-spa", "yes-minimal", "no")
 AI_FEATURE_CHOICES = ("rag", "agents", "evals", "streaming")
 AGENT_CHOICES = ("claude-code", "codex", "antigravity", "cursor", "other")
@@ -56,7 +57,7 @@ FEATURE_TIERS = ("chore", "feature")
 FEATURE_ID_RE = re.compile(r"^F\d{3}$")
 DESIGN_KEYS = ("references", "tone", "anti_reference")
 TOP_LEVEL_KEYS = ("schema", "date", "agents", "project", "stack", "security",
-                  "opt_ins", "features", "design")
+                  "opt_ins", "features", "design", "weight")
 SCHEMA_VERSION = 1
 
 PROFILE_SCALARS = (
@@ -268,6 +269,9 @@ def validate_answers(ans: object) -> dict:
     date = ans.get("date")
     if not isinstance(date, str) or not DATE_RE.match(date):
         errors.append("date: must be an ISO date string (YYYY-MM-DD)")
+    if ans.get("weight") not in WEIGHTS:
+        errors.append(f"weight: must be one of {WEIGHTS} (the project's factory "
+                      "weight -- derived in the interview, confirmed at Phase 3)")
     if errors:
         raise RenderError("invalid answers file:\n  - " + "\n  - ".join(errors))
 

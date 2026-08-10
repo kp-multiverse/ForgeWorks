@@ -113,5 +113,6 @@
       "tier": "feature",
       "surface": "none"
     }
-  ]
+  ],
+  "weight": "full"
 }

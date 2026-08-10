@@ -100,5 +100,6 @@
       "tier": "chore",
       "surface": "none"
     }
-  ]
+  ],
+  "weight": "full"
 }

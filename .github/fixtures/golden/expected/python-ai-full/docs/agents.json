@@ -19,5 +19,11 @@
       "status": "installed"
     }
   ],
-  "schema": 1
+  "model_tiers": {
+    "judgment": "inherit",
+    "mechanical": "haiku",
+    "standard": "sonnet"
+  },
+  "schema": 1,
+  "weight": "full"
 }

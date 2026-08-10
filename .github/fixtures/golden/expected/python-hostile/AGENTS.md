@@ -67,10 +67,10 @@ Reality surprised you (API differs from docs, gate green but feature dead)? Add 
 </learning>
 <!-- /FW-BLOCK: learning -->
 
-<!-- FW-BLOCK: roster v4.0.0 -->
+<!-- FW-BLOCK: roster v4.4.0 -->
 <roster>
 Skills (on demand): `iteration` (the per-feature loop -- the only workflow), `security-review` (trigger definition + checklist), `tech-debt` (on-demand sweep). Upstream if installed: `tdd`, `grill-me`.
-Subagents: `@reviewer` (the single REVIEW pass: plan conformance, correctness, design fidelity, security; its Stop hook re-runs the quality gate) plus an independent Codex second-opinion pass, `@utility` (mechanical chores, never in the critical path). Fan-out (max 5 agents, disjoint files only) exists only as an owner-approved GRILL proposal. On non-Claude rosters, run the same passes as independent fresh-context sessions -- the skills define what each pass checks.
+Subagents: `@reviewer` (the single REVIEW pass: plan conformance, correctness, design fidelity, security; its Stop hook re-runs the quality gate) plus an independent Codex second-opinion pass, `@utility` (mechanical chores, never in the critical path). Dispatch is priced: a job card (deliverable, exact inputs, tier, done-check) per dispatch, model tiers + the project's `weight` in `docs/agents.json`, routed by the `iteration` skill's Dispatch rule -- the cheapest model whose failure the done-check would catch. A 2-feature batch (disjoint files, own worktrees, merge queue) exists only as an owner-approved GRILL proposal at full weight. On non-Claude rosters, run the same passes as independent fresh-context sessions -- the skills define what each pass checks.
 </roster>
 <!-- /FW-BLOCK: roster -->
 

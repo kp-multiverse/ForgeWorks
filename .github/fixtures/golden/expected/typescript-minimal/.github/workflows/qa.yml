@@ -3,6 +3,7 @@ name: QA
 on:
   push:
     branches: [main]
+    tags: ["v*"]  # lite weight: release tags trigger the e2e job below
   pull_request:
 
 permissions:
@@ -36,6 +37,10 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # Lite weight: the full e2e suite runs at release (a v* tag), not on every
+    # push -- the per-feature cost a one-person project cannot afford. The
+    # quality gate above still runs everywhere.
+    if: startsWith(github.ref, 'refs/tags/v')
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -213,6 +218,7 @@ jobs:
   # justification restated in five docstrings. Exceptions go in .dup-ignore.
   dup-check:
     runs-on: ubuntu-latest
+    continue-on-error: true  # lite weight: the dup gate reports, never blocks
     timeout-minutes: 5
     steps:
       - name: Checkout

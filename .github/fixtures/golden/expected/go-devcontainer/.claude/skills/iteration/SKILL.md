@@ -54,11 +54,13 @@ Draft the plan into `docs/plans/<id>.md` with these sections:
   feature entry's `mockup` field. `features_check.py` blocks a surface
   feature from leaving `todo` without it. Changing an existing surface?
   Update its mockup in the same branch.
-- **Fan-out** (only when honestly warranted). Propose it only if the work
-  splits into 2+ pieces touching disjoint files with no ordering: the
-  pieces, agent count (max 5), expected benefit, cost note ("~Nx tokens of
-  a solo build"). Overlapping files, unclear boundaries, or "might be
-  faster" are not reasons.
+- **Batch** (full weight only; only when honestly warranted). Propose
+  running 2 features in parallel ONLY when both plans exist and their
+  files-to-touch lists do not intersect: each feature gets its own worktree,
+  branch, and single writer; merges queue one at a time through the full
+  gate; `factory_doctor.sh` must report zero worktrees after. Overlapping
+  files, unclear boundaries, or "might be faster" are not reasons. The
+  owner approves the batch here, at GRILL, with a cost note.
 
 Now **attack the plan**: strongest objections, failure modes, a simpler
 alternative, and the attacker's view. Present to the owner in the
@@ -84,9 +86,11 @@ failing run output. Set `status: in-progress`.
 
 ## 3. GREEN
 
-Implement in THIS context -- no implementer subagent. If the owner approved
-fan-out at GRILL: one git worktree per piece, one writer per branch, the
-caps below apply per agent. Write the least code that passes, then refactor:
+Implement in THIS context by default -- no standing implementer subagent. A
+`surface: "none"` feature whose RED tests are complete MAY go to a
+`standard`-tier fresh agent on a job card (see Dispatch below) -- the tests
+are the whole contract. If the owner approved a batch at GRILL: one git
+worktree per feature, one writer per branch, the caps below apply per agent. Write the least code that passes, then refactor:
 remove dead code, one concept per file. Visual surfaces are BUILT AGAINST the
 approved mockup, visual values from the tokens file.
 
@@ -154,6 +158,26 @@ owner with the named deltas. Any cap hit -> stop and ask the owner in the
    whole stale entries until it passes clear of the cap -- never rewrite one.
 7. Merge report to the owner: 3 lines (shipped -- in the plan's words,
    evidence, next up in the backlog).
+
+## Dispatch -- job cards and the model ladder
+
+Work leaves this context only on a JOB CARD: the deliverable's shape, the
+exact inputs (paths + named sections, never "read the docs"), the model
+tier, and the done-check (the command or test that verifies the result). If
+a card that small cannot be written, the job is not dispatchable -- keep it.
+
+Tiers are named in `docs/agents.json` (`model_tiers` -- model ids live
+there, never in prose; every dispatch states its tier explicitly). Route by
+one rule: **the cheapest model whose failure the done-check would catch.**
+
+- `mechanical`: chores with a mechanical done-check -- renames, log mining,
+  regenerations (`prune.py`/`backlog.py` runs), dep bumps the gate verifies.
+- `standard`: GREEN against complete RED tests for a non-UI feature.
+- `judgment` (or this context): GRILL, RED, REVIEW, security, mockups --
+  anywhere a wrong answer fails silently instead of loudly.
+
+Commit before every dispatch (a reviewer once stashed uncommitted work into
+oblivion); one writer per branch, no exceptions.
 
 ## CHECKPOINT -- run before any clear, and whenever a decision is made
 
