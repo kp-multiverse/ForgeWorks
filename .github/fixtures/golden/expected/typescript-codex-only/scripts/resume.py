@@ -53,9 +53,11 @@ def ledger_lines() -> list[str]:
     if not os.path.exists(LEDGER):
         return []
     with open(LEDGER, encoding="utf-8") as f:
-        return [ln.strip() for ln in f
-                if "|" in ln
-                and not ln.lstrip().startswith(("#", "Format", "F012"))]
+        return [
+            ln.strip()
+            for ln in f
+            if "|" in ln and not ln.lstrip().startswith(("#", "Format", "F012"))
+        ]
 
 
 def collect() -> tuple[dict, list[str]]:
@@ -103,7 +105,7 @@ def collect() -> tuple[dict, list[str]]:
         # `next:` rides in the evidence field, e.g.
         #   ... | agent: main | plan: docs/plans/F012.md, next: write AC1-AC3 tests
         low = last.lower()
-        state["next"] = last[low.index("next:") + 5:].strip() if "next:" in low else None
+        state["next"] = last[low.index("next:") + 5 :].strip() if "next:" in low else None
 
     plan = os.path.join(PLANS, f"{ft['id']}.md")
     if not os.path.exists(plan):
@@ -132,9 +134,11 @@ def collect() -> tuple[dict, list[str]]:
 def brief(state: dict) -> str:
     if state.get("idle"):
         if state.get("next_todo"):
-            return (f"Nothing in progress. Next in the backlog: "
-                    f"{state['next_todo']} -- {state['next_title']}.\n"
-                    f"Say the word and I will start it at GRILL.")
+            return (
+                f"Nothing in progress. Next in the backlog: "
+                f"{state['next_todo']} -- {state['next_title']}.\n"
+                f"Say the word and I will start it at GRILL."
+            )
         return "Nothing in progress and nothing todo. The backlog is empty."
     ft = state["feature"]
     phase = state.get("phase") or "?"
@@ -147,8 +151,9 @@ def brief(state: dict) -> str:
     ]
     if state.get("next"):
         lines.append(f"  next    {state['next']}")
-    lines.append(f"  read    python3 scripts/backlog.py --feature {ft['id']}"
-                 f"  +  {state.get('plan') or ''}")
+    lines.append(
+        f"  read    python3 scripts/backlog.py --feature {ft['id']}  +  {state.get('plan') or ''}"
+    )
     return "\n".join(lines)
 
 
@@ -158,9 +163,11 @@ def main(argv: list[str]) -> int:
     if problems:
         for p in problems:
             print(f"::error::resume: {p}")
-        print("\nresume: the pointers disagree, so no brief is printed. Fix the "
-              "contradiction above before continuing -- resuming from a wrong "
-              "pointer costs more than the minute this takes.")
+        print(
+            "\nresume: the pointers disagree, so no brief is printed. Fix the "
+            "contradiction above before continuing -- resuming from a wrong "
+            "pointer costs more than the minute this takes."
+        )
         return 1
     if checking:
         print("resume-check: OK (`go` has exactly one unambiguous place to start)")
