@@ -140,24 +140,19 @@ owner with the named deltas. Any cap hit -> stop and ask the owner in the
 2. Merge to main. Delete the feature branch. Remove every worktree this
    feature created; run `bash scripts/factory_doctor.sh` and confirm it
    reports none left.
-3. Set `status: done` (its mapped tests exist and pass -- hard rule).
-4. Delete `docs/plans/<id>.md`. Its decisions already live in the feature's
-   `acceptance` array, the commit history, and the ledger line. Anything in
-   the plan that is NOT captured in one of those and still changes a future
-   decision goes there FIRST (a gotcha, a `SECURITY.md` row, a test name) --
-   then delete the file. Never keep the plan just to hold it.
-5. Doc budgets (`<context>` block): any budgeted doc over its cap -> compact
-   it in this same merge. Compacting means deleting every entry that is no
-   longer true or no longer changes a decision, until nothing left is
-   deletable. Landing within 5% of the cap means you shaved to just under the
-   line instead -- redo it. A doc parked at 99% of its budget release after
-   release is the exact failure this rule exists to prevent. Move to
-   `docs/archive/` only what you would genuinely re-read; if `docs/archive/`
-   is over ITS cap, delete oldest files until it is under.
-6. Run `python3 scripts/backlog.py` -- regenerates `docs/BACKLOG.md`.
-7. Ledger: `<id> | MERGED | - | <time> | agent: main | worktrees: 0
-   remaining, e2e: N passed`.
-8. Merge report to the owner: 3 lines (shipped -- in the plan's words,
+3. Set `status: done` (its mapped tests exist and pass -- hard rule). Then
+   move anything in the plan or ledger that still changes a future decision:
+   a lesson to `docs/gotchas.md`, a security delta to `docs/SECURITY.md`,
+   owed work to the feature's `notes` or a new todo entry. Carry a status
+   VERBATIM or delete it -- never reword an obligation into a claim.
+4. `python3 scripts/prune.py` -- deletes this feature's ledger and deviations
+   lines, its plan, losing mockups, and uncited probes. No MERGED ledger
+   line: the merge commit is the durable record; the ledger holds open
+   features only.
+5. `python3 scripts/backlog.py` -- regenerates `docs/BACKLOG.md`.
+6. If `docs-budget` still flags a judgment doc (gotchas, SECURITY): delete
+   whole stale entries until it passes clear of the cap -- never rewrite one.
+7. Merge report to the owner: 3 lines (shipped -- in the plan's words,
    evidence, next up in the backlog).
 
 ## CHECKPOINT -- run before any clear, and whenever a decision is made
@@ -188,35 +183,26 @@ quiet: an offer the owner learns to ignore is worse than none.
 
 ## Ledger format
 
-One line per state change, appended to `docs/LEDGER.md`. End the evidence field
-with `next: <the single next action>` -- it is the one fact a restart cannot
-derive from anywhere else, and `scripts/resume.py` reads it straight out:
+One PHYSICAL line per state change, appended to `docs/LEDGER.md`. The ledger
+holds open features only -- `prune.py` deletes a feature's lines at merge, and
+the commit history is the durable record. `prune.py --check` (CI) owns the
+length cap: pointers, not prose -- counts, SHAs, paths. The story belongs in
+the commit message. End with `next: <the single next action>` -- the one fact
+a restart cannot derive from anywhere else; `scripts/resume.py` reads it
+straight out:
 
     F012 | GRILL  | approved      | 2026-08-01 13:40 | agent: main | plan: docs/plans/F012.md, next: write the failing tests for AC1-AC4
     F012 | GREEN  | round 1/2     | 2026-08-01 14:02 | agent: main | gate: 42 passed
     F012 | REVIEW | round 1/1     | 2026-08-01 14:31 | agent: reviewer | APPROVE, 1 optional
-    F012 | MERGED | -             | 2026-08-01 14:58 | agent: main | worktrees: 0 remaining, e2e: 7 passed
-
-When the live file passes the cap `docs-budget` sets for it, drop merged
-features' lines entirely --
-the commit history is the durable record. Archive a year's lines to
-`docs/archive/LEDGER-<year>.md` only if you actually re-read them.
 
 ## Close (every feature)
 
-Deviations from plan or mockup: conservative choice + one
-`docs/deviations.md` line. Surprises -> `docs/gotchas.md`, one entry of four
-short lines. Off-scope ideas -> new `features.json` entries (status todo),
-never scope creep.
+Deviations from plan or mockup: conservative choice + one `docs/deviations.md`
+entry, capped by `prune.py --check`. Surprises -> `docs/gotchas.md`, one entry
+of four short lines. Off-scope ideas -> new `features.json` entries (status
+todo), never scope creep -- and never a prose ideas file.
 
-Then delete this feature's scaffolding, in the merge commit:
-
-- Any `docs/probes/` file nothing cites. `grep -r "docs/probes/<name>" .`
-  first: a probe named by a test or a source comment is that fixture's
-  provenance and stays as long as the fixture does. An uncited one is
-  scaffolding.
-- Every mockup except the approved winner for a surface that still exists.
-- Any scratch analysis, comparison, or research note written to reach the
-  decision. The decision is in the code and the feature entry.
-
-Nothing here is "kept for the record" -- git already has the record.
+Scaffolding (losing mockups, uncited probes, scratch analyses written to reach
+the decision) is deleted by `prune.py` at merge. Nothing is "kept for the
+record" -- git already has the record. A probe a test or source comment cites
+by path is provenance, not scaffolding; `prune.py` leaves it alone.

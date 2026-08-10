@@ -26,13 +26,14 @@ A fully structured project with:
 - `.github/workflows/qa.yml`: CI running the quality gate (fast), a separate end-to-end job, and the mechanical gates: `features-check` (validates `docs/features.json`), `docs-budget` (owns every doc cap -- the prose points here rather than repeating the numbers), `checkpoint-budget` (what a fresh session costs to re-prime), `resume-check` (`go` has exactly one place to start), `dup-check`, and `test-tamper`
 - `.github/pull_request_template.md`: short PR checklist
 - `.pre-commit-config.yaml`: local pre-commit hooks (language-specific portion populated from your profile)
-- `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (live factory state, evidence per line), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `proposals-ideas.md`, `deviations.md`, `plans/` (working state only -- a plan is deleted at merge), `archive/` (the small, capped keep-pile after a budgeted doc is compacted), `probes/` (deleted once their finding lands in a fixture), `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
+- `docs/`: living documentation -- `PRD.md` (the owner-approved one-page product picture: journey, surfaces, v1 in/out -- every feature's `serves:` line cites it), `features.json` (the machine-checked spec: intent, acceptance, tests, status, tier [`chore`/`feature`], surface, mockup), `BACKLOG.md` (the generated human-readable view of `features.json`), `LEDGER.md` (open features only, one capped line per state change), `SECURITY.md`, `language-standards.md`, `documentation.md`, `gotchas.md`, `deviations.md`, `plans/` (working state only -- a plan is deleted at merge), `archive/` (the small, capped keep-pile after a budgeted doc is compacted), `probes/` (deleted once their finding lands in a fixture), `agents.md` + `agents.json`, and -- for frontend projects -- `design/` (`DESIGN.md` + `mockups/`)
 - `scripts/features_check.py`: validates `docs/features.json` against its schema; also runs as the CI `features-check` job
 - `scripts/backlog.py`: regenerates `docs/BACKLOG.md` from `docs/features.json`; `--feature <id>` prints ONE entry, which is how a session reads the spec without loading a 70K file (`AGENTS.md` `<context>`)
 - `scripts/resume.py`: prints the resume brief -- this is what `go` runs. Derives every pointer (live feature, phase, branch, plan) from the file that owns it, cross-checks them, and refuses to print rather than resume from a contradiction; `--check` is the CI `resume-check` job
 - `scripts/dup_check.py`: the duplication gate -- fails when the same normalized 6-line block appears in two files (copied logic, copied markup, or one convention re-justified in five docstrings); exceptions in a committed `.dup-ignore` (path globs, permanent) or `.dup-baseline` (`--baseline`, by block hash, decays as blocks are edited -- prefer this); also runs as the CI `dup-check` job
 - `scripts/tamper_check.py`: flags an unexplained change to a test, fixture, or gate config (the hard-rules tamper guard)
 - `scripts/factory_doctor.sh`: prunes stale git worktrees and merged feature branches
+- `scripts/prune.py`: mechanical doc death -- deletes what a closed feature leaves behind (ledger + deviations lines, its plan, losing mockups, uncited probes); `--check` is the CI entry-cap gate (it owns the entry caps) that rejects essay entries at write time
 - `.devcontainer/`: portable development environment (if chosen)
 - `README.md` + `.env.example`: project readme (commands, flow) and a documented, secret-free env template
 - A minimal green scaffold for the chosen language (a placeholder module + a passing test) so the quality gate passes on the first run
@@ -369,6 +370,7 @@ test -f scripts/features_check.py && python3 scripts/features_check.py && \
 test -f scripts/backlog.py && test -f scripts/tamper_check.py && \
 test -f scripts/dup_check.py && python3 scripts/dup_check.py && \
 test -f scripts/resume.py && python3 scripts/resume.py --check && \
+test -f scripts/prune.py && python3 scripts/prune.py --check && \
 test -f scripts/factory_doctor.sh && \
 test -f .claude/skills/iteration/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
 test -f .claude/skills/tech-debt/SKILL.md

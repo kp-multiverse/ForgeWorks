@@ -5,8 +5,9 @@ add an entry after a task that surprised them, and read this before working in
 the same area again.
 
 **An entry earns its place by changing a future decision.** Not by being true,
-and not by being interesting. Its budget is enforced by the `docs-budget` CI
-job, which owns the number.
+and not by being interesting. The file budget is enforced by the `docs-budget`
+CI job and each entry's length by `scripts/prune.py --check`; each gate owns
+its own number.
 
 ## Format -- four short lines, newest first
 
