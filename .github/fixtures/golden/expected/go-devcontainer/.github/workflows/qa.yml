@@ -80,10 +80,13 @@ jobs:
         run: python3 scripts/features_check.py
 
   # Doc budgets (AGENTS.md <context>): keeps always-loaded/near-always-loaded
-  # docs small enough for context economy. Over cap -> COMPACT (delete what is
-  # stale or no longer changes a decision). Do not shave to just under the
-  # line, and do not just move the bytes into docs/archive/ -- that is why
-  # docs/archive/ is capped too.
+  # docs small enough for context economy. First line of defense is mechanical:
+  # scripts/prune.py rejects essay entries at write time and deletes what a
+  # closed feature leaves behind, so these file caps are the backstop, not the
+  # routine. Over cap -> COMPACT (delete whole stale entries; never rewrite one
+  # -- a rewrite can flip an owed obligation into a done claim). Do not shave
+  # to just under the line, and do not just move the bytes into docs/archive/
+  # -- that is why docs/archive/ is capped too.
   #
   # Raising a cap: allowed, once the doc holds NO history -- a big system can
   # have a genuinely big current threat model, and deleting live security
@@ -146,6 +149,15 @@ jobs:
           if [ "$lines" -gt 100 ]; then
             echo "::error::AGENTS.md is ${lines} lines (cap 100)"; exit 1; fi
           echo "docs-budget: OK"
+
+      # Entry-level teeth (scripts/prune.py OWNS the entry caps): a ledger,
+      # deviations, or gotchas entry over its cap fails HERE, when it is
+      # written -- not months later when the file cap trips and an LLM is sent
+      # to "compact" history. Also fails on anything a merge should have
+      # pruned mechanically (closed features' lines, losing mockups, uncited
+      # probes): the fix is `python3 scripts/prune.py`, not prose work.
+      - name: Entry shapes + leftovers a merge should have pruned
+        run: python3 scripts/prune.py --check
 
   # Checkpoint budget (AGENTS.md <context>): what a fresh session must read to
   # resume ONE feature. THIS JOB OWNS THE NUMBER -- the prose points here rather
