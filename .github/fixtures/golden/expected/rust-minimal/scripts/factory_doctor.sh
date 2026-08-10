@@ -20,3 +20,13 @@ git branch --no-merged "$BASE" | grep -v '^\*' || echo "  none"
 echo
 echo "Delete a merged branch with: git branch -d <name>"
 echo "Remove a finished worktree with: git worktree remove <path>"
+echo
+# The meter: is the factory serving the product or itself? Computed from git
+# alone -- nothing to write, nothing to game. Print only, no threshold: the
+# owner judges the number (a rising docs:code ratio is the poison alarm).
+echo "== meter (last 100 commits / last 28 days) =="
+total=$(git rev-list --count -100 HEAD)
+docs=$(git log --format='%s' -100 | grep -cE '^(docs|chore\(docs\)|chore\(ledger\))' || true)
+merges=$(git log --merges --since="28 days ago" --oneline | wc -l | tr -d ' ')
+echo "  doc-maintenance commits: ${docs}/${total} (the product got the rest)"
+echo "  merges in the last 28 days: ${merges}"

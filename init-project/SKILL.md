@@ -122,11 +122,15 @@ codex is in the roster. Say which defaults were applied; each is one answer
 Derive and confirm: project name/slug, goal, primary user, core problem,
 core journey, surfaces list (screens/pages; empty for API/CLI), in-scope
 list, non-goals, success metrics, differentiator, current alternative --
-these fill `docs/PRD.md`. Close Phase 2 by showing the owner the drafted
-one-page PRD content and the five-line summary
+these fill `docs/PRD.md`. Also derive the factory **weight** (never a sixth
+question): `lite` for a solo/personal tool with no strangers' data, money,
+or outward writes on the line; `full` otherwise. State it in the summary --
+the owner flips it with one word, and it lands in the answers file and
+`docs/agents.json` (changeable later by editing that file). Close Phase 2 by
+showing the owner the drafted one-page PRD content and the five-line summary
 ("<language> <product-type>, frontend: <y/n>, security-sensitive: <y/n>,
-agents: <list>, defaults applied: <n>") and getting an explicit OK -- the
-PRD is owner-approved BEFORE the render.
+weight: <lite/full>, agents: <list>, defaults applied: <n>") and getting an
+explicit OK -- the PRD is owner-approved BEFORE the render.
 
 ### Phase 3: Confirm the plan
 
@@ -153,8 +157,8 @@ the renderer:
 - `templates/conditional/` -- the canonical texts of the conditional blocks: `ai-discipline.md`, `memory-block.md`, `memory-doc-line.md`, `codex-review-step.md`, `codex-roster-note.md`, `gotchas-seed.md`, the per-agent roster snippets under `agents/`, and the roster-wide `agents/no-claude-note.md` (rendered when `claude-code` is absent). Edit them THERE; this file only points at them.
 
 **Step 1 -- write the answers file** at `docs/_init-answers.json`, exactly in
-this schema. All top-level keys (`schema`, `date`, `agents`, `project`,
-`stack`, `security`, `opt_ins`, `features`, `design`) and every key within the
+this schema. All top-level keys (`schema`, `date`, `weight`, `agents`,
+`project`, `stack`, `security`, `opt_ins`, `features`, `design`) and every key within the
 four object sections are required; yes/no fields are the literal strings
 `"yes"`/`"no"`; multi-line values use `\n`. Example (values abbreviated --
 yours carry the real interview content):
@@ -163,6 +167,7 @@ yours carry the real interview content):
 {
   "schema": 1,
   "date": "2026-07-12",
+  "weight": "full",
   "agents": [{"name": "claude-code", "status": "installed"}],
   "project": {
     "name": "Recipe Radar",
@@ -269,6 +274,7 @@ Field rules the renderer enforces (it fails closed with a precise message):
 - `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.
 - `features` (top-level, required, non-empty): each entry needs `id` (`F000`-`F999`, unique), `title`, `intent`, `serves` (names the `docs/PRD.md` section it serves -- e.g. "journey step 2" or "differentiator: <the key differentiator>"; if a feature cannot say which part of the PRD it serves, question the feature), `acceptance` (non-empty list of strings), `tests` (list of strings -- `[]` at bootstrap, filled in as the test files are named), `status` (all `"todo"` at bootstrap; `in-progress` / `done` / `dropped` only apply later), `tier` (`chore` or `feature` -- routes the `iteration` skill: a chore builds straight through the gate, a feature runs GRILL -> RED -> GREEN -> REVIEW -> MERGE), and `surface` (the entry from `project.surfaces` this feature touches, or `"none"` for API/CLI-only work). A feature whose `surface` is not `"none"` needs a `mockup` field (a `docs/design/mockups/...` path) before it can leave `todo` -- `scripts/features_check.py` enforces this; bootstrap-time features normally have none yet, so leave `mockup` unset. An optional key, `notes`, is unused at bootstrap (every feature starts `todo`) but becomes required later -- `scripts/features_check.py` fails a `dropped` feature that has no reason recorded in `notes`. Derive 3-7 features from the core journey, using the acceptance criteria drawn out in conversation as the source for each feature's `acceptance` array -- order them user-visible-journey-first (hardening and infra queue behind the first shippable surface).
 - `design` (top-level): an object with `references`, `tone`, `anti_reference` -- collected from the frontend visual-reference follow-up in Phase 2 -- when `stack.has_frontend` is not `"no"`; `null` when it is `"no"`.
+- `weight` (top-level, required): `"lite"` or `"full"` -- derived in Phase 2, confirmed in the owner's summary OK. What it changes is mechanical (rule 23): lite runs the e2e CI job at release tags instead of every push, makes the dup gate advisory (`continue-on-error`), and the `iteration` skill's batch mode is full-weight only. All hard rules (quality gate, features-check, test-tamper, security) are identical in both weights.
 
 **Step 2 -- run the renderer** from the project root:
 
@@ -313,6 +319,7 @@ fixtures in the template repo CI:
 | 20 | Frontend projects: renders `docs/design/` (DESIGN.md + mockups/) and the profile tokens.css; `has_frontend: no` skips both (skip_file rule). There is no separate design agent or skill in v4.0.0 -- design fidelity is one of `@reviewer`'s four lenses, checked at the REVIEW step of the `iteration` skill, not a dedicated pass. |
 | 21 | mem0 memory block inserts after `<!-- /FW-BLOCK: learning -->`. |
 | 22 | `AGENTS.md` is line-capped after every substitution and insertion; the renderer raises if the rendered file exceeds the cap (the same number the generated `docs-budget` job enforces) (context economy is a hard requirement of this rule, not a style preference). |
+| 23 | `weight`: lite fences (`# FW-LITE-START/END`, YAML-comment markers -- same mechanic as rules 4/18) keep their lines only when `weight` is `lite`: the release-tag e2e trigger + job `if:` and the advisory dup gate in `qa.yml`. `docs/agents.json` gains `weight` and `model_tiers` (the dispatch ladder: `mechanical`/`standard`/`judgment` -- concrete model ids for a Claude roster, owner-filled TODOs otherwise; model ids live only there, never in prose). |
 
 Keep `docs/_init-answers.json` until Phase 5's placeholder grep and
 `features_check.py` pass, then delete it (`rm docs/_init-answers.json`)

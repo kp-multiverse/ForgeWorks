@@ -36,7 +36,7 @@ from render_schema import (
 
 # Stamped into .claude/.template-version when the bootstrap install did not
 # already write one. Bump on release (see the repo AGENTS.md <release-process>).
-TEMPLATE_VERSION = "v4.3.0"
+TEMPLATE_VERSION = "v4.4.0"
 
 AI_FENCE_START_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-START -->\s*$")
 AI_FENCE_END_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-END -->\s*$")
@@ -46,6 +46,13 @@ AI_FENCE_END_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-END -->\s*$")
 # the .claude/ tree that only ship for a Claude Code roster (e.g. structure.txt).
 CC_FENCE_START_RE = re.compile(r"^\s*<!-- CC-[A-Z]+-START -->\s*$")
 CC_FENCE_END_RE = re.compile(r"^\s*<!-- CC-[A-Z]+-END -->\s*$")
+
+# Lite fences: YAML-comment markers (HTML comments would break YAML) around
+# lines that ship ONLY when the project's weight is "lite" -- e.g. the release
+# -only e2e trigger and the advisory dup gate in qa.yml. Full weight drops the
+# fenced lines entirely, leaving today's CI shape untouched.
+LITE_FENCE_START_RE = re.compile(r"^\s*# FW-LITE-START\s*$")
+LITE_FENCE_END_RE = re.compile(r"^\s*# FW-LITE-END\s*$")
 
 # Free-text (interview prose) placeholders may land verbatim only in Markdown
 # and plain-text files, or escaped into JSON/TOML. Anywhere else is an error --
@@ -361,6 +368,8 @@ def render_file(src: str, dst: str, relpath: str, ans: dict,
                         start_re=AI_FENCE_START_RE, end_re=AI_FENCE_END_RE)
     text = apply_fences(text, keep_content=claude_selected(ans),
                         start_re=CC_FENCE_START_RE, end_re=CC_FENCE_END_RE)
+    text = apply_fences(text, keep_content=ans["weight"] == "lite",
+                        start_re=LITE_FENCE_START_RE, end_re=LITE_FENCE_END_RE)
     text = substitute(text, relpath, mapping)
     text = apply_insertions(text, relpath, ans, cond_dir)
     if relpath == "AGENTS.md" and len(text.splitlines()) > 100:
@@ -393,7 +402,18 @@ def post_steps(out_dir: str, ans: dict) -> None:
     # Machine-readable agent roster -- the runtime offload config.
     agents_json = os.path.join(out_dir, "docs", "agents.json")
     os.makedirs(os.path.dirname(agents_json), exist_ok=True)
+    # Model tiers (the dispatch economy): tier names are harness-neutral; the
+    # concrete model ids live HERE, never in prose. "inherit" = the driving
+    # session's model. Non-Claude rosters get TODOs the owner fills once.
+    if claude_selected(ans):
+        tiers = {"mechanical": "haiku", "standard": "sonnet",
+                 "judgment": "inherit"}
+    else:
+        tiers = {t: "TODO(cheapest model of your harness that fits this tier)"
+                 for t in ("mechanical", "standard", "judgment")}
     payload = {"schema": 1,
+               "weight": ans["weight"],
+               "model_tiers": tiers,
                "agents": [{"name": a["name"], "status": a["status"],
                            "roles": AGENT_ROLES[a["name"]]}
                           for a in ans["agents"]]}
@@ -472,7 +492,8 @@ def render(answers_path: str, core_dir: str, profile_dir: str, out_dir: str) -> 
                           "(fail closed):\n  - " + "\n  - ".join(leftovers))
     roster = ",".join(f"{a['name']}({a['status'][0]})" for a in ans["agents"])
     print(f"rendered {written} files -> {out_dir} "
-          f"[{ans['stack']['language']}; ai={'on' if ans['stack']['ai_features'] else 'off'}; "
+          f"[{ans['stack']['language']}; weight={ans['weight']}; "
+          f"ai={'on' if ans['stack']['ai_features'] else 'off'}; "
           f"devcontainer={ans['stack']['uses_devcontainer']}; "
           f"mem0={ans['opt_ins']['mem0']}; codex={ans['opt_ins']['codex_reviewer']}; "
           f"agents={roster}]")

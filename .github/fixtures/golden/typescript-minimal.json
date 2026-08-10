@@ -87,5 +87,6 @@
       "tier": "chore",
       "surface": "none"
     }
-  ]
+  ],
+  "weight": "lite"
 }
