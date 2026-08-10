@@ -70,12 +70,35 @@ COMMON = dict(
                         "TEST_LAYOUT_NOTES", "PRECOMMIT_HOOKS_NOTES")},
 )
 
-# The rendered tree simulates a NO-AI, no-Claude-Code project, so every AI and
-# CC fence is deleted wholesale (smoke only asserts placeholder completeness,
-# not the keep-vs-drop distinction render.py applies per real answers) -- in
-# EVERY file that carries one (SECURITY.md, reviewer.md,
-# and any future fenced file).
+# The rendered tree simulates a NO-AI, no-Claude-Code, FULL-weight project, so
+# every AI and CC fence is deleted wholesale (smoke only asserts placeholder
+# completeness, not the keep-vs-drop distinction render.py applies per real
+# answers) -- in EVERY file that carries one (SECURITY.md, reviewer.md,
+# and any future fenced file). FW-LITE fences (YAML-comment markers in qa.yml)
+# are likewise dropped whole: full weight is render.py's behavior for them.
 FENCE = re.compile(r"<!-- (?:AI|CC)-[A-Z]+-START -->.*?<!-- (?:AI|CC)-[A-Z]+-END -->\n?", re.S)
+LITE_FENCE = re.compile(r"^[ \t]*# FW-LITE-START[^\n]*\n.*?^[ \t]*# FW-LITE-END[^\n]*\n?",
+                        re.S | re.M)
+PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
+
+
+def substitute(c: str, mapping: dict) -> str:
+    """Same re-indent semantics as render.py: a multi-line value inherits the
+    placeholder's leading whitespace on every line, so YAML/TOML stay valid.
+    The old plain str.replace left continuation lines at column 0 -- the smoke
+    qa.yml was born invalid, and a prettier release started (correctly)
+    failing on it."""
+    def repl(m: re.Match) -> str:
+        key = m.group(1)
+        if key not in mapping:
+            return m.group(0)
+        v = mapping[key]
+        line_start = m.string.rfind("\n", 0, m.start()) + 1
+        prefix = m.string[line_start:m.start()]
+        if "\n" in v and not prefix.strip():
+            v = v.replace("\n", "\n" + prefix)
+        return v
+    return PLACEHOLDER.sub(repl, c)
 
 # Hidden files/dirs (.claude, .github, .env.example, ...) that MUST be visited.
 # glob('**/*') silently skips dotfiles, so we walk instead and assert coverage.
@@ -108,8 +131,8 @@ def render(lang: str, out: str) -> list[str]:
         except (UnicodeDecodeError, IsADirectoryError):
             continue
         c = FENCE.sub("", c)
-        for k, v in mapping.items():
-            c = c.replace("{{%s}}" % k, v)
+        c = LITE_FENCE.sub("", c)
+        c = substitute(c, mapping)
         open(f, "w", encoding="utf-8").write(c)
     leftover = []
     for f in all_files(out):

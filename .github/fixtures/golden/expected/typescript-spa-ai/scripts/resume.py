@@ -53,7 +53,9 @@ def ledger_lines() -> list[str]:
     if not os.path.exists(LEDGER):
         return []
     with open(LEDGER, encoding="utf-8") as f:
-        return [ln.strip() for ln in f if "|" in ln and not ln.lstrip().startswith(("#", "Format", "F012"))]
+        return [ln.strip() for ln in f
+                if "|" in ln
+                and not ln.lstrip().startswith(("#", "Format", "F012"))]
 
 
 def collect() -> tuple[dict, list[str]]:
@@ -139,12 +141,14 @@ def brief(state: dict) -> str:
     lines = [
         f"{ft['id']} -- {ft['title']}",
         f"  phase   {phase} done -> next {NEXT_PHASE.get(phase, '?')}",
-        f"  branch  {state.get('branch') or '?'}{'  (uncommitted changes present)' if state.get('dirty') else ''}",
+        f"  branch  {state.get('branch') or '?'}"
+        f"{'  (uncommitted changes present)' if state.get('dirty') else ''}",
         f"  plan    {state.get('plan') or '(none)'}",
     ]
     if state.get("next"):
         lines.append(f"  next    {state['next']}")
-    lines.append(f"  read    python3 scripts/backlog.py --feature {ft['id']}  +  {state.get('plan') or ''}")
+    lines.append(f"  read    python3 scripts/backlog.py --feature {ft['id']}"
+                 f"  +  {state.get('plan') or ''}")
     return "\n".join(lines)
 
 
