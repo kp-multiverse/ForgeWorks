@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1268" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="1240" height="1268" fill="#FBF7EA"/>
+
+  <!-- header -->
+  <text x="90" y="86" font-size="40" font-weight="800" fill="#1a1a1a">ForgeWorks <tspan font-weight="400" fill="#8a8574">&#183;</tspan> the bounded iteration loop</text>
+  <text x="90" y="122" font-size="19" fill="#6b6657">from an owner-approved PRD to shipped features, one evidence-gated loop at a time</text>
+
+  <!-- step 0 -->
+  <g>
+    <rect x="90" y="160" width="580" height="118" rx="10" fill="#F1EDDD" stroke="#DDD6C0"/>
+    <rect x="90" y="160" width="7" height="118" rx="3" fill="#2A7F77"/>
+    <circle cx="64" cy="196" r="17" fill="#2A7F77"/><text x="64" y="202" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">0</text>
+    <text x="112" y="194" font-size="20" font-weight="700" fill="#1a1a1a">Bootstrap session <tspan font-size="14" font-weight="400" fill="#8a8574">once per project</tspan></text>
+    <text x="112" y="220" font-size="13.5" fill="#4a4639">one command on an empty folder &#183; a conversation of at most 5 questions</text>
+    <text x="112" y="240" font-size="13.5" fill="#4a4639">drafts the PRD, the owner approves it, a deterministic renderer generates</text>
+    <text x="112" y="260" font-size="13.5" fill="#4a4639">the project: same answers, same bytes</text>
+  </g>
+
+  <!-- chore bypass -->
+  <g>
+    <rect x="720" y="160" width="430" height="118" rx="10" fill="#FFFFFF" stroke="#DDD6C0" stroke-dasharray="5 4"/>
+    <text x="742" y="194" font-size="16" font-weight="700" fill="#6b6657">CHORE? SKIP THE LOOP</text>
+    <text x="742" y="220" font-size="13.5" fill="#4a4639">no behavior change, the diff fits in one sentence:</text>
+    <text x="742" y="240" font-size="13.5" fill="#4a4639">build it, quality gate green, commit. Nothing else.</text>
+    <text x="742" y="260" font-size="13.5" fill="#4a4639">Unsure which tier? It is a feature.</text>
+  </g>
+
+  <text x="380" y="312" font-size="15" font-style="italic" fill="#8a8574" text-anchor="middle">then, for every feature:</text>
+  <line x1="380" y1="282" x2="380" y2="296" stroke="#C9C2AA" stroke-width="2"/>
+  <line x1="380" y1="320" x2="380" y2="332" stroke="#C9C2AA" stroke-width="2"/>
+
+  <!-- feature cards -->
+  <!-- 1 GRILL -->
+  <g>
+    <rect x="90" y="336" width="580" height="132" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <rect x="90" y="336" width="7" height="132" rx="3" fill="#4A55A2"/>
+    <circle cx="64" cy="372" r="17" fill="#4A55A2"/><text x="64" y="378" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+    <text x="112" y="370" font-size="20" font-weight="700" fill="#1a1a1a">GRILL <tspan font-size="14" font-weight="400" fill="#8a8574">plan it, then attack it</tspan></text>
+    <text x="112" y="396" font-size="13.5" fill="#4a4639">a capped plan that decides: acceptance criteria, threat model, files to touch</text>
+    <text x="112" y="416" font-size="13.5" fill="#4a4639">UI work: 3-4 real mockups, the owner picks one BEFORE any code</text>
+    <text x="112" y="436" font-size="13.5" fill="#4a4639">strongest objections + simpler alternative argued, decisions written back</text>
+    <text x="112" y="456" font-size="13.5" font-weight="600" fill="#4A55A2">the ONE routine owner approval lives here</text>
+  </g>
+  <line x1="380" y1="468" x2="380" y2="496" stroke="#C9C2AA" stroke-width="2"/>
+
+  <!-- 2 RED -->
+  <g>
+    <rect x="90" y="500" width="580" height="96" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <rect x="90" y="500" width="7" height="96" rx="3" fill="#B2372E"/>
+    <circle cx="64" cy="536" r="17" fill="#B2372E"/><text x="64" y="542" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+    <text x="112" y="534" font-size="20" font-weight="700" fill="#1a1a1a">RED <tspan font-size="14" font-weight="400" fill="#8a8574">failing tests first</tspan></text>
+    <text x="112" y="560" font-size="13.5" fill="#4a4639">one test per acceptance criterion + the threat model's security tests,</text>
+    <text x="112" y="580" font-size="13.5" fill="#4a4639">each confirmed failing for the right reason. Written at judgment tier.</text>
+  </g>
+  <line x1="380" y1="596" x2="380" y2="624" stroke="#C9C2AA" stroke-width="2"/>
+
+  <!-- 3 GREEN -->
+  <g>
+    <rect x="90" y="628" width="580" height="114" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <rect x="90" y="628" width="7" height="114" rx="3" fill="#C4691B"/>
+    <circle cx="64" cy="664" r="17" fill="#C4691B"/><text x="64" y="670" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+    <text x="112" y="662" font-size="20" font-weight="700" fill="#1a1a1a">GREEN <tspan font-size="14" font-weight="400" fill="#8a8574">the least code that passes, then refactor</tspan></text>
+    <text x="112" y="688" font-size="13.5" fill="#4a4639">main context by default; a non-UI feature with complete RED tests may go</text>
+    <text x="112" y="708" font-size="13.5" fill="#4a4639">to a standard-tier fresh agent on a job card &#183; exit: quality gate green</text>
+    <text x="112" y="728" font-size="13.5" fill="#4a4639">+ duplication gate green &#183; stall cap: 2 failed cycles &#8594; checkpoint + ask</text>
+  </g>
+  <line x1="380" y1="742" x2="380" y2="770" stroke="#C9C2AA" stroke-width="2"/>
+
+  <!-- 4 REVIEW -->
+  <g>
+    <rect x="90" y="774" width="580" height="114" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <rect x="90" y="774" width="7" height="114" rx="3" fill="#3E7C3A"/>
+    <circle cx="64" cy="810" r="17" fill="#3E7C3A"/><text x="64" y="816" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+    <text x="112" y="808" font-size="20" font-weight="700" fill="#1a1a1a">REVIEW <tspan font-size="14" font-weight="400" fill="#8a8574">fresh context grades the work</tspan></text>
+    <text x="112" y="834" font-size="13.5" fill="#4a4639">@reviewer, one pass, four lenses: plan conformance &#183; correctness &#183;</text>
+    <text x="112" y="854" font-size="13.5" fill="#4a4639">design fidelity (mockup diff) &#183; security (on its trigger) + optional Codex</text>
+    <text x="112" y="874" font-size="13.5" fill="#4a4639">second opinion &#183; hard caps: 2 fix passes, 1 re-review, then stop and ask</text>
+  </g>
+  <line x1="380" y1="888" x2="380" y2="916" stroke="#C9C2AA" stroke-width="2"/>
+
+  <!-- 5 MERGE -->
+  <g>
+    <rect x="90" y="920" width="580" height="114" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <rect x="90" y="920" width="7" height="114" rx="3" fill="#8B7A1E"/>
+    <circle cx="64" cy="956" r="17" fill="#8B7A1E"/><text x="64" y="962" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">5</text>
+    <text x="112" y="954" font-size="20" font-weight="700" fill="#1a1a1a">MERGE <tspan font-size="14" font-weight="400" fill="#8a8574">and the paperwork dies with it</tspan></text>
+    <text x="112" y="980" font-size="13.5" fill="#4a4639">gate + e2e + feature-list check green &#8594; merge &#183; prune.py mechanically</text>
+    <text x="112" y="1000" font-size="13.5" fill="#4a4639">deletes the feature's ledger lines, plan, losing mockups, uncited probes</text>
+    <text x="112" y="1020" font-size="13.5" fill="#4a4639">(the commit is the record) &#183; 3-line report to the owner</text>
+  </g>
+
+  <!-- loop-back arrow -->
+  <path d="M 40 977 C 8 977 8 402 40 402" fill="none" stroke="#7A8A2E" stroke-width="3"/>
+  <path d="M 40 402 l -9 -6 l 2 12 z" fill="#7A8A2E" transform="rotate(10 40 402)"/>
+  <text x="20" y="700" font-size="15" font-weight="700" fill="#7A8A2E" transform="rotate(-90 20 700)" text-anchor="middle">next feature</text>
+
+  <!-- right column -->
+  <g>
+    <rect x="720" y="336" width="430" height="150" rx="12" fill="#191919"/>
+    <text x="742" y="372" font-size="16" font-weight="700" fill="#B6AF97" letter-spacing="1">WHO RUNS THIS</text>
+    <text x="742" y="398" font-size="13.5" fill="#EFEBDD">your main coding agent drives every step in one</text>
+    <text x="742" y="418" font-size="13.5" fill="#EFEBDD">context and holds the plan. Exactly two subagents:</text>
+    <text x="742" y="444" font-size="13.5" fill="#EFEBDD"><tspan font-family="ui-monospace, Menlo, monospace" fill="#8FBC8F">@reviewer</tspan>  judgment tier, fresh context, REVIEW only</text>
+    <text x="742" y="466" font-size="13.5" fill="#EFEBDD"><tspan font-family="ui-monospace, Menlo, monospace" fill="#87A9C9">@utility</tspan>  cheap tier, mechanical chores only</text>
+  </g>
+
+  <g>
+    <rect x="720" y="510" width="430" height="168" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <text x="742" y="544" font-size="16" font-weight="700" fill="#6b6657" letter-spacing="1">DISPATCH IS PRICED</text>
+    <text x="742" y="570" font-size="13.5" fill="#4a4639">work leaves main context only on a job card:</text>
+    <text x="742" y="590" font-size="13.5" fill="#4a4639">deliverable &#183; exact inputs &#183; tier &#183; done-check</text>
+    <text x="742" y="616" font-size="13.5" font-weight="600" fill="#1a1a1a">route: the cheapest model whose failure</text>
+    <text x="742" y="636" font-size="13.5" font-weight="600" fill="#1a1a1a">the done-check would catch</text>
+    <text x="742" y="662" font-size="13" fill="#6b6657">tiers (mechanical / standard / judgment) map to models</text>
+    <text x="742" y="680" font-size="13" fill="#6b6657" font-family="ui-monospace, Menlo, monospace">in docs/agents.json, never in prose</text>
+  </g>
+
+  <g>
+    <rect x="720" y="702" width="430" height="150" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <text x="742" y="736" font-size="16" font-weight="700" fill="#6b6657" letter-spacing="1">SIZED TO THE PROJECT</text>
+    <text x="742" y="762" font-size="13.5" fill="#4a4639"><tspan font-weight="700">weight: lite</tspan> (a one-person project) &#8594; e2e at release</text>
+    <text x="742" y="782" font-size="13.5" fill="#4a4639">tags, advisory duplication gate, strictly solo + reviewer</text>
+    <text x="742" y="808" font-size="13.5" fill="#4a4639"><tspan font-weight="700">weight: full</tspan> &#8594; batch mode: up to 2 disjoint features</text>
+    <text x="742" y="828" font-size="13.5" fill="#4a4639">in parallel worktrees, one writer each, merge queue</text>
+  </g>
+
+  <g>
+    <rect x="720" y="876" width="430" height="158" rx="10" fill="#F1EDDD" stroke="#DDD6C0"/>
+    <text x="742" y="910" font-size="16" font-weight="700" fill="#6b6657" letter-spacing="1">DETERMINISTIC GATES, NOT PROMISES</text>
+    <text x="742" y="936" font-size="13" fill="#4a4639" font-family="ui-monospace, Menlo, monospace">qa &#183; e2e &#183; features-check &#183; dup-check</text>
+    <text x="742" y="956" font-size="13" fill="#4a4639" font-family="ui-monospace, Menlo, monospace">docs-budget + prune --check &#183; test-tamper</text>
+    <text x="742" y="976" font-size="13" fill="#4a4639" font-family="ui-monospace, Menlo, monospace">checkpoint-budget &#183; resume-check &#183; deps-guard</text>
+    <text x="742" y="1002" font-size="13" fill="#6b6657">docs die mechanically: essay entries fail CI at the line</text>
+    <text x="742" y="1020" font-size="13" fill="#6b6657">they were written; a merge deletes its own paperwork</text>
+  </g>
+
+  <!-- resume strip -->
+  <g>
+    <rect x="90" y="1074" width="1060" height="96" rx="10" fill="#FFFFFF" stroke="#DDD6C0"/>
+    <text x="112" y="1108" font-size="16" font-weight="700" fill="#6b6657" letter-spacing="1">SESSIONS ARE CHEAP TO RESTART</text>
+    <text x="112" y="1134" font-size="13.5" fill="#4a4639">one feature per session &#183; <tspan font-family="ui-monospace, Menlo, monospace">go</tspan> derives the resume brief from the files that own each fact and REFUSES to print when they disagree &#183;</text>
+    <text x="112" y="1154" font-size="13.5" fill="#4a4639">a fresh session reads this constitution + one skill + one feature entry + one plan, and CI caps what that costs</text>
+  </g>
+
+  <!-- footer -->
+  <text x="90" y="1230" font-size="15" fill="#4a4639"><tspan font-weight="700">next feature &#8594; same loop.</tspan>  Lessons flow back into the template: every project starts smarter than the last.</text>
+
+  <!-- version note -->
+  <text x="1150" y="1230" font-size="12" fill="#B6AF97" text-anchor="end">ForgeWorks v4.4</text>
+</svg>

@@ -34,14 +34,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/kp-multiverse/ForgeWorks/v4.
 
 A short conversation (at most 5 questions) drafts `docs/PRD.md`, the owner approves it, and the renderer generates the project. From there the `iteration` skill is the only per-feature workflow: chores build straight through the quality gate, features run GRILL -> RED -> GREEN -> REVIEW -> MERGE with hard caps, driven by `tdd` and `grill-me` (from `mattpocock/skills`). `@reviewer` runs the one REVIEW pass in fresh context — plan conformance, correctness, design fidelity (mockup diff, frontend projects), and security (on the canonical trigger) — in the same pass. Tasks with no behavioral effect (typos, doc wording, formatting) skip the ceremony — anything that changes what the product does, however small, does not. The same quality gate runs locally (a `Stop` hook that blocks a red build) and in CI.
 
-<!-- TODO(v4): docs/forgeworks-loop.png still depicts a pre-v4 loop (implementer/
-     code-reviewer/security-reviewer/design-reviewer as separate subagents, risk
-     tiers, the slice skill) -- regenerate it for the v4 iteration loop (GRILL ->
-     RED -> GREEN -> REVIEW -> MERGE, @reviewer + @utility only) before
-     re-enabling. Original alt text: "The ForgeWorks multi-agent TDD loop: a
-     one-time bootstrap session, then a repeating seven-step cycle driven by an
-     orchestration layer that dispatches six specialist subagents" -->
-<!-- ![The ForgeWorks multi-agent TDD loop](docs/forgeworks-loop.png) -->
+![The ForgeWorks bounded iteration loop: a one-time bootstrap session, then a repeating five-step cycle (GRILL, RED, GREEN, REVIEW, MERGE) driven by the main agent with two subagents, priced dispatch, project weight, and deterministic gates](docs/forgeworks-loop.svg)
 
 ## Upgrade an existing project
 
