@@ -407,11 +407,15 @@ def post_steps(out_dir: str, ans: dict) -> None:
     # concrete model ids live HERE, never in prose. "inherit" = the driving
     # session's model. Non-Claude rosters get TODOs the owner fills once.
     # value may carry a harness prefix ("opencode:<model-id>") to route a
-    # tier through another roster harness's non-interactive runner.
+    # tier through another roster harness's non-interactive runner, and may
+    # be an ordered LIST of channels (spend order: free first, then paid --
+    # the iteration skill's channel-economy rule defines the spillover).
     opencode = any(a["name"] == "opencode" for a in ans["agents"])
     if claude_selected(ans):
-        standard = ("opencode:TODO(cheapest coder that passes your gate -- "
-                    "see `opencode models`)" if opencode else "sonnet")
+        standard = ([
+            "opencode:TODO(free-tier coder -- `opencode models` lists them)",
+            "opencode:TODO(paid coder -- fill when a credit channel is set up)",
+        ] if opencode else "sonnet")
         tiers = {"mechanical": "haiku", "standard": standard,
                  "judgment": "inherit"}
     else:

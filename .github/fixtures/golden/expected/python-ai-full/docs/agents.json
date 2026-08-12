@@ -31,7 +31,10 @@
   "model_tiers": {
     "judgment": "inherit",
     "mechanical": "haiku",
-    "standard": "opencode:TODO(cheapest coder that passes your gate -- see `opencode models`)"
+    "standard": [
+      "opencode:TODO(free-tier coder -- `opencode models` lists them)",
+      "opencode:TODO(paid coder -- fill when a credit channel is set up)"
+    ]
   },
   "schema": 1,
   "weight": "full"

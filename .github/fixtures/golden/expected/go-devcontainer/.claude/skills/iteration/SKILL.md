@@ -179,6 +179,12 @@ one rule: **the cheapest model whose failure the done-check would catch.**
 - `judgment` (or this context): GRILL, RED, REVIEW, security, mockups --
   anywhere a wrong answer fails silently instead of loudly.
 
+**Channel economy:** a tier's value may be an ordered list of channels --
+spend order, free channels first, then paid, cheapest first. Dispatch on
+the FIRST channel; a rate-limit or quota block moves SIDEWAYS to the next
+channel (note the switch in the ledger line). Exhaustion is not failure --
+escalation below is only for failed done-checks, never for empty quotas.
+
 **Escalation:** a card whose done-check fails twice at its tier comes back
 one tier up (or into this context) with the failure output attached --
 never a third try at the same tier, and never a silent retry. Ledger the
