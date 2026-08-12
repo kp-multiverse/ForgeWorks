@@ -9,6 +9,10 @@
     {
       "name": "antigravity",
       "status": "planned"
+    },
+    {
+      "name": "opencode",
+      "status": "installed"
     }
   ],
   "project": {

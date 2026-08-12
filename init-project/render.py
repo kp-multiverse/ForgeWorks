@@ -36,7 +36,7 @@ from render_schema import (
 
 # Stamped into .claude/.template-version when the bootstrap install did not
 # already write one. Bump on release (see the repo AGENTS.md <release-process>).
-TEMPLATE_VERSION = "v4.4.2"
+TEMPLATE_VERSION = "v4.5.0"
 
 AI_FENCE_START_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-START -->\s*$")
 AI_FENCE_END_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-END -->\s*$")
@@ -81,6 +81,7 @@ AGENT_ROLES = {
     "codex": ["second_opinion", "heavy_batch"],
     "antigravity": ["second_opinion", "heavy_batch"],
     "cursor": ["second_opinion"],
+    "opencode": ["orchestrator", "second_opinion", "heavy_batch"],
     "other": [],
 }
 

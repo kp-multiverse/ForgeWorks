@@ -103,9 +103,10 @@ list, one question at a time, multiple-choice where possible:
 5. **Which agents drive** -- the roster question, asked as one question.
    PROBE first, do not guess: check which agent CLIs are installed
    (`command -v codex`, `command -v cursor`, `command -v agy || command -v
-   antigravity`, `command -v gemini`, plus any the user names). Claude Code
+   antigravity`, `command -v opencode`, `command -v gemini`, plus any the
+   user names). Claude Code
    counts as installed when this interview runs inside it. Options:
-   claude-code / codex / antigravity / cursor / other (multi-select; default
+   claude-code / codex / antigravity / cursor / opencode / other (multi-select; default
    `claude-code` alone; at least one required; a selected-but-not-installed
    agent is recorded with `"status": "planned"`). If `claude-code` is NOT
    selected, warn that the Claude-specific enforcement stack (subagents,
@@ -271,7 +272,7 @@ Field rules the renderer enforces (it fails closed with a precise message):
 - Free-text fields that land in `AGENTS.md` (`goal`, `primary_user`, the style references) must be single-line -- the renderer hard-fails if the rendered `AGENTS.md` exceeds its line cap (rule 22), and a wrapped multi-line answer is the easiest way to blow that cap.
 - Rule zero still holds: no bare `TODO` in any answer. The only allowed form is `TODO(interview-skipped)` when the user explicitly refused a question. `date` is today, ISO format.
 - `vector_db`, `llm_provider`, `embeddings_model`, `database`, `backend_framework`: write `none` (or `none (CLI/library)` for the framework) when not applicable.
-- `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.
+- `agents` (top-level): non-empty list of `{"name", "status"}`; `name` one of `claude-code` / `codex` / `antigravity` / `cursor` / `opencode` / `other` (no duplicates), `status` `installed` or `planned`. `codex_reviewer: "yes"` requires `codex` in the roster.
 - `features` (top-level, required, non-empty): each entry needs `id` (`F000`-`F999`, unique), `title`, `intent`, `serves` (names the `docs/PRD.md` section it serves -- e.g. "journey step 2" or "differentiator: <the key differentiator>"; if a feature cannot say which part of the PRD it serves, question the feature), `acceptance` (non-empty list of strings), `tests` (list of strings -- `[]` at bootstrap, filled in as the test files are named), `status` (all `"todo"` at bootstrap; `in-progress` / `done` / `dropped` only apply later), `tier` (`chore` or `feature` -- routes the `iteration` skill: a chore builds straight through the gate, a feature runs GRILL -> RED -> GREEN -> REVIEW -> MERGE), and `surface` (the entry from `project.surfaces` this feature touches, or `"none"` for API/CLI-only work). A feature whose `surface` is not `"none"` needs a `mockup` field (a `docs/design/mockups/...` path) before it can leave `todo` -- `scripts/features_check.py` enforces this; bootstrap-time features normally have none yet, so leave `mockup` unset. An optional key, `notes`, is unused at bootstrap (every feature starts `todo`) but becomes required later -- `scripts/features_check.py` fails a `dropped` feature that has no reason recorded in `notes`. Derive 3-7 features from the core journey, using the acceptance criteria drawn out in conversation as the source for each feature's `acceptance` array -- order them user-visible-journey-first (hardening and infra queue behind the first shippable surface).
 - `design` (top-level): an object with `references`, `tone`, `anti_reference` -- collected from the frontend visual-reference follow-up in Phase 2 -- when `stack.has_frontend` is not `"no"`; `null` when it is `"no"`.
 - `weight` (top-level, required): `"lite"` or `"full"` -- derived in Phase 2, confirmed in the owner's summary OK. What it changes is mechanical (rule 23): lite runs the e2e CI job at release tags instead of every push, makes the dup gate advisory (`continue-on-error`), and the `iteration` skill's batch mode is full-weight only. All hard rules (quality gate, features-check, test-tamper, security) are identical in both weights.

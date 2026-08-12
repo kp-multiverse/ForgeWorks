@@ -176,6 +176,11 @@ one rule: **the cheapest model whose failure the done-check would catch.**
 - `judgment` (or this context): GRILL, RED, REVIEW, security, mockups --
   anywhere a wrong answer fails silently instead of loudly.
 
+**Escalation:** a card whose done-check fails twice at its tier comes back
+one tier up (or into this context) with the failure output attached --
+never a third try at the same tier, and never a silent retry. Ledger the
+escalation; the GREEN stall cap still applies after it.
+
 Commit before every dispatch (a reviewer once stashed uncommitted work into
 oblivion); one writer per branch, no exceptions.
 
