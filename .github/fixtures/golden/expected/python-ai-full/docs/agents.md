@@ -41,3 +41,14 @@ Reads `AGENTS.md` (the cross-tool standard) -- rules and docs apply; the
 Claude-specific enforcement (subagents, hooks) does not. Usable from any
 driver as a dispatch target: `codex exec "<task brief>"` for second-opinion
 reviews and heavy batch work. Default roles: second_opinion, heavy_batch.
+
+### OpenCode
+
+Reads `AGENTS.md` (the cross-tool standard) -- rules and docs apply; the
+Claude-specific enforcement (subagents, hooks) does not. Model-agnostic
+harness: fill `model_tiers` in `docs/agents.json` with its model ids
+(`opencode models` lists them) -- a free/flash model for `mechanical`, a
+strong cheap coding model for `standard`, a frontier model for `judgment`.
+Can drive the full `iteration` loop itself or take dispatched job cards
+from any driver: `opencode run -m <model-id> "<job card>"` (non-interactive).
+Default roles: orchestrator, second_opinion, heavy_batch.

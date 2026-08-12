@@ -167,7 +167,10 @@ tier, and the done-check (the command or test that verifies the result). If
 a card that small cannot be written, the job is not dispatchable -- keep it.
 
 Tiers are named in `docs/agents.json` (`model_tiers` -- model ids live
-there, never in prose; every dispatch states its tier explicitly). Route by
+there, never in prose; every dispatch states its tier explicitly). A tier
+value may carry a harness prefix (`opencode:<model-id>`): send that card
+through the harness's non-interactive runner (`opencode run -m <model-id>
+"<card>"`), same job-card rules. Route by
 one rule: **the cheapest model whose failure the done-check would catch.**
 
 - `mechanical`: chores with a mechanical done-check -- renames, log mining,

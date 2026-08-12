@@ -17,12 +17,21 @@
         "heavy_batch"
       ],
       "status": "installed"
+    },
+    {
+      "name": "opencode",
+      "roles": [
+        "orchestrator",
+        "second_opinion",
+        "heavy_batch"
+      ],
+      "status": "installed"
     }
   ],
   "model_tiers": {
     "judgment": "inherit",
     "mechanical": "haiku",
-    "standard": "sonnet"
+    "standard": "opencode:TODO(cheapest coder that passes your gate -- see `opencode models`)"
   },
   "schema": 1,
   "weight": "full"

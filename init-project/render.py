@@ -406,8 +406,13 @@ def post_steps(out_dir: str, ans: dict) -> None:
     # Model tiers (the dispatch economy): tier names are harness-neutral; the
     # concrete model ids live HERE, never in prose. "inherit" = the driving
     # session's model. Non-Claude rosters get TODOs the owner fills once.
+    # value may carry a harness prefix ("opencode:<model-id>") to route a
+    # tier through another roster harness's non-interactive runner.
+    opencode = any(a["name"] == "opencode" for a in ans["agents"])
     if claude_selected(ans):
-        tiers = {"mechanical": "haiku", "standard": "sonnet",
+        standard = ("opencode:TODO(cheapest coder that passes your gate -- "
+                    "see `opencode models`)" if opencode else "sonnet")
+        tiers = {"mechanical": "haiku", "standard": standard,
                  "judgment": "inherit"}
     else:
         tiers = {t: "TODO(cheapest model of your harness that fits this tier)"
