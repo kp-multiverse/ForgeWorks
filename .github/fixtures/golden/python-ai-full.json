@@ -9,6 +9,10 @@
     {
       "name": "codex",
       "status": "installed"
+    },
+    {
+      "name": "opencode",
+      "status": "installed"
     }
   ],
   "project": {

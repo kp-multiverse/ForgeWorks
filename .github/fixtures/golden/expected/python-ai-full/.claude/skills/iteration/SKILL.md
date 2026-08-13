@@ -167,7 +167,10 @@ tier, and the done-check (the command or test that verifies the result). If
 a card that small cannot be written, the job is not dispatchable -- keep it.
 
 Tiers are named in `docs/agents.json` (`model_tiers` -- model ids live
-there, never in prose; every dispatch states its tier explicitly). Route by
+there, never in prose; every dispatch states its tier explicitly). A tier
+value may carry a harness prefix (`opencode:<model-id>`): send that card
+through the harness's non-interactive runner (`opencode run -m <model-id>
+"<card>"`), same job-card rules. Route by
 one rule: **the cheapest model whose failure the done-check would catch.**
 
 - `mechanical`: chores with a mechanical done-check -- renames, log mining,
@@ -175,6 +178,17 @@ one rule: **the cheapest model whose failure the done-check would catch.**
 - `standard`: GREEN against complete RED tests for a non-UI feature.
 - `judgment` (or this context): GRILL, RED, REVIEW, security, mockups --
   anywhere a wrong answer fails silently instead of loudly.
+
+**Channel economy:** a tier's value may be an ordered list of channels --
+spend order, free channels first, then paid, cheapest first. Dispatch on
+the FIRST channel; a rate-limit or quota block moves SIDEWAYS to the next
+channel (note the switch in the ledger line). Exhaustion is not failure --
+escalation below is only for failed done-checks, never for empty quotas.
+
+**Escalation:** a card whose done-check fails twice at its tier comes back
+one tier up (or into this context) with the failure output attached --
+never a third try at the same tier, and never a silent retry. Ledger the
+escalation; the GREEN stall cap still applies after it.
 
 Commit before every dispatch (a reviewer once stashed uncommitted work into
 oblivion); one writer per branch, no exceptions.

@@ -15,6 +15,15 @@
         "heavy_batch"
       ],
       "status": "planned"
+    },
+    {
+      "name": "opencode",
+      "roles": [
+        "orchestrator",
+        "second_opinion",
+        "heavy_batch"
+      ],
+      "status": "installed"
     }
   ],
   "model_tiers": {

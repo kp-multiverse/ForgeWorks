@@ -27,7 +27,8 @@ LANGUAGES = ("python", "typescript", "go", "rust")
 WEIGHTS = ("lite", "full")
 FRONTEND_CHOICES = ("yes-spa", "yes-minimal", "no")
 AI_FEATURE_CHOICES = ("rag", "agents", "evals", "streaming")
-AGENT_CHOICES = ("claude-code", "codex", "antigravity", "cursor", "other")
+AGENT_CHOICES = ("claude-code", "codex", "antigravity", "cursor", "opencode",
+                 "other")
 AGENT_STATUSES = ("installed", "planned")
 
 # Answers-file layout: section -> required keys. All free-text unless

@@ -36,7 +36,7 @@ from render_schema import (
 
 # Stamped into .claude/.template-version when the bootstrap install did not
 # already write one. Bump on release (see the repo AGENTS.md <release-process>).
-TEMPLATE_VERSION = "v4.4.2"
+TEMPLATE_VERSION = "v4.5.0"
 
 AI_FENCE_START_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-START -->\s*$")
 AI_FENCE_END_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-END -->\s*$")
@@ -81,6 +81,7 @@ AGENT_ROLES = {
     "codex": ["second_opinion", "heavy_batch"],
     "antigravity": ["second_opinion", "heavy_batch"],
     "cursor": ["second_opinion"],
+    "opencode": ["orchestrator", "second_opinion", "heavy_batch"],
     "other": [],
 }
 
@@ -405,8 +406,17 @@ def post_steps(out_dir: str, ans: dict) -> None:
     # Model tiers (the dispatch economy): tier names are harness-neutral; the
     # concrete model ids live HERE, never in prose. "inherit" = the driving
     # session's model. Non-Claude rosters get TODOs the owner fills once.
+    # value may carry a harness prefix ("opencode:<model-id>") to route a
+    # tier through another roster harness's non-interactive runner, and may
+    # be an ordered LIST of channels (spend order: free first, then paid --
+    # the iteration skill's channel-economy rule defines the spillover).
+    opencode = any(a["name"] == "opencode" for a in ans["agents"])
     if claude_selected(ans):
-        tiers = {"mechanical": "haiku", "standard": "sonnet",
+        standard = ([
+            "opencode:TODO(free-tier coder -- `opencode models` lists them)",
+            "opencode:TODO(paid coder -- fill when a credit channel is set up)",
+        ] if opencode else "sonnet")
+        tiers = {"mechanical": "haiku", "standard": standard,
                  "judgment": "inherit"}
     else:
         tiers = {t: "TODO(cheapest model of your harness that fits this tier)"
