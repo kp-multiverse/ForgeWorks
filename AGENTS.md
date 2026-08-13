@@ -114,7 +114,7 @@ A complete profile is a YAML block PLUS a folder, both meeting the same readines
 
 <conventions>
 - **Boring tech beats clever tech.** Plain bash in `install.sh`, plain markdown for SKILL.md, plain string `.replace` for placeholder substitution. No template engines.
-- **Plain English in docs and rule text.** Read every block aloud. If it does not survive being spoken, rewrite it.
+- **Plain English in docs and rule text.** Read every block aloud. If it does not survive being spoken, rewrite it. Write new rule text to the same standard the generated projects get (`templates/core/docs/writing.md`, Simplified Technical English): short sentences, active voice, one instruction per sentence, no hedging.
 - **Commit messages.** Conventional Commits style (`feat(template):`, `refactor(skill):`, `docs(readme):`). No Co-Authored-By trailer.
 - **PRs vs direct commits.** Trivial changes (typos, doc edits) can go straight to `main`. Anything that touches `SKILL.md` Phase 4, `templates/core/AGENTS.md` rule blocks, or the bootstrap script goes via a PR for a second pass.
 </conventions>

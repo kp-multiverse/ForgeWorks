@@ -371,6 +371,7 @@ test -f .github/workflows/qa.yml && test -f .github/pull_request_template.md && 
 test -f docs/PRD.md && test -f docs/features.json && \
 test -f docs/LEDGER.md && test -f docs/BACKLOG.md && \
 test -f docs/SECURITY.md && test -f docs/language-standards.md && \
+test -f docs/writing.md && \
 test -f docs/deviations.md && test -f docs/plans/README.md && \
 test -f docs/archive/.gitkeep && \
 test -f docs/agents.md && test -f docs/agents.json && \
