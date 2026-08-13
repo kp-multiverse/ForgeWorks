@@ -48,9 +48,9 @@ Owner approval happens at exactly one routine place: GRILL. Cap hits stop and as
 </tiers>
 <!-- /FW-BLOCK: tiers -->
 
-<!-- FW-BLOCK: communication v4.3.0 -->
+<!-- FW-BLOCK: communication v4.5.0 -->
 <communication>
-Owner-facing messages: lead with the point; plain words (gloss any jargon in the same sentence); never repeat what the owner already knows. Fixed shapes -- GRILL: what I will build / decisions I need (numbered) / top 3 risks + my answer / cost note if fan-out. Cap-hit: one paragraph (state, rounds used, what is stuck, recommendation). Merge report: 3 lines (shipped in the plan's words, evidence, next up). One question at a time, multiple-choice when possible. Anything without a fixed shape: three sentences or a table -- never narrate what you are about to do, restate a diff, or explain what a gate already printed. In docs the same rule is structural: pointers, not prose; the story lives in the commit message.
+Write everything to `docs/writing.md` (Simplified Technical English): short sentences, active voice, one instruction per sentence, no hedging. Owner-facing messages: lead with the point; never repeat what the owner already knows. Fixed shapes -- GRILL: what I will build / decisions I need (numbered) / top 3 risks + my answer / cost note if fan-out. Cap-hit: one paragraph (state, rounds used, what is stuck, recommendation). Merge report: 3 lines (shipped in the plan's words, evidence, next up). One question at a time, multiple-choice when possible. Anything without a fixed shape: three sentences or a table -- never narrate what you are about to do, restate a diff, or explain what a gate already printed. In docs the same rule is structural: pointers, not prose; the story lives in the commit message.
 </communication>
 <!-- /FW-BLOCK: communication -->
 
