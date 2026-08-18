@@ -93,6 +93,13 @@ jobs:
       - name: deps-guard blocks/allows the expected commands
         run: bash .github/scripts/deps_guard_test.sh
 
+  tree-claim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: tree-claim blocks a second session and takes a stale claim over
+        run: bash .github/scripts/tree_claim_test.sh
+
   line-cap:
     runs-on: ubuntu-latest
     steps:
