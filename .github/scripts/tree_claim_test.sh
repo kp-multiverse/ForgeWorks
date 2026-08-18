@@ -34,6 +34,7 @@ check "second session git -C add"      2 '{"session_id":"BBB","tool_name":"Bash"
 check "second session reads allowed"   0 '{"session_id":"BBB","tool_name":"Bash","tool_input":{"command":"ls -la && git status && git log"}}'
 check "second session git diff"        0 '{"session_id":"BBB","tool_name":"Bash","tool_input":{"command":"git diff --stat"}}'
 check "second session test run"        0 '{"session_id":"BBB","tool_name":"Bash","tool_input":{"command":"npm test -- --watch=false"}}'
+check "second session opens its own worktree" 0 '{"session_id":"BBB","tool_name":"Bash","tool_input":{"command":"git worktree add ../wt -b feat/x"}}'
 check "no session id fails open"       0 '{"tool_name":"Edit","tool_input":{"file_path":"a"}}'
 
 # A claim nobody has refreshed for longer than the TTL is taken over, so a

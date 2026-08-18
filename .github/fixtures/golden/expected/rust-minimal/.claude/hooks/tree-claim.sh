@@ -57,7 +57,10 @@ fi
 # Bash: guard only the commands that move git state. Everything else passes.
 if [ "${tool}" = "Bash" ]; then
   cmd=$(read_field '.tool_input.command')
-  git_verbs='commit|merge|rebase|reset|checkout|switch|restore|cherry-pick|revert|stash|apply|am|push|branch|tag|worktree|add|rm|mv|clean'
+  # `git worktree add` is NOT here on purpose: it writes a DIFFERENT directory,
+  # not this tree's files, HEAD, or index -- and it is the way out this hook
+  # recommends, so blocking it would leave taking the tree over as the only move.
+  git_verbs='commit|merge|rebase|reset|checkout|switch|restore|cherry-pick|revert|stash|apply|am|push|branch|tag|add|rm|mv|clean'
   printf '%s' "${cmd}" \
     | grep -Eq "(^|[[:space:];&|(])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^[:space:]]+)?)*[[:space:]]+(${git_verbs})([[:space:]]|$)" \
     || exit 0
