@@ -23,9 +23,9 @@ Package manager and installs: `docs/language-standards.md`. New dependencies go 
 </commands>
 <!-- /FW-BLOCK: commands -->
 
-<!-- FW-BLOCK: etiquette v4.0.0 -->
+<!-- FW-BLOCK: etiquette v4.6.0 -->
 <etiquette>
-Conventional Commits. Branch per feature; CI green before merge. One writer per branch: when a subagent reports done, the orchestrator owns the branch, and vice versa. Work inside this repo only unless explicitly asked.
+Conventional Commits. Branch per feature; CI green before merge. One writer per branch: when a subagent reports done, the orchestrator owns the branch, and vice versa. One session per working tree: a second session opened in the same directory takes the claim over or opens its own worktree BEFORE it writes. Work inside this repo only unless explicitly asked.
 </etiquette>
 <!-- /FW-BLOCK: etiquette -->
 

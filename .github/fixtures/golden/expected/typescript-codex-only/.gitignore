@@ -26,6 +26,8 @@ test-results/
 
 # Claude / agent state
 .claude/cache/
+.claude/worktrees/
+.claude/.tree-claim
 .claude/state/
 .claude/skills/_user-data/
 
