@@ -57,14 +57,14 @@ Ask the user only for what you could not detect. Keep it to 2-3 questions.
 The template is `core/` (language-free) plus one `profiles/<lang>/`. Pull both the core and the project's own language profile (from Phase 1) into temp dirs to reconcile against:
 
 ```bash
-npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/core#v4.5.0 /tmp/upgrade-core --force
-npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/profiles/<lang>#v4.5.0 /tmp/upgrade-profile --force
-npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project#v4.5.0 /tmp/upgrade-skill --force
+npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/core#v4.6.0 /tmp/upgrade-core --force
+npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project/templates/profiles/<lang>#v4.6.0 /tmp/upgrade-profile --force
+npx --yes degit@2.8.4 kp-multiverse/ForgeWorks/init-project#v4.6.0 /tmp/upgrade-skill --force
 ```
 
 Use the detected language for `<lang>` (`python`, `typescript`, `go`, or `rust`). Reconcile core into the project's universal files and the profile into its language files -- **never** pull a different language's profile (that is the cross-language leak the structure exists to prevent). If the project's language has no profile folder at this version (e.g. an experimental language), reconcile `core/` only and report that the toolchain is the user's to maintain. The conditional block texts (<ai-discipline>, <memory>, the Codex sections, the gotchas seed) live in `init-project/templates/conditional/` (since v2.3.0; older releases embedded them in SKILL.md Phase 4) -- reconcile AI/memory-conditional content against `/tmp/upgrade-skill/templates/conditional/`.
 
-Reconcile against this skill's own released version (`v4.5.0`), not `main`: installing the `vX.Y.Z` upgrade skill brings a project *up to* `vX.Y.Z` -- a versioned, reviewable target. (Each release bumps this ref; see the repo `AGENTS.md` release process.)
+Reconcile against this skill's own released version (`v4.6.0`), not `main`: installing the `vX.Y.Z` upgrade skill brings a project *up to* `vX.Y.Z` -- a versioned, reviewable target. (Each release bumps this ref; see the repo `AGENTS.md` release process.)
 
 ### Phase 3: Reconcile
 
@@ -88,7 +88,7 @@ step of the `iteration` skill). Everything else absent proceeds as below:
 - **Language/tooling placeholders you cannot resolve** (no full language profile on hand) -> do NOT half-write it. Report it as "add manually" with a pointer to the template path.
 
   *Special cases:*
-  - `.claude/settings.json` -- if the project already has one, **merge** the `PreToolUse` deps-guard hook into the existing `hooks` object; never replace the file (that would drop the project's own hooks).
+  - `.claude/settings.json` -- if the project already has one, **merge** every `PreToolUse` hook the template ships (deps-guard, tree-claim) into the existing `hooks` object, skipping any already present; never replace the file (that would drop the project's own hooks).
   - **AI fences** (same rule everywhere a template file carries them): if the project uses AI, delete only the marker lines and keep the content; if not, delete the fenced blocks entirely. Current fences (v4.0.0): `<!-- AI-SECURITY-START/END -->` + `<!-- AI-REDTEAM-START/END -->` in `docs/SECURITY.md`, `<!-- AI-REVIEW-START/END -->` in `.claude/agents/reviewer.md`. `AI-IMPL` is gone in v4 -- `implementer.md` itself was deleted (its role folded into the `iteration` skill's RED/GREEN steps), so there is no file left to carry that fence.
   - **CC fences** (same mechanic, keyed on the Phase 1 agent roster instead of AI features): if `claude-code` is in the recovered roster, delete only the marker lines and keep the content; if not, delete the fenced block entirely. Current fence (v4.0.0): `<!-- CC-HOOKS-START/END -->` around the deps-guard hook bullet in `docs/SECURITY.md`'s Enforcement section.
   - **Manifest `.example` suffix** (Python): the template ships `pyproject.toml.example` so the template repo's own tooling ignores it. A generated project already has a real `pyproject.toml` -- never copy the `.example` file in as "absent"; treat it as the merge source for the existing manifest (Phase 3-C), not a new file.
@@ -130,6 +130,8 @@ step of the `iteration` skill). Everything else absent proceeds as below:
 *Language-independent CI delta (since v3.0.0):* the generated `.github/workflows/qa.yml` carries a `features-check` job (validates `docs/features.json` via `scripts/features_check.py`; replaced the v2 `ship-audit` job -- history only, see the `v3.0.0`-tagged upgrade skill for a project still on v2). It has no placeholders: if the project's `qa.yml` lacks the job, graft it verbatim from the fetched template (show the diff first, as always).
 
 *Language-independent CI delta (since v4.1.0) -- duplication gate + checkpoint economy:* copy `scripts/dup_check.py` from the fetched template, substituting `{{SOURCE_SUFFIXES}}` from the project's `profile.json` (`chmod +x`), and append the `dup-check` job to `qa.yml` if absent. **Run it before finishing** and put the result in the Phase 4 report: an existing project will almost certainly have findings (two field projects measured 84 and 131 duplicated blocks in production code). Do NOT fix them in the upgrade -- that is feature work with its own tests. Run `python3 scripts/dup_check.py --baseline` so existing findings stop failing while any NEW duplication does -- prefer that to `.dup-ignore`, which exempts a path permanently and would let new duplication into an old file. Note the baseline count in the report, and add a `features.json` entry for the burn-down, so the gate is live and the debt is tracked rather than silently ignored. Copy `scripts/resume.py` (placeholder-free) and append the `resume-check` job; run `python3 scripts/resume.py --check` before finishing and report what it says -- an existing project commonly has two features marked in-progress, which is exactly the state that makes a restart resume the wrong work. Also replace `scripts/backlog.py` with the fetched version: it gains a `--feature <id>` mode, which is what the new `<context>` block tells sessions to use instead of reading the whole `features.json`.
+
+*Language-independent delta (since v4.6.0) -- tree claim:* copy `.claude/hooks/tree-claim.sh` verbatim (`chmod +x`, claude-code rosters only) and merge its `PreToolUse` entry into the project's `.claude/settings.json` (matcher `Edit|Write|NotebookEdit|Bash`). Add `.claude/worktrees/` and `.claude/.tree-claim` to the project's `.gitignore` if absent. The hook makes "one session writes a tree at a time" mechanical instead of a rule the second session has to remember; the `etiquette` block gains the matching sentence through the Phase 3-B marker graft.
 
 *Language-independent CI delta (since v4.1.0) -- checkpoint budget:* append the `checkpoint-budget` job from the fetched template if absent. It asserts what a fresh session costs to re-prime (`AGENTS.md` + the `iteration` skill + one feature entry + the largest plan) and OWNS that number, so the prose no longer repeats it. When grafting the v4.1 `<context>` block, note that it deliberately stops listing cap numbers: if the project's `AGENTS.md` still lists them, that is drift waiting to happen -- delete the numbers, keep the pointer to the job.
 

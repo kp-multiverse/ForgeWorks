@@ -22,6 +22,7 @@ A fully structured project with:
 - `.claude/skills/`: the generated skills `iteration` (the one per-feature workflow: chore or GRILL -> RED -> GREEN -> REVIEW -> MERGE), `security-review`, and `tech-debt`
 - `.claude/hooks/quality-gate.sh`: deterministic static+test gate triggered by the reviewer's Stop hook
 - `.claude/hooks/deps-guard.sh` + `.claude/settings.json`: best-effort supply-chain guard (PreToolUse hook)
+- `.claude/hooks/tree-claim.sh`: one session writes a tree at a time; blocks a second session's writes (PreToolUse hook)
 - `.mcp.json`: Context7 MCP server for live library docs
 - `.github/workflows/qa.yml`: CI running the quality gate (fast), a separate end-to-end job, and the mechanical gates: `features-check` (validates `docs/features.json`), `docs-budget` (owns every doc cap -- the prose points here rather than repeating the numbers), `checkpoint-budget` (what a fresh session costs to re-prime), `resume-check` (`go` has exactly one place to start), `dup-check`, and `test-tamper`
 - `.github/pull_request_template.md`: short PR checklist
@@ -394,7 +395,7 @@ enforcement tree landed:
 ```bash
 test -L CLAUDE.md && test -d .claude/agents && \
 test -f .claude/agents/reviewer.md && test -f .claude/agents/utility.md && \
-test -f .claude/settings.json && test -f .claude/hooks/deps-guard.sh
+test -f .claude/settings.json && test -f .claude/hooks/deps-guard.sh && test -f .claude/hooks/tree-claim.sh
 ```
 
 And, ONLY when the project has a frontend (the frontend answer not `no`), also
