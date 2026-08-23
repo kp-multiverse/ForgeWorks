@@ -100,6 +100,13 @@ jobs:
       - name: tree-claim blocks a second session and takes a stale claim over
         run: bash .github/scripts/tree_claim_test.sh
 
+  skills-doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: skills doctor fails duplicate skills + SessionStart plugins, passes a clean machine
+        run: bash .github/scripts/skills_doctor_test.sh
+
   line-cap:
     runs-on: ubuntu-latest
     steps:

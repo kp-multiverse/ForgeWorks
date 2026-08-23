@@ -1,6 +1,6 @@
 ---
 name: init-project
-description: Bootstrap a new project through a short conversation (at most 5 questions -- the agent infers everything else and states its defaults) that ends in an owner-approved one-page PRD, then generates two focused subagents (reviewer, utility), the `iteration` skill (the one per-feature workflow: chores build straight through, features run GRILL -> RED -> GREEN -> REVIEW -> MERGE), a machine-checked feature list (docs/features.json: two tiers chore/feature, a surface + mockup field, enforced in CI), docs/PRD.md, docs/LEDGER.md, docs/BACKLOG.md, a static+test quality-gate hook, a tamper guard, a supply-chain guard hook, Context7 MCP, CI (a fast gate, a separate end-to-end job, and a features-check job), PR template, pre-commit config, dev container, a threat-model doc, and structured documentation. Stack-agnostic at its core: language and tooling choices live in this skill's interview, not in the template files. Use this skill whenever a project is uninitialized (no docs/features.json or .claude/agents/), when the user says "init", "bootstrap", "set up this project", "/init-project", or describes wanting to start a new AI engineering project. Generates AGENTS.md, .claude/ (the reviewer/utility agents, hooks, and the iteration/security-review/tech-debt skills), .mcp.json, docs/ (including features.json and, for frontend projects, docs/design/), .github/, .devcontainer/, scripts/ (features_check.py, backlog.py, tamper_check.py, factory_doctor.sh), and a manifest tailored to the chosen language. Pairs with the upstream `tdd` and `grill-me` skills from mattpocock/skills, installed during bootstrap.
+description: Bootstrap a new project through a short conversation (at most 5 questions -- the agent infers everything else and states its defaults) that ends in an owner-approved one-page PRD, then generates two focused subagents (reviewer, utility), the `iteration` skill (the one per-feature workflow: chores build straight through, features run GRILL -> RED -> GREEN -> REVIEW -> MERGE), a machine-checked feature list (docs/features.json: two tiers chore/feature, a surface + mockup field, enforced in CI), docs/PRD.md, docs/LEDGER.md, docs/BACKLOG.md, a static+test quality-gate hook, a tamper guard, a supply-chain guard hook, Context7 MCP, CI (a fast gate, a separate end-to-end job, and a features-check job), PR template, pre-commit config, dev container, a threat-model doc, and structured documentation. Stack-agnostic at its core: language and tooling choices live in this skill's interview, not in the template files. Use this skill whenever a project is uninitialized (no docs/features.json or .claude/agents/), when the user says "init", "bootstrap", "set up this project", "/init-project", or describes wanting to start a new AI engineering project. Generates AGENTS.md, .claude/ (the reviewer/utility agents, hooks, and the iteration/security-review/tech-debt skills), .mcp.json, docs/ (including features.json and, for frontend projects, docs/design/), .github/, .devcontainer/, scripts/ (features_check.py, backlog.py, tamper_check.py, factory_doctor.sh, skills_doctor.py), and a manifest tailored to the chosen language. Pairs with the upstream `tdd` and `grill-me` skills from mattpocock/skills, installed during bootstrap.
 ---
 
 # init-project
@@ -33,7 +33,8 @@ A fully structured project with:
 - `scripts/resume.py`: prints the resume brief -- this is what `go` runs. Derives every pointer (live feature, phase, branch, plan) from the file that owns it, cross-checks them, and refuses to print rather than resume from a contradiction; `--check` is the CI `resume-check` job
 - `scripts/dup_check.py`: the duplication gate -- fails when the same normalized 6-line block appears in two files (copied logic, copied markup, or one convention re-justified in five docstrings); exceptions in a committed `.dup-ignore` (path globs, permanent) or `.dup-baseline` (`--baseline`, by block hash, decays as blocks are edited -- prefer this); also runs as the CI `dup-check` job
 - `scripts/tamper_check.py`: flags an unexplained change to a test, fixture, or gate config (the hard-rules tamper guard)
-- `scripts/factory_doctor.sh`: prunes stale git worktrees and merged feature branches
+- `scripts/factory_doctor.sh`: prunes stale git worktrees and merged feature branches, then runs the skills doctor
+- `scripts/skills_doctor.py`: the instruction-stack check -- fails when one skill name is installed from more than one source or an enabled plugin injects a SessionStart hook into every session, and prints the real session-start inventory (CLAUDE.md chain, memory index, enabled plugins) that the repo-side `checkpoint-budget` job cannot see
 - `scripts/prune.py`: mechanical doc death -- deletes what a closed feature leaves behind (ledger + deviations lines, its plan, losing mockups, uncited probes); `--check` is the CI entry-cap gate (it owns the entry caps) that rejects essay entries at write time
 - `.devcontainer/`: portable development environment (if chosen)
 - `README.md` + `.env.example`: project readme (commands, flow) and a documented, secret-free env template
@@ -67,6 +68,8 @@ npx skills@latest add mattpocock/skills
 ```
 
 Required skills (must be installed): `tdd`, `grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`.
+
+**The one-copy rule.** That `npx skills` install is the ONLY source of `tdd` and `grill-me` for this project; the generated `iteration` skill owns the workflow around them. Skill packs that ship their own TDD / grilling / debugging / review skills must not be enabled next to it -- known offenders: the `superpowers` plugin (also injects a SessionStart hook into every session, which preempts project skills and breaks the checkpoint) and the `mattpocock-skills` *plugin* (a second copy of the same `tdd`). A field project lost a week to exactly this: three TDD skills, four grilling skills, and routing became a race the generic copy won. Before continuing, ask the user which packs are enabled (Claude Code: `/plugin`); if one overlaps, they disable it now -- do not proceed with two copies of a process skill on the machine. Phase 5 runs `scripts/skills_doctor.py`, which lists what is still duplicated.
 
 After the user picks them in the skills picker, verify `tdd` and `grill-me` are present before proceeding. `grill-me` is what powers the planning pass (Phase 2's conversation, and the `iteration` skill's GRILL step for every feature); do not skip it. If the user refuses or skips, stop and explain why bootstrap cannot continue without `tdd` and `grill-me`.
 
@@ -381,13 +384,27 @@ test -f scripts/backlog.py && test -f scripts/tamper_check.py && \
 test -f scripts/dup_check.py && python3 scripts/dup_check.py && \
 test -f scripts/resume.py && python3 scripts/resume.py --check && \
 test -f scripts/prune.py && python3 scripts/prune.py --check && \
-test -f scripts/factory_doctor.sh && \
+test -f scripts/factory_doctor.sh && test -f scripts/skills_doctor.py && \
 test -f .claude/skills/iteration/SKILL.md && test -f .claude/skills/security-review/SKILL.md && \
 test -f .claude/skills/tech-debt/SKILL.md
 ```
 
 (`.claude/skills/` ships for every roster -- plain-markdown procedures, not
 Claude Code slash commands -- so this check is unconditional.)
+
+Then run the skills doctor and put its output in front of the user:
+
+```bash
+python3 scripts/skills_doctor.py
+```
+
+A `FAIL` line is a duplicated skill name or an always-on SessionStart plugin
+(the Phase 1 one-copy rule); the fix is the owner's -- disable the extra
+source (`/plugin`) -- not a template step. Do not report the bootstrap as
+clean while a FAIL stands: the first line of the final report is that FAIL and
+what to disable, before any "done". The inventory it prints is also the
+honest version of the checkpoint: the CI `checkpoint-budget` job measures repo
+files only, and this shows what the machine loads on top.
 
 Then, ONLY when `claude-code` is in the agent roster, confirm the Claude-specific
 enforcement tree landed:

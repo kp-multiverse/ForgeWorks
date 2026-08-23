@@ -26,6 +26,7 @@ When you detect this state, do the following:
    ```
    Required at minimum: `tdd`, `grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`.
    Use `mattpocock/skills` for the core loop (not the broader `superpowers` pack). Always pull the latest. `tdd` provides Red to Green to Refactor; `grill-me` powers the planning interview; the generated subagents pair with both.
+   One copy per process skill: this install is the only source of `tdd`/`grill-me`. If the `superpowers` plugin or the `mattpocock-skills` plugin is enabled next to it, the user disables it first (`/plugin`) -- two copies make skill routing a race, and the generic copy wins.
 3. **Run the init-project skill** to generate the project structure.
    - If `init-project` is available as a slash command (`/init-project`), invoke it.
    - Otherwise, read `.claude/skills/init-project/SKILL.md` and follow its instructions.

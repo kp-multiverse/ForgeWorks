@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# factory doctor -- list and prune stale worktrees and merged branches.
+# factory doctor -- list and prune stale worktrees and merged branches, then
+# run the skills doctor (one copy per skill name; no always-on injection).
 # Set FACTORY_BASE to the base branch name (default: main).
 # Safe by default: prunes only worktrees whose directory is gone and merged
 # branches; anything with uncommitted or unmerged work is LISTED, not touched.
+# Exit status is the skills doctor's: 1 when the instruction stack has a
+# collision the owner must resolve, 0 otherwise.
 set -euo pipefail
 
 BASE="${FACTORY_BASE:-main}"
@@ -30,3 +33,7 @@ docs=$(git log --format='%s' -100 | grep -cE '^(docs|chore\(docs\)|chore\(ledger
 merges=$(git log --merges --since="28 days ago" --oneline | wc -l | tr -d ' ')
 echo "  doc-maintenance commits: ${docs}/${total} (the product got the rest)"
 echo "  merges in the last 28 days: ${merges}"
+echo
+# The instruction stack: the budget CI measures is repo files only; this is
+# the rest of what a session actually starts with (and what collides in it).
+python3 "$(dirname "$0")/skills_doctor.py" --root "$(git rev-parse --show-toplevel)"
