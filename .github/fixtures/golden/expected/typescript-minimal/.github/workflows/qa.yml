@@ -154,7 +154,9 @@ jobs:
 
   # Checkpoint budget (AGENTS.md <context>): what a fresh session must read to
   # resume ONE feature. THIS JOB OWNS THE NUMBER -- the prose points here rather
-  # than repeating it, so the two cannot drift.
+  # than repeating it, so the two cannot drift. It is a FLOOR: CI sees repo
+  # files only; global CLAUDE.md files, the memory index and enabled plugins
+  # load on top -- `scripts/skills_doctor.py` prints that machine-side rest.
   #
   # Measured on a field project before this gate existed: ~32K tokens, 16% of a
   # 200K window, spent before any work happened. 56% of that was reading the
