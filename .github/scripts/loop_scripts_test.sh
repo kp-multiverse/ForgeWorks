@@ -7,7 +7,7 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 python3 init-project/render.py --answers .github/fixtures/golden/python-ai-full.json \
   --core init-project/templates/core --profile init-project/templates/profiles/python \
   --out "$tmp/proj" >/dev/null
-cd "$tmp/proj" && git init -q && git add -A && git commit -qm init
+cd "$tmp/proj" && git init -q && git -c user.name=ci -c user.email=ci@example.com commit -q --allow-empty -m init && git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm scaffold
 ok() { out=$("$@" 2>&1) || { echo "loop-scripts: FAIL -- $*"; echo "$out"; exit 1; }; }
 fails() { if out=$("$@" 2>&1); then echo "loop-scripts: FAIL -- expected failure: $*"; echo "$out"; exit 1; fi; }
 ok python3 scripts/features_check.py
