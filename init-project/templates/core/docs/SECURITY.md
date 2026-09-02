@@ -3,8 +3,7 @@
 This is a living document. It states what an attacker would try, the defenses in
 place, and the red-team checklist the test suite must cover. Update it whenever a
 feature matches the security trigger: see `.claude/skills/security-review/SKILL.md`.
-When no delta is needed, record `Security doc delta: none, because ...` in the
-review notes instead. The hard rule requiring this review lives in `AGENTS.md`
+When no delta is needed, record why in the feature's `notes` instead. The hard rule requiring this review lives in `AGENTS.md`
 `<hard-rules>`; this file is where the threat model becomes concrete for this
 project.
 
@@ -33,29 +32,13 @@ it can reach. Review each row "through the lens of an attacker."
 
 ## Universal risks and defenses
 
-These apply to every project regardless of stack or subject.
+One line per risk; the value is in the *where enforced* slot, not the lecture.
 
-1. **Broken access control (IDOR)** -- the most common real vulnerability. One user
-   reaches another's data by supplying or incrementing an id. **Defense:** never
-   trust a user-supplied identity; derive the acting user from a verified session
-   or signed token (verify the signature, don't just decode it), enforced in one
-   middleware layer. Scope every query and file path to that owner. Validate and
-   sandbox any path or id from input so `../` cannot escape. *Where enforced:* TODO.
-2. **Secrets exposure** -- keys in source, logs, prompts, or committed config.
-   **Defense:** secrets live only in env or a secret store; the ignore file
-   excludes them; an example env file documents the variables with empty values.
-   *Where enforced:* TODO.
-3. **Supply-chain / slopsquatting** -- a compromised or hallucinated dependency runs
-   code on dev/CI machines. **Defense:** install from the lockfile only (no blind
-   updates); vet every new package (real, established, right author, not a
-   lookalike); prefer dependencies more than ~a week old. Enforced by committed
-   lockfiles, reviewed updates, and CI dependency scanning on every roster --
-   plus the `deps-guard` PreToolUse hook when Claude Code drives -- not by trust.
-4. **Unbounded input** -- a huge payload buries an injection or runs up cost.
-   **Defense:** length-bound every input that enters a prompt, a log, or storage.
-5. **Blast radius** -- assume something will be compromised; limit what it reaches.
-   **Defense:** least privilege per session; isolate production; do not give broad
-   direct production access. Fail closed on any security-check error.
+1. **Broken access control (IDOR).** Derive the acting user from a verified session or signed token (verify, not decode) in one middleware layer; scope every query and path to that owner; sandbox any path or id from input. *Where enforced:* TODO.
+2. **Secrets exposure.** Secrets live only in env or a secret store; the ignore file excludes them; `.env.example` documents the variables with empty values. *Where enforced:* TODO.
+3. **Supply chain / slopsquatting.** Install from the lockfile only; vet every new package (real, established, right author, not brand new). Enforced by committed lockfiles, reviewed updates, CI scanning, and the `deps-guard` hook where Claude Code drives.
+4. **Unbounded input.** Length-bound every input that enters a prompt, a log, or storage. *Where enforced:* TODO.
+5. **Blast radius.** Least privilege per session; isolate production; fail closed on any security-check error. *Where enforced:* TODO.
 
 <!-- AI-SECURITY-START -->
 ## LLM / agent risks and defenses

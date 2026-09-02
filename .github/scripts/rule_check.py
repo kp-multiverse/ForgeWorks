@@ -48,12 +48,15 @@ PROSE = (
     ".claude/skills/security-review/SKILL.md",
     "docs/SECURITY.md",
     "docs/gotchas.md",
+    ".claude/skills/iteration/reference/dispatch.md",
+    ".claude/agents/reviewer.md",
     "docs/plans/README.md",
     "docs/probes/README.md",
 )
 # The generator's own prose restates caps too -- the brownfield path is where a
 # transcribed number rots quietest, because nobody re-reads an upgrade skill.
-REPO_PROSE = ("init-project/SKILL.md", "upgrade-project/SKILL.md", "AGENTS.md")
+REPO_PROSE = ("init-project/SKILL.md", "init-project/reference/renderer-rules.md",
+              "upgrade-project/SKILL.md", "AGENTS.md")
 # A number this large in prose, near a budget word, is a restated cap.
 BUDGET_WORD = re.compile(
     r"(cap|budget|limit|chars|characters|tokens|lines)", re.I
@@ -94,8 +97,8 @@ def check_tree(tree: str, label: str) -> list[str]:
             # Silently skipping a renamed file exempts all its prose -- failing
             # in the direction of passing, which is what this file exists to
             # stop. Frontend-only files are the one legitimate absence.
-            if rel.startswith("docs/design"):
-                continue
+            if rel.startswith("docs/design") or rel.startswith(".claude/agents"):
+                continue  # frontend-only / claude-code-roster-only files
             problems.append(f"{label}: {rel} is in PROSE but the rendered tree "
                             f"does not have it. Renamed? Update PROSE -- do not "
                             f"let its rules go unchecked.")
@@ -156,19 +159,19 @@ def check_repo() -> list[str]:
     # Each pattern is asserted SEPARATELY. A drift gate that silently stops
     # finding the thing it guards fails in the direction of passing, which is
     # the exact failure mode this file exists to prevent.
-    m = re.search(r'relpath == "AGENTS\.md" and len\(text\.splitlines\(\)\) > (\d+)', render)
-    g = re.search(r"lines=\$\(grep -c '' AGENTS\.md\)\s*\n\s*if \[ \"\$lines\" -gt (\d+)", qa)
+    m = re.search(r'relpath == "AGENTS\.md" and len\(text\) > (\d+)', render)
+    g = re.search(r"^\s*check AGENTS\.md (\d+)", qa, re.M)
     if not m:
-        problems.append(f"rotted: no AGENTS.md line cap found in {render_path} "
-                        f"(pattern: 'relpath == \"AGENTS.md\" and len(...) > N'). "
+        problems.append(f"rotted: no AGENTS.md char cap found in {render_path} "
+                        f"(pattern: 'relpath == \"AGENTS.md\" and len(text) > N'). "
                         f"Fix the pattern -- do not delete the check.")
     if not g:
-        problems.append(f"rotted: no AGENTS.md line cap found in {qa_path} "
-                        f"(pattern: \"lines=$(grep -c '' AGENTS.md)\" then '-gt N'). "
+        problems.append(f"rotted: no AGENTS.md char cap found in {qa_path} "
+                        f"(pattern: 'check AGENTS.md N'). "
                         f"Fix the pattern -- do not delete the check.")
     if m and g and m.group(1) != g.group(1):
         problems.append(
-            f"render.py fails AGENTS.md over {m.group(1)} lines but the shipped "
+            f"render.py fails AGENTS.md over {m.group(1)} chars but the shipped "
             f"docs-budget job uses {g.group(1)}. A project would render fine and "
             f"then fail its own CI, or the reverse."
         )

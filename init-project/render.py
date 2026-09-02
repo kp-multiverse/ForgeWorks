@@ -16,7 +16,7 @@ insertion anchor, or a leftover {{...}} in the output all abort with a clear
 message and a non-zero exit.
 
 The rules implemented here are documented (as a summary table) in
-init-project/SKILL.md Phase 4; the conditional block texts live in
+init-project/reference/renderer-rules.md; the conditional block texts live in
 templates/conditional/ next to the core templates.
 """
 
@@ -36,7 +36,7 @@ from render_schema import (
 
 # Stamped into .claude/.template-version when the bootstrap install did not
 # already write one. Bump on release (see the repo AGENTS.md <release-process>).
-TEMPLATE_VERSION = "v4.7.0"
+TEMPLATE_VERSION = "v5.0.0"
 
 AI_FENCE_START_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-START -->\s*$")
 AI_FENCE_END_RE = re.compile(r"^\s*<!-- AI-[A-Z]+-END -->\s*$")
@@ -373,10 +373,10 @@ def render_file(src: str, dst: str, relpath: str, ans: dict,
                         start_re=LITE_FENCE_START_RE, end_re=LITE_FENCE_END_RE)
     text = substitute(text, relpath, mapping)
     text = apply_insertions(text, relpath, ans, cond_dir)
-    if relpath == "AGENTS.md" and len(text.splitlines()) > 100:
+    if relpath == "AGENTS.md" and len(text) > 8000:
         raise RenderError(
-            f"AGENTS.md rendered to {len(text.splitlines())} lines; "
-            "hard cap is 100 (spec: context economy)")
+            f"AGENTS.md rendered to {len(text)} chars; hard cap is 8000 "
+            "(the same number the generated docs-budget job enforces)")
     with open(dst, "w", encoding="utf-8", newline="") as f:
         f.write(text)
     shutil.copymode(src, dst)
