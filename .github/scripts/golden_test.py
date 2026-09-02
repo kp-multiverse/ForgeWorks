@@ -11,7 +11,7 @@ Any drift is a failure with a diff.
     python3 .github/scripts/golden_test.py --update   # regenerate expected trees
 
 Also cross-checks the load-bearing scalar values in each profile.json against
-the matching YAML block in init-project/SKILL.md, so the two cannot drift
+the matching YAML block in init-project/reference/language-profiles.md, so the two cannot drift
 silently. Run from anywhere; paths resolve relative to the repo root.
 """
 
@@ -104,7 +104,8 @@ def render_fixture(fixture: str, out_dir: str) -> None:
 def profile_sync_check() -> list[str]:
     """The load-bearing profile.json scalars must appear verbatim in the
     matching SKILL.md <language-profiles> YAML block."""
-    with open(os.path.join(ROOT, "init-project", "SKILL.md"), encoding="utf-8") as f:
+    with open(os.path.join(ROOT, "init-project", "reference", "language-profiles.md"),
+              encoding="utf-8") as f:
         skill = f.read()
     problems: list[str] = []
     for lang in ("python", "typescript", "go", "rust"):
@@ -113,13 +114,13 @@ def profile_sync_check() -> list[str]:
             prof = json.load(f)
         for key in SYNC_KEYS:
             # test_path_regex often contains backslashes/regex metachars, so
-            # SKILL.md quotes it with single quotes (YAML-literal, no escapes)
-            # while the rest use double quotes -- accept either form here.
+            # the reference quotes it with single quotes (YAML-literal, no
+            # escapes) while the rest use double quotes -- accept either.
             needle_dq = f'{key}: "{prof[key]}"'
             needle_sq = f"{key}: '{prof[key]}'"
             if needle_dq not in skill and needle_sq not in skill:
                 problems.append(f"{lang}/profile.json: `{needle_dq}` not found in "
-                                "SKILL.md <language-profiles> -- the two drifted")
+                                "reference/language-profiles.md -- the two drifted")
     return problems
 
 

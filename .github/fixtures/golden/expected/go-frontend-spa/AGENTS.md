@@ -1,84 +1,73 @@
-<!-- FW-BLOCK: project v4.3.0 -->
+<!-- FW-BLOCK: project v5.0.0 -->
 <project>
 Pillarwatch -- A self-hosted status page that shows the up/down history of a small team's own services, no third-party dependency.
-Primary user: An on-call engineer at a small team who wants an honest status page without paying for or trusting a SaaS status vendor.. Stack: Go; frontend: yes-minimal; AI features: none. Dev container: no (if yes, commands run inside it).
-Where things live:
-- `docs/PRD.md` -- what the finished product looks like (journey, surfaces, v1 in/out). Every feature's `serves:` points here.
-- `docs/features.json` -- the ordered, machine-checked feature list; this is the spec, prose is commentary. `docs/BACKLOG.md` is its human-readable view, regenerated at merge.
-- `docs/plans/<id>.md` -- the working decision record for the feature being built, deleted at merge by `scripts/prune.py` (its decisions land in `features.json` and the commit). `docs/LEDGER.md` -- open features only, one capped line per state change.
-- `docs/design/` (frontend projects) -- tokens, rubric, approved mockups. `docs/SECURITY.md` -- threat model + red-team checklist.
-- `docs/gotchas.md` (paid-for pitfalls), `docs/deviations.md`, `docs/language-standards.md`, `docs/documentation.md` (Context7 is wired -- verify unfamiliar APIs there, not from memory).
+Primary user: An on-call engineer at a small team who wants an honest status page without paying for or trusting a SaaS status vendor.. Stack: Go; frontend: yes-minimal; AI features: none; dev container: no.
+What `ls` does not tell you:
+- `docs/features.json` is the spec AND the loop's state: one entry per feature with `acceptance`, `tests`, `status`, and, while in progress, `phase` and `next`. Read one entry with `python3 scripts/feature.py <id>`; never the whole file. `docs/BACKLOG.md` is its generated view. `docs/PRD.md` is what every entry's `serves:` points at.
+- `docs/plans/<id>.md` holds the decisions for the feature being built and is deleted at merge.
+- `docs/gotchas.md` lists pitfalls this codebase paid for. Read it before working in the same area.
+- `docs/SECURITY.md` (threat model + red-team checklist), `docs/design/` (frontend only: tokens, rubric, approved mockups), `docs/language-standards.md`, `docs/documentation.md` (Context7 is wired: verify unfamiliar APIs there, not from memory).
 
 Code style anchor: Pattern-match every file you write or modify to the single-binary, no-frills operational feel of Uptime Kuma. Reference material: https://github.com/louislam/uptime-kuma. 
 </project>
 <!-- /FW-BLOCK: project -->
 
-<!-- FW-BLOCK: commands v4.7.0 -->
+<!-- FW-BLOCK: commands v5.0.0 -->
 <commands>
-- Quality gate (verify-only: lint, format check, types, unit + functional): `bash scripts/qa.sh` | auto-fix: `bash scripts/fix.sh` | e2e suite: `bash scripts/e2e.sh`
-- Feature check (schema, done-cites-tests, mockup gate): `python3 scripts/features_check.py` | duplication gate: `python3 scripts/dup_check.py` (`--list` to survey, `--baseline` to accept existing findings once)
-- Resume brief (`go`): `python3 scripts/resume.py` | backlog view: `python3 scripts/backlog.py` | ONE feature entry: `python3 scripts/backlog.py --feature <id>` | factory doctor (prune stale worktrees + merged branches, then the skills doctor): `bash scripts/factory_doctor.sh` | skills doctor alone (one copy per skill name, no always-on injection, the real session-start inventory): `python3 scripts/skills_doctor.py` | doc prune (deletes what closed features leave behind): `python3 scripts/prune.py` (`--check` is the CI entry-cap gate and owns the caps)
-Package manager and installs: `docs/language-standards.md`. New dependencies go through the manifest and the deps-guard hook (re-run with `DEPS_VETTED=1` once vetted).
+- Quality gate (verify only): `bash scripts/qa.sh` | auto-fix: `bash scripts/fix.sh` | e2e: `bash scripts/e2e.sh`
+- One feature entry: `python3 scripts/feature.py <id>` (add `key=value` to update it) | resume brief (`go`): `python3 scripts/resume.py` | feature list check: `python3 scripts/features_check.py` | duplication gate: `python3 scripts/dup_check.py` | merge cleanup: `python3 scripts/prune.py` | doctor (stale worktrees, merged branches, skill collisions): `bash scripts/factory_doctor.sh`
+- New dependencies go through the manifest and the deps-guard hook (`DEPS_VETTED=1` once vetted); details in `docs/language-standards.md`.
 </commands>
 <!-- /FW-BLOCK: commands -->
 
-<!-- FW-BLOCK: etiquette v4.6.0 -->
+<!-- FW-BLOCK: etiquette v5.0.0 -->
 <etiquette>
-Conventional Commits. Branch per feature; CI green before merge. One writer per branch: when a subagent reports done, the orchestrator owns the branch, and vice versa. One session per working tree: a second session opened in the same directory takes the claim over or opens its own worktree BEFORE it writes. Work inside this repo only unless explicitly asked.
+Conventional Commits. One branch per feature; CI green before merge. One writer per branch, one session per working tree (the tree-claim hook enforces the second). Work inside this repo only unless asked.
 </etiquette>
 <!-- /FW-BLOCK: etiquette -->
 
-<!-- FW-BLOCK: hard-rules v4.0.0 -->
+<!-- FW-BLOCK: hard-rules v5.0.0 -->
 <hard-rules>
-Few and absolute -- each holds with no exceptions:
-- Never weaken, skip, delete, or comment out a failing test to make a gate pass. Changing existing tests, fixtures, or gate config requires a stated reason ("test-change:" line in the commit body); the tamper guard checks.
-- Never commit secrets. Env or a secret store, never source, prompts, or committed config.
-- Never set a `features.json` status to `done` unless its mapped tests exist and pass; never delete an entry (`status: dropped` + reason in `notes`).
-- Work matching the `security-review` skill's trigger merges only after its security lens ran (see the `iteration` skill).
-- No state change without evidence (test output, command run, screenshot path). "Looks done" is not a stop signal.
+Few and absolute:
+- Never weaken, skip, or delete a failing test to make a gate pass. A change to an existing test, fixture, or gate config states its reason in a `test-change:` line of the commit body; the tamper guard checks.
+- Never commit secrets. Env or a secret store only.
+- Never set a feature `done` unless its cited tests exist and pass. Never delete an entry: `status: dropped` with the reason in `notes`.
+- Work matching the `security-review` skill's trigger merges only after its security lens ran.
+- No state change without evidence: test output, the command run, or a screenshot path.
 </hard-rules>
 <!-- /FW-BLOCK: hard-rules -->
 
-<!-- FW-BLOCK: tiers v4.0.0 -->
+<!-- FW-BLOCK: tiers v5.0.0 -->
 <tiers>
-Two tiers, routed by the `iteration` skill:
-- **Chore** (typo, copy, small fix, refactor with no behavior change -- the diff fits in one sentence): build it, quality gate green, commit. Nothing else.
-- **Feature** (any new or changed behavior): GRILL -> RED -> GREEN -> REVIEW -> MERGE, with the skill's hard caps. Unsure which? It is a feature.
-Owner approval happens at exactly one routine place: GRILL. Cap hits stop and ask; everything else proceeds (deviations take the conservative choice + a `docs/deviations.md` line).
+- **Chore** (the diff fits in one sentence, no behavior change): build, gate green, commit.
+- **Feature** (any new or changed behavior): the `iteration` skill, GRILL -> RED -> GREEN -> REVIEW -> MERGE. Unsure? It is a feature.
+The owner approves once, at GRILL. A cap hit stops and asks. Everything else proceeds with the conservative choice, noted in the feature's `notes`.
 </tiers>
 <!-- /FW-BLOCK: tiers -->
 
-<!-- FW-BLOCK: communication v4.5.0 -->
+<!-- FW-BLOCK: communication v5.0.0 -->
 <communication>
-Write everything to `docs/writing.md` (Simplified Technical English): short sentences, active voice, one instruction per sentence, no hedging. Owner-facing messages: lead with the point; never repeat what the owner already knows. Fixed shapes -- GRILL: what I will build / decisions I need (numbered) / top 3 risks + my answer / cost note if fan-out. Cap-hit: one paragraph (state, rounds used, what is stuck, recommendation). Merge report: 3 lines (shipped in the plan's words, evidence, next up). One question at a time, multiple-choice when possible. Anything without a fixed shape: three sentences or a table -- never narrate what you are about to do, restate a diff, or explain what a gate already printed. In docs the same rule is structural: pointers, not prose; the story lives in the commit message.
+Write to `docs/writing.md`: short sentences, active voice, no hedging in instructions. Lead with the point. Do not repeat what the owner knows or what a gate already printed. Three fixed shapes. GRILL: what I will build / decisions I need (numbered) / top risks with my answer. Cap hit: one paragraph (state, rounds used, what is stuck, recommendation). Merge report: three lines (shipped, evidence, next up). Ask the fewest questions that unblock the work, batch independent ones, and offer choices when they exist.
 </communication>
 <!-- /FW-BLOCK: communication -->
 
-<!-- FW-BLOCK: context v4.7.0 -->
+<!-- FW-BLOCK: context v5.0.0 -->
 <context>
-This file is the only always-loaded doc, and its line cap is enforced twice -- by the renderer and by the `docs-budget` job, which owns the number. Everything else is read on demand, by targeted section. Subagent dispatches carry a minimal brief -- plan file, diff, named doc sections, mockup path -- never "read the docs"; subagents return ~1-2K-token results, not transcripts. **The checkpoint.** One feature per session. `go` in a fresh session means: run `python3 scripts/resume.py`, then read the two things it names -- ONE feature entry (`scripts/backlog.py --feature <id>`, never the whole `features.json`; only scripts read that whole) and that feature's plan. Plus this file and the `iteration` skill. Nothing else. `resume.py` derives every pointer from the file that owns it and REFUSES to print a brief when they disagree, so a wrong resume stops instead of proceeding confidently. That is the memory between sessions, never the conversation -- and never the harness's agent memory: that store holds durable preferences and paid-for gotchas only, not session state (resume pointers, feature handoffs), because state lives in repo docs where `prune.py` deletes it when it closes, and a stale memory injects outdated facts into new work. The `checkpoint-budget` CI job asserts the total and owns the number -- as a floor: it sees repo files only, and global CLAUDE.md files, the memory index, plugin injections and MCP listings load on top of it invisibly, so `python3 scripts/skills_doctor.py` prints the real session-start inventory. **Offering a clear is earned, never scheduled:** say "clean stop -- `/clear`, then `go`" as ONE line inside a report you were already writing, and only when the next action needs nothing from this conversation. Never as a question, never between the parts of one orchestration the owner is watching, never on a phase timer. If the conversation still holds a live decision, the answer is not to suggest clearing -- it is to CHECKPOINT it (see the `iteration` skill) so it stops being live: if a restart costs more than a few percent of the window before any work happens, the plan is too long or something is being read whole that should be read by section. Doc budgets: the `docs-budget` job in `.github/workflows/qa.yml` owns every file cap and `scripts/prune.py --check` owns every entry cap -- read the numbers there, never restate them here, or the two drift and the prose wins in the reader's head while the gate wins in CI. Deletion is mechanical first: `prune.py` removes what closed features leave behind, so a file cap should rarely trip. At cap, COMPACT in the same PR that grew it: delete WHOLE entries that are no longer true or no longer change a decision -- never rewrite one, because a rewrite can flip an owed obligation into a done claim -- and stop only when nothing left is deletable. Finish within 5% of the cap and you shaved, not compacted -- redo it, because a cap treated as a target is how these files got big. A cap may be raised in that job with a stated reason ONLY once the doc holds no history and nothing in it is still deletable. Deleting is the default; archive only what you would genuinely re-read, and `docs/archive/` is capped too, oldest out first.
+This file is the only always-loaded doc. Everything else is read on demand, by section. `go` in a fresh session means: run `python3 scripts/resume.py`, then read the one feature entry and plan it names, plus the `iteration` skill. That is the whole memory between sessions. Harness memory holds preferences and paid-for gotchas, never session state. The `docs-budget` and `checkpoint-budget` CI jobs own every cap number; `scripts/prune.py` deletes what closed features leave behind. At a cap, delete whole stale entries; never rewrite one. Subagent briefs name exact files and sections, never "read the docs".
 </context>
 <!-- /FW-BLOCK: context -->
 
-<!-- FW-BLOCK: learning v4.1.0 -->
+<!-- FW-BLOCK: learning v5.0.0 -->
 <learning>
-Reality surprised you (API differs from docs, gate green but feature dead)? Add the lesson to `docs/gotchas.md` -- one entry, four short lines, and delete any entry the code has since made impossible. Implementation must deviate from plan or mockup? Conservative option + `docs/deviations.md` line, keep going. Working notes (losing mockups, scratch analyses, uncited probe files) are scaffolding, not records: each dies once its finding lands in a gotcha, a fixture, or a test. A doc earns its place by changing a future decision -- nothing is kept "for the record". Exception: a probe a test or source comment cites by path is that fixture's provenance -- it lives as long as the fixture does.
+Reality surprised you (API differs from docs, gate green but feature dead)? One four-line entry in `docs/gotchas.md`. Delete any entry the code has since made impossible. Working notes die once their finding lands in a gotcha, a fixture, or a test.
 </learning>
 <!-- /FW-BLOCK: learning -->
 
-<!-- FW-BLOCK: roster v4.7.0 -->
+<!-- FW-BLOCK: roster v5.0.0 -->
 <roster>
-Skills (on demand): `iteration` (the per-feature loop -- the only workflow), `security-review` (trigger definition + checklist), `tech-debt` (on-demand sweep). Upstream if installed: `tdd`, `grill-me` -- and ONE copy per process skill (TDD, grilling, debugging, review): the `iteration` skill owns the workflow, that upstream pair is the only other copy, and any overlapping pack or always-on SessionStart plugin is disabled, never left to race it (the generic copy wins the race and generic output ships); `python3 scripts/skills_doctor.py` lists collisions and injections.
-Subagents: `@reviewer` (the single REVIEW pass: plan conformance, correctness, design fidelity, security; its Stop hook re-runs the quality gate), `@utility` (mechanical chores, never in the critical path). Dispatch is priced: a job card (deliverable, exact inputs, tier, done-check) per dispatch, model tiers + the project's `weight` in `docs/agents.json`, routed by the `iteration` skill's Dispatch rule -- the cheapest model whose failure the done-check would catch. A 2-feature batch (disjoint files, own worktrees, merge queue) exists only as an owner-approved GRILL proposal at full weight. On non-Claude rosters, run the same passes as independent fresh-context sessions -- the skills define what each pass checks.
+Skills: `iteration` (the per-feature loop), `security-review` (trigger + checklist), `tech-debt` (on-demand sweep); upstream `tdd` and `grill-me` when installed. One copy per process skill: `python3 scripts/skills_doctor.py` lists collisions.
+Subagents: `@reviewer` (the single REVIEW pass: plan conformance, correctness, design fidelity, security), `@utility` (mechanical chores on the cheapest tier). Dispatch rules and model tiers: the `iteration` skill's dispatch reference and `docs/agents.json`. Without subagents, run the same passes as fresh sessions.
 </roster>
 <!-- /FW-BLOCK: roster -->
 
-<!--
-Project: Pillarwatch
-Goal: A self-hosted status page that shows the up/down history of a small team's own services, no third-party dependency.
-Primary user: An on-call engineer at a small team who wants an honest status page without paying for or trusting a SaaS status vendor.
-Language: Go
-Frontend: yes-minimal
-AI features: none
-Bootstrapped: 2026-07-26
--->
+<!-- ForgeWorks: Pillarwatch | Go | bootstrapped 2026-07-26 -->

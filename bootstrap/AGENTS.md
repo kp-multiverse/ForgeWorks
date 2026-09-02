@@ -1,57 +1,30 @@
 <!--
-  This is the BOOTSTRAP version of AGENTS.md.
-
-  When the init-project skill runs successfully, this file is REPLACED with
-  the project-specific AGENTS.md generated from a template.
-
-  If you are an agent reading this file: the project is uninitialized.
-  Trigger BOOTSTRAP MODE below.
+  BOOTSTRAP version of AGENTS.md. The init-project skill replaces this file
+  with the project's own AGENTS.md when it runs.
 -->
 
 # AGENTS.md (Bootstrap Mode)
 
 <bootstrap-mode>
-This project is uninitialized. The following files do not yet exist:
+This project is uninitialized: `docs/features.json`, `docs/PRD.md`, and
+`.claude/agents/` do not exist yet.
 
-- `docs/features.json`
-- `docs/PRD.md`
-- `.claude/agents/`
-
-When you detect this state, do the following:
-
-1. **Confirm with the user** that they want to bootstrap this project.
-2. **Install supporting skills** (REQUIRED, not optional):
+1. Confirm with the user that they want to bootstrap this project.
+2. Install the two upstream process skills the generated loop pairs with:
    ```bash
    npx skills@latest add mattpocock/skills
    ```
-   Required at minimum: `tdd`, `grill-me`, `to-prd`, `caveman`, `write-a-skill`, `handoff`.
-   Use `mattpocock/skills` for the core loop (not the broader `superpowers` pack). Always pull the latest. `tdd` provides Red to Green to Refactor; `grill-me` powers the planning interview; the generated subagents pair with both.
-   One copy per process skill: this install is the only source of `tdd`/`grill-me`. If the `superpowers` plugin or the `mattpocock-skills` plugin is enabled next to it, the user disables it first (`/plugin`) -- two copies make skill routing a race, and the generic copy wins.
-3. **Run the init-project skill** to generate the project structure.
-   - If `init-project` is available as a slash command (`/init-project`), invoke it.
-   - Otherwise, read `.claude/skills/init-project/SKILL.md` and follow its instructions.
+   Pick `tdd` and `grill-me`. This install is the only copy of each: if the
+   `superpowers` plugin or the `mattpocock-skills` plugin is enabled too, the
+   user disables it first (`/plugin`). Two copies of a process skill make
+   skill routing a race, and the generic copy wins.
+3. Run `/init-project` (or read `.claude/skills/init-project/SKILL.md` and
+   follow it). It interviews the user, then renders the project: an
+   `AGENTS.md` constitution, the `iteration` / `security-review` / `tech-debt`
+   skills, the `reviewer` and `utility` subagents with their hooks, `docs/`
+   (PRD, feature list, threat model, gotchas), CI, and the chosen language's
+   toolchain with a green-on-first-run scaffold.
 
-The init-project skill will interview the user about scope and stack, then generate:
-
-- `AGENTS.md` (project-specific, stack-agnostic core, replacing this file)
-- `CLAUDE.md` (symlinked to `AGENTS.md` for Claude Code compatibility)
-- `.claude/agents/` with subagent definitions: `reviewer` (the single fresh-context REVIEW pass -- plan conformance, correctness, design fidelity, and security in one lens set) and `utility` (mechanical chores)
-- `.claude/hooks/quality-gate.sh` (deterministic static+test gate, triggered by `reviewer`'s Stop hook) and `.claude/hooks/deps-guard.sh` + `.claude/settings.json` (supply-chain guard hook)
-- `.mcp.json` with Context7 MCP server wired up for live library docs lookup
-- `.github/workflows/qa.yml` (CI: fast quality gate plus a separate end-to-end job on push and PR)
-- `.github/pull_request_template.md` (short PR checklist)
-- `.pre-commit-config.yaml` (Python profile only; TypeScript/Go use their qa gate + CI)
-- `docs/` with templates filled in from the interview, including `language-standards.md` and `SECURITY.md`
-- `.devcontainer/` if requested
-- The chosen language's runners: a verify-only quality gate, a local fix, and a separate end-to-end runner (shell scripts for Python/Go; npm scripts for TypeScript)
-- The chosen language's manifest file (`pyproject.toml`, `package.json`, or `go.mod`)
-- A working environment via the chosen package manager (`uv sync` / `npm install` / `go mod download`), unless a dev container is chosen
+Until bootstrap is complete: do not write code, create unrelated files, or
+commit.
 </bootstrap-mode>
-
-<development-process>
-Until bootstrap is complete:
-
-- Do not write code or create unrelated files.
-- Do not commit to git.
-- Focus exclusively on running the init-project skill to set up the project.
-</development-process>

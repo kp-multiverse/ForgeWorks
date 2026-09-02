@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""Read `docs/features.json` -- the whole list, or one feature.
+"""Regenerate docs/BACKLOG.md, the human-readable view of docs/features.json.
 
-Two modes:
+    python3 scripts/backlog.py
 
-    python3 scripts/backlog.py              # regenerate docs/BACKLOG.md
-    python3 scripts/backlog.py --feature F012   # print ONE entry, as JSON
-
-The second mode exists for context economy. `features.json` grows with the
-project (70K+ chars on a mature one); an agent building one feature needs one
-entry. Reading the file whole to get it costs 20-35x the tokens and blows the
-session's checkpoint budget -- see `AGENTS.md` `<context>`. Scripts may read it
-whole; a working session should not.
+`scripts/prune.py` runs this at every merge, so the file is rarely written by
+hand. To read ONE feature, use `scripts/feature.py <id>` -- a working session
+never reads features.json whole.
 """
 
 from __future__ import annotations
@@ -31,16 +26,6 @@ def load() -> list | None:
     except (OSError, KeyError, json.JSONDecodeError) as exc:
         print(f"backlog: cannot read {SRC}: {exc}")
         return None
-
-
-def one(feats: list, fid: str) -> int:
-    for ft in feats:
-        if ft.get("id") == fid:
-            print(json.dumps(ft, indent=2, ensure_ascii=False))
-            return 0
-    ids = ", ".join(f.get("id", "?") for f in feats)
-    print(f"backlog: no feature {fid!r}. Known ids: {ids}")
-    return 1
 
 
 def regenerate(feats: list) -> int:
@@ -69,18 +54,11 @@ def regenerate(feats: list) -> int:
 
 
 def main(argv: list[str]) -> int:
-    feats = load()
-    if feats is None:
-        return 1
-    if argv[:1] == ["--feature"]:
-        if len(argv) != 2:
-            print("usage: backlog.py --feature <id>")
-            return 1
-        return one(feats, argv[1])
     if argv:
-        print(f"backlog: unknown argument {argv[0]!r}; use --feature <id> or no arguments")
+        print(f"backlog: unknown argument {argv[0]!r}; this script takes none")
         return 1
-    return regenerate(feats)
+    feats = load()
+    return 1 if feats is None else regenerate(feats)
 
 
 if __name__ == "__main__":

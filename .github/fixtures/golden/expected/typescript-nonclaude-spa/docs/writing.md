@@ -19,7 +19,7 @@ from ASD-STE100, the aerospace controlled language.
 
 ## Two modes
 
-- **Strict** -- procedures, error messages, ledger lines, job cards,
+- **Strict** -- procedures, error messages, feature notes, job cards,
   commit subjects: every rule applies.
 - **STE-flavored** -- explanatory prose (README sections, gotcha entries,
   a plan's Approach section): keep the discipline; relax the vocabulary
